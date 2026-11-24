@@ -1,0 +1,46 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    /* Core Dark Purple & Lavender Design Tokens */
+    --vl-bg-main: #1C0E29;
+    --vl-bg-nav: #0E0713;
+    --vl-bg-secondary: #3D2C56;
+    --vl-bg-primary: #514871;
+    --vl-bg-card: #675D85;
+    --vl-bg-light-purple: #7C7397;
+    --vl-bg-hover: #9993AC;
+    --vl-accent-lavender: #B5ADC6;
+    --vl-text-light: #CFCEDD;
+    --vl-text-white: #FFFFFF;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+    background-color: #1C0E29;
+    color: #FFFFFF;
+  }
+
+  h1, h2, .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "VIDHYA LIBRARY",
+  "description": "Complete library management system with public website, student portal, seat management, QR attendance, book inventory, Razorpay billing, and financial analytics.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,1071 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 0: Default Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Pillar 3: Reusable Global Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedEmail() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isBootstrappedAdminEmail() {
+      return isVerifiedEmail() && request.auth.token.email == 'educationrevolution90@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdminEmail() ||
+        (isVerifiedEmail() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function getRoleDoc() {
+      return get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data;
+    }
+
+    function hasRoleDoc() {
+      return isVerifiedEmail() && exists(/databases/$(database)/documents/user_roles/$(request.auth.uid));
+    }
+
+    function isManagerOrAdmin() {
+      return isAdmin() || (hasRoleDoc() && getRoleDoc().active == true && getRoleDoc().role in ['admin', 'manager']);
+    }
+
+    function isStaffOrAbove() {
+      return isManagerOrAdmin() || (hasRoleDoc() && getRoleDoc().active == true && getRoleDoc().role in ['admin', 'manager', 'staff']);
+    }
+
+    function isNonEmptyString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isOptionalString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    // Existing Library Validation Blueprints
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'studentDocId', 'staffDocId', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && isNonEmptyString(data.email, 3, 200)
+        && isNonEmptyString(data.displayName, 1, 120)
+        && data.role in ['student', 'staff', 'manager', 'admin']
+        && data.status in ['active', 'inactive', 'blocked']
+        && (!('studentDocId' in data) || isOptionalString(data.studentDocId, 128))
+        && (!('staffDocId' in data) || isOptionalString(data.staffDocId, 128))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAdminRole(data) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'email', 'createdAt'])
+        && isValidId(data.uid)
+        && isNonEmptyString(data.email, 3, 200)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidUserRoleAssignment(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'permissions', 'active', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'role', 'permissions', 'active', 'updatedAt'])
+        && isValidId(data.uid)
+        && isNonEmptyString(data.email, 3, 200)
+        && data.role in ['admin', 'manager', 'staff', 'student']
+        && data.permissions is list && data.permissions.size() <= 20
+        && (data.permissions.size() == 0 || (data.permissions[0] is string && data.permissions[0].size() <= 60))
+        && data.active is bool
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidStudent(data) {
+      return data.keys().hasAll(['uid', 'studentCode', 'fullName', 'mobile', 'email', 'fatherName', 'address', 'emergencyContact', 'membershipStatus', 'status', 'isDemo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'studentCode', 'fullName', 'mobile', 'email', 'fatherName', 'address', 'emergencyContact', 'profilePhotoUrl', 'idDocumentUrl', 'seatId', 'seatCode', 'membershipId', 'membershipPlanName', 'membershipStatus', 'membershipExpiry', 'status', 'isDemo', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.uid, 1, 128)
+        && isNonEmptyString(data.studentCode, 4, 24)
+        && data.studentCode.matches('^VL[0-9]{4,12}$')
+        && isNonEmptyString(data.fullName, 2, 120)
+        && isNonEmptyString(data.mobile, 7, 20)
+        && isNonEmptyString(data.email, 3, 200)
+        && isNonEmptyString(data.fatherName, 2, 120)
+        && isNonEmptyString(data.address, 3, 400)
+        && isNonEmptyString(data.emergencyContact, 7, 30)
+        && (!('profilePhotoUrl' in data) || isOptionalString(data.profilePhotoUrl, 1000))
+        && (!('idDocumentUrl' in data) || isOptionalString(data.idDocumentUrl, 1000))
+        && (!('seatId' in data) || isOptionalString(data.seatId, 128))
+        && (!('seatCode' in data) || isOptionalString(data.seatCode, 16))
+        && (!('membershipId' in data) || isOptionalString(data.membershipId, 128))
+        && (!('membershipPlanName' in data) || isOptionalString(data.membershipPlanName, 100))
+        && data.membershipStatus in ['active', 'expired', 'pending', 'none']
+        && (!('membershipExpiry' in data) || isOptionalString(data.membershipExpiry, 40))
+        && data.status in ['active', 'inactive', 'blocked']
+        && data.isDemo is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidStaff(data) {
+      return data.keys().hasAll(['staffCode', 'fullName', 'email', 'mobile', 'role', 'permissions', 'shift', 'monthlySalary', 'status', 'isDemo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'staffCode', 'fullName', 'email', 'mobile', 'role', 'permissions', 'shift', 'monthlySalary', 'status', 'isDemo', 'createdAt', 'updatedAt'])
+        && (!('uid' in data) || isOptionalString(data.uid, 128))
+        && isNonEmptyString(data.staffCode, 2, 24)
+        && isNonEmptyString(data.fullName, 2, 120)
+        && isNonEmptyString(data.email, 3, 200)
+        && isNonEmptyString(data.mobile, 7, 20)
+        && data.role in ['staff', 'manager']
+        && data.permissions is list && data.permissions.size() <= 20
+        && (data.permissions.size() == 0 || (data.permissions[0] is string && data.permissions[0].size() <= 60))
+        && isNonEmptyString(data.shift, 2, 60)
+        && data.monthlySalary is number && data.monthlySalary >= 0 && data.monthlySalary <= 10000000
+        && data.status in ['active', 'inactive']
+        && data.isDemo is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMembershipPlan(data) {
+      return data.keys().hasAll(['name', 'durationDays', 'price', 'timings', 'seatAccess', 'facilities', 'terms', 'active', 'isDemo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'durationDays', 'price', 'timings', 'seatAccess', 'facilities', 'terms', 'active', 'isDemo', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.name, 2, 100)
+        && data.durationDays is int && data.durationDays >= 1 && data.durationDays <= 3650
+        && data.price is number && data.price >= 0 && data.price <= 1000000
+        && isNonEmptyString(data.timings, 2, 100)
+        && isNonEmptyString(data.seatAccess, 2, 120)
+        && data.facilities is list && data.facilities.size() <= 15
+        && (data.facilities.size() == 0 || (data.facilities[0] is string && data.facilities[0].size() <= 100))
+        && isOptionalString(data.terms, 1000)
+        && data.active is bool
+        && data.isDemo is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMembership(data) {
+      return data.keys().hasAll(['studentDocId', 'studentUid', 'studentCode', 'studentName', 'planId', 'planName', 'amount', 'startDate', 'expiryDate', 'status', 'isDemo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['studentDocId', 'studentUid', 'studentCode', 'studentName', 'planId', 'planName', 'amount', 'startDate', 'expiryDate', 'status', 'paymentId', 'isDemo', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.studentDocId, 1, 128)
+        && isNonEmptyString(data.studentUid, 1, 128)
+        && isNonEmptyString(data.studentCode, 4, 24)
+        && isNonEmptyString(data.studentName, 2, 120)
+        && isNonEmptyString(data.planId, 1, 128)
+        && isNonEmptyString(data.planName, 2, 100)
+        && data.amount is number && data.amount >= 0 && data.amount <= 1000000
+        && isNonEmptyString(data.startDate, 4, 40)
+        && isNonEmptyString(data.expiryDate, 4, 40)
+        && data.status in ['active', 'expired', 'pending', 'cancelled']
+        && (!('paymentId' in data) || isOptionalString(data.paymentId, 128))
+        && data.isDemo is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSeat(data) {
+      return data.keys().hasAll(['seatCode', 'zone', 'rowLabel', 'colIndex', 'status', 'isDemo', 'updatedAt'])
+        && data.keys().hasOnly(['seatCode', 'zone', 'rowLabel', 'colIndex', 'status', 'assignedStudentDocId', 'assignedStudentUid', 'assignedStudentCode', 'shift', 'isDemo', 'updatedAt'])
+        && isNonEmptyString(data.seatCode, 2, 16)
+        && isNonEmptyString(data.zone, 2, 60)
+        && isNonEmptyString(data.rowLabel, 1, 8)
+        && data.colIndex is int && data.colIndex >= 1 && data.colIndex <= 100
+        && data.status in ['available', 'occupied', 'reserved', 'maintenance']
+        && (!('assignedStudentDocId' in data) || isOptionalString(data.assignedStudentDocId, 128))
+        && (!('assignedStudentUid' in data) || isOptionalString(data.assignedStudentUid, 128))
+        && (!('assignedStudentCode' in data) || isOptionalString(data.assignedStudentCode, 24))
+        && (!('shift' in data) || isOptionalString(data.shift, 60))
+        && data.isDemo is bool
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSeatBooking(data) {
+      return data.keys().hasAll(['seatId', 'seatCode', 'studentDocId', 'studentUid', 'studentCode', 'studentName', 'bookingType', 'status', 'isDemo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['seatId', 'seatCode', 'studentDocId', 'studentUid', 'studentCode', 'studentName', 'bookingType', 'status', 'notes', 'isDemo', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.seatId, 1, 128)
+        && isNonEmptyString(data.seatCode, 2, 16)
+        && isNonEmptyString(data.studentDocId, 1, 128)
+        && isNonEmptyString(data.studentUid, 1, 128)
+        && isNonEmptyString(data.studentCode, 4, 24)
+        && isNonEmptyString(data.studentName, 2, 120)
+        && data.bookingType in ['new', 'change']
+        && data.status in ['pending', 'approved', 'rejected', 'cancelled', 'released']
+        && (!('notes' in data) || isOptionalString(data.notes, 400))
+        && data.isDemo is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAttendance(data) {
+      return data.keys().hasAll(['studentDocId', 'studentUid', 'studentCode', 'studentName', 'date', 'checkInTime', 'durationMinutes', 'method', 'isLate', 'isDemo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['studentDocId', 'studentUid', 'studentCode', 'studentName', 'date', 'checkInTime', 'checkOutTime', 'durationMinutes', 'method', 'isLate', 'markedBy', 'isDemo', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.studentDocId, 1, 128)
+        && isNonEmptyString(data.studentUid, 1, 128)
+        && isNonEmptyString(data.studentCode, 4, 24)
+        && isNonEmptyString(data.studentName, 2, 120)
+        && isNonEmptyString(data.date, 8, 20)
+        && isNonEmptyString(data.checkInTime, 4, 40)
+        && (!('checkOutTime' in data) || isOptionalString(data.checkOutTime, 40))
+        && data.durationMinutes is int && data.durationMinutes >= 0 && data.durationMinutes <= 1440
+        && data.method in ['qr', 'manual', 'id']
+        && data.isLate is bool
+        && (!('markedBy' in data) || isOptionalString(data.markedBy, 128))
+        && data.isDemo is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidBookCategory(data) {
+      return data.keys().hasAll(['name', 'shelfRange', 'createdAt'])
+        && data.keys().hasOnly(['name', 'description', 'shelfRange', 'createdAt'])
+        && isNonEmptyString(data.name, 2, 80)
+        && (!('description' in data) || isOptionalString(data.description, 300))
+        && isNonEmptyString(data.shelfRange, 1, 40)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidBook(data) {
+      return data.keys().hasAll(['title', 'author', 'isbn', 'categoryName', 'totalCopies', 'availableCopies', 'shelfNumber', 'publicationYear', 'isDemo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['title', 'author', 'publisher', 'isbn', 'categoryId', 'categoryName', 'totalCopies', 'availableCopies', 'shelfNumber', 'publicationYear', 'coverUrl', 'isDemo', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.title, 1, 200)
+        && isNonEmptyString(data.author, 1, 150)
+        && (!('publisher' in data) || isOptionalString(data.publisher, 150))
+        && isNonEmptyString(data.isbn, 3, 32)
+        && (!('categoryId' in data) || isOptionalString(data.categoryId, 128))
+        && isNonEmptyString(data.categoryName, 2, 80)
+        && data.totalCopies is int && data.totalCopies >= 0 && data.totalCopies <= 10000
+        && data.availableCopies is int && data.availableCopies >= 0 && data.availableCopies <= data.totalCopies
+        && isNonEmptyString(data.shelfNumber, 1, 32)
+        && data.publicationYear is int && data.publicationYear >= 1800 && data.publicationYear <= 2100
+        && (!('coverUrl' in data) || isOptionalString(data.coverUrl, 1000))
+        && data.isDemo is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidBookIssue(data) {
+      return data.keys().hasAll(['bookId', 'bookTitle', 'studentDocId', 'studentUid', 'studentCode', 'studentName', 'fineAmount', 'status', 'isDemo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['bookId', 'bookTitle', 'studentDocId', 'studentUid', 'studentCode', 'studentName', 'issueDate', 'dueDate', 'returnDate', 'fineAmount', 'status', 'isDemo', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.bookId, 1, 128)
+        && isNonEmptyString(data.bookTitle, 1, 200)
+        && isNonEmptyString(data.studentDocId, 1, 128)
+        && isNonEmptyString(data.studentUid, 1, 128)
+        && isNonEmptyString(data.studentCode, 4, 24)
+        && isNonEmptyString(data.studentName, 2, 120)
+        && (!('issueDate' in data) || isOptionalString(data.issueDate, 40))
+        && (!('dueDate' in data) || isOptionalString(data.dueDate, 40))
+        && (!('returnDate' in data) || isOptionalString(data.returnDate, 40))
+        && data.fineAmount is number && data.fineAmount >= 0 && data.fineAmount <= 100000
+        && data.status in ['requested', 'issued', 'returned', 'overdue', 'rejected']
+        && data.isDemo is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPayment(data) {
+      return data.keys().hasAll(['receiptNumber', 'studentDocId', 'studentUid', 'studentCode', 'studentName', 'planName', 'amount', 'method', 'status', 'isDemo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['receiptNumber', 'studentDocId', 'studentUid', 'studentCode', 'studentName', 'planId', 'planName', 'amount', 'method', 'status', 'razorpayOrderId', 'razorpayPaymentId', 'razorpaySignature', 'notes', 'isDemo', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.receiptNumber, 3, 40)
+        && isNonEmptyString(data.studentDocId, 1, 128)
+        && isNonEmptyString(data.studentUid, 1, 128)
+        && isNonEmptyString(data.studentCode, 4, 24)
+        && isNonEmptyString(data.studentName, 2, 120)
+        && (!('planId' in data) || isOptionalString(data.planId, 128))
+        && isNonEmptyString(data.planName, 2, 100)
+        && data.amount is number && data.amount >= 0 && data.amount <= 1000000
+        && data.method in ['razorpay_upi', 'razorpay_card', 'razorpay_netbanking', 'cash', 'upi_offline']
+        && data.status in ['verified', 'pending', 'failed', 'refunded']
+        && (!('razorpayOrderId' in data) || isOptionalString(data.razorpayOrderId, 128))
+        && (!('razorpayPaymentId' in data) || isOptionalString(data.razorpayPaymentId, 128))
+        && (!('razorpaySignature' in data) || isOptionalString(data.razorpaySignature, 256))
+        && (!('notes' in data) || isOptionalString(data.notes, 400))
+        && data.isDemo is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidExpense(data) {
+      return data.keys().hasAll(['title', 'category', 'amount', 'expenseDate', 'recordedBy', 'isDemo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['title', 'category', 'amount', 'expenseDate', 'notes', 'recordedBy', 'isDemo', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.title, 2, 150)
+        && data.category in ['electricity', 'rent', 'internet', 'salary', 'maintenance', 'furniture', 'other']
+        && data.amount is number && data.amount >= 0 && data.amount <= 10000000
+        && isNonEmptyString(data.expenseDate, 8, 20)
+        && (!('notes' in data) || isOptionalString(data.notes, 400))
+        && isNonEmptyString(data.recordedBy, 1, 128)
+        && data.isDemo is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['recipientUid', 'type', 'title', 'message', 'read', 'channel', 'createdAt'])
+        && data.keys().hasOnly(['recipientUid', 'type', 'title', 'message', 'read', 'channel', 'createdAt'])
+        && isNonEmptyString(data.recipientUid, 1, 128)
+        && data.type in ['membership_expiry', 'payment_confirmation', 'payment_pending', 'seat_allocation', 'seat_change', 'attendance_confirmation', 'book_return', 'announcement']
+        && isNonEmptyString(data.title, 2, 150)
+        && isNonEmptyString(data.message, 2, 600)
+        && data.read is bool
+        && data.channel in ['in_app', 'whatsapp', 'email', 'sms']
+        && data.createdAt is timestamp;
+    }
+
+    function isValidEnquiry(data) {
+      return data.keys().hasAll(['name', 'email', 'phone', 'subject', 'message', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'email', 'phone', 'subject', 'message', 'status', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.name, 2, 120)
+        && isNonEmptyString(data.email, 3, 200)
+        && isNonEmptyString(data.phone, 7, 20)
+        && isNonEmptyString(data.subject, 2, 150)
+        && isNonEmptyString(data.message, 5, 1000)
+        && data.status in ['new', 'contacted', 'resolved']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAnnouncement(data) {
+      return data.keys().hasAll(['title', 'body', 'priority', 'published', 'createdAt'])
+        && data.keys().hasOnly(['title', 'body', 'priority', 'published', 'createdAt'])
+        && isNonEmptyString(data.title, 2, 160)
+        && isNonEmptyString(data.body, 2, 1000)
+        && data.priority in ['normal', 'important']
+        && data.published is bool
+        && data.createdAt is timestamp;
+    }
+
+    function isValidGalleryItem(data) {
+      return data.keys().hasAll(['title', 'category', 'imageUrl', 'caption', 'sortOrder', 'createdAt'])
+        && data.keys().hasOnly(['title', 'category', 'imageUrl', 'caption', 'sortOrder', 'createdAt'])
+        && isNonEmptyString(data.title, 2, 120)
+        && isNonEmptyString(data.category, 2, 60)
+        && isNonEmptyString(data.imageUrl, 3, 1000)
+        && isOptionalString(data.caption, 300)
+        && data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 1000
+        && data.createdAt is timestamp;
+    }
+
+    function isValidLibrarySettings(data) {
+      return data.keys().hasAll(['libraryName', 'tagline', 'address', 'phone', 'whatsapp', 'email', 'openingHours', 'is24HourAccess', 'mapLat', 'mapLng', 'facilities', 'updatedAt'])
+        && data.keys().hasOnly(['libraryName', 'tagline', 'address', 'phone', 'whatsapp', 'email', 'openingHours', 'is24HourAccess', 'mapLat', 'mapLng', 'mapUrl', 'ratingText', 'facilities', 'termsText', 'privacyText', 'razorpayEnabled', 'whatsappConfigured', 'emailConfigured', 'smsConfigured', 'updatedAt'])
+        && isNonEmptyString(data.libraryName, 2, 120)
+        && isNonEmptyString(data.tagline, 2, 200)
+        && isNonEmptyString(data.address, 3, 300)
+        && isNonEmptyString(data.phone, 5, 40)
+        && isNonEmptyString(data.whatsapp, 5, 30)
+        && isNonEmptyString(data.email, 3, 200)
+        && isNonEmptyString(data.openingHours, 2, 120)
+        && data.is24HourAccess is bool
+        && data.mapLat is number && data.mapLng is number
+        && (!('mapUrl' in data) || isOptionalString(data.mapUrl, 500))
+        && (!('ratingText' in data) || isOptionalString(data.ratingText, 100))
+        && data.facilities is list && data.facilities.size() <= 20
+        && (data.facilities.size() == 0 || (data.facilities[0] is string && data.facilities[0].size() <= 120))
+        && (!('termsText' in data) || isOptionalString(data.termsText, 4000))
+        && (!('privacyText' in data) || isOptionalString(data.privacyText, 4000))
+        && (!('razorpayEnabled' in data) || data.razorpayEnabled is bool)
+        && (!('whatsappConfigured' in data) || data.whatsappConfigured is bool)
+        && (!('emailConfigured' in data) || data.emailConfigured is bool)
+        && (!('smsConfigured' in data) || data.smsConfigured is bool)
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['actorUid', 'actorEmail', 'actorRole', 'action', 'targetType', 'targetId', 'details', 'createdAt'])
+        && data.keys().hasOnly(['actorUid', 'actorEmail', 'actorRole', 'action', 'targetType', 'targetId', 'details', 'createdAt'])
+        && isNonEmptyString(data.actorUid, 1, 128)
+        && isNonEmptyString(data.actorEmail, 3, 200)
+        && isNonEmptyString(data.actorRole, 2, 40)
+        && isNonEmptyString(data.action, 2, 120)
+        && isNonEmptyString(data.targetType, 2, 80)
+        && isNonEmptyString(data.targetId, 1, 128)
+        && isOptionalString(data.details, 500)
+        && data.createdAt is timestamp;
+    }
+
+    // Competitive Examination & AI Learning Blueprints
+    function isValidExamCategory(data) {
+      return data.keys().hasAll(['name', 'categoryGroup', 'code', 'defaultDurationMinutes', 'marksPerCorrect', 'negativeMarks', 'description', 'active', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'categoryGroup', 'code', 'defaultDurationMinutes', 'marksPerCorrect', 'negativeMarks', 'description', 'active', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.name, 2, 100)
+        && isNonEmptyString(data.categoryGroup, 2, 80)
+        && isNonEmptyString(data.code, 2, 32)
+        && data.defaultDurationMinutes is int && data.defaultDurationMinutes >= 5 && data.defaultDurationMinutes <= 360
+        && data.marksPerCorrect is number && data.marksPerCorrect >= 0.5 && data.marksPerCorrect <= 20
+        && data.negativeMarks is number && data.negativeMarks >= 0 && data.negativeMarks <= 10
+        && isOptionalString(data.description, 400)
+        && data.active is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidExamSubject(data) {
+      return data.keys().hasAll(['examName', 'name', 'active', 'createdAt'])
+        && data.keys().hasOnly(['examName', 'name', 'active', 'createdAt'])
+        && isNonEmptyString(data.examName, 2, 100)
+        && isNonEmptyString(data.name, 2, 100)
+        && data.active is bool
+        && data.createdAt is timestamp;
+    }
+
+    function isValidExamChapter(data) {
+      return data.keys().hasAll(['examName', 'subjectName', 'name', 'topics', 'active', 'createdAt'])
+        && data.keys().hasOnly(['examName', 'subjectName', 'name', 'topics', 'active', 'createdAt'])
+        && isNonEmptyString(data.examName, 2, 100)
+        && isNonEmptyString(data.subjectName, 2, 100)
+        && isNonEmptyString(data.name, 2, 140)
+        && data.topics is list && data.topics.size() <= 40
+        && (data.topics.size() == 0 || (data.topics[0] is string && data.topics[0].size() <= 140))
+        && data.active is bool
+        && data.createdAt is timestamp;
+    }
+
+    function isValidExamQuestion(data) {
+      return data.keys().hasAll(['questionCode', 'examName', 'examCategory', 'subject', 'chapter', 'topic', 'questionText', 'options', 'difficulty', 'examYear', 'source', 'language', 'verificationStatus', 'fingerprint', 'normalizedText', 'answerSeal', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['questionCode', 'examName', 'examCategory', 'subject', 'chapter', 'topic', 'questionText', 'options', 'difficulty', 'examYear', 'examShift', 'source', 'sourceDocumentId', 'language', 'verificationStatus', 'published', 'usageCount', 'hasDiagramOrTable', 'diagramDescription', 'fingerprint', 'normalizedText', 'answerSeal', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.questionCode, 2, 40)
+        && isNonEmptyString(data.examName, 2, 100)
+        && isNonEmptyString(data.examCategory, 2, 80)
+        && isNonEmptyString(data.subject, 2, 100)
+        && isNonEmptyString(data.chapter, 1, 140)
+        && isNonEmptyString(data.topic, 1, 140)
+        && isNonEmptyString(data.questionText, 5, 3000)
+        && data.options is list && data.options.size() == 4
+        && isNonEmptyString(data.options[0], 1, 800)
+        && data.difficulty in ['easy', 'medium', 'hard']
+        && data.examYear is int && data.examYear >= 1980 && data.examYear <= 2040
+        && (!('examShift' in data) || isOptionalString(data.examShift, 80))
+        && data.source in ['pyq', 'ai_generated', 'manual', 'current_affairs', 'gk_book']
+        && (!('sourceDocumentId' in data) || isOptionalString(data.sourceDocumentId, 128))
+        && data.language in ['en', 'hi', 'bilingual']
+        && data.verificationStatus in ['verified', 'ai_derived', 'needs_review']
+        && (!('published' in data) || data.published is bool)
+        && (!('usageCount' in data) || (data.usageCount is int && data.usageCount >= 0))
+        && (!('hasDiagramOrTable' in data) || data.hasDiagramOrTable is bool)
+        && (!('diagramDescription' in data) || isOptionalString(data.diagramDescription, 1000))
+        && isNonEmptyString(data.fingerprint, 6, 128)
+        && isNonEmptyString(data.normalizedText, 3, 3000)
+        && isNonEmptyString(data.answerSeal, 16, 4000)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidQuestionKey(data) {
+      return data.keys().hasAll(['questionId', 'correctIndex', 'explanation', 'derivedBy', 'updatedAt'])
+        && data.keys().hasOnly(['questionId', 'correctIndex', 'explanation', 'derivedBy', 'updatedAt'])
+        && isValidId(data.questionId)
+        && data.correctIndex is int && data.correctIndex >= 0 && data.correctIndex <= 3
+        && isOptionalString(data.explanation, 3000)
+        && data.derivedBy in ['official_key', 'ai_derived', 'admin_manual']
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUploadedDocument(data) {
+      return data.keys().hasAll(['fileName', 'fileSizeBytes', 'totalPages', 'examName', 'examYear', 'subject', 'uploadedByUid', 'status', 'createdAt'])
+        && data.keys().hasOnly(['fileName', 'fileSizeBytes', 'totalPages', 'storageUrl', 'examName', 'examYear', 'subject', 'shift', 'uploadedByUid', 'status', 'createdAt'])
+        && isNonEmptyString(data.fileName, 3, 200)
+        && data.fileSizeBytes is int && data.fileSizeBytes >= 1 && data.fileSizeBytes <= 104857600
+        && data.totalPages is int && data.totalPages >= 1 && data.totalPages <= 1000
+        && (!('storageUrl' in data) || isOptionalString(data.storageUrl, 1000))
+        && isNonEmptyString(data.examName, 2, 100)
+        && data.examYear is int && data.examYear >= 1980 && data.examYear <= 2040
+        && isNonEmptyString(data.subject, 2, 100)
+        && (!('shift' in data) || isOptionalString(data.shift, 80))
+        && isValidId(data.uploadedByUid)
+        && data.status in ['uploaded', 'processing', 'completed', 'failed']
+        && data.createdAt is timestamp;
+    }
+
+    function isValidImportJob(data) {
+      return data.keys().hasAll(['documentId', 'fileName', 'examName', 'examYear', 'subject', 'totalPages', 'pagesProcessed', 'failedPageRanges', 'extractedCount', 'importedCount', 'duplicateCount', 'reviewCount', 'errorMessages', 'status', 'createdByUid', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['documentId', 'fileName', 'examName', 'examYear', 'subject', 'shift', 'totalPages', 'pagesProcessed', 'failedPageRanges', 'extractedCount', 'importedCount', 'duplicateCount', 'reviewCount', 'errorMessages', 'status', 'createdByUid', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.documentId, 1, 128)
+        && isNonEmptyString(data.fileName, 3, 200)
+        && isNonEmptyString(data.examName, 2, 100)
+        && data.examYear is int && data.examYear >= 1980 && data.examYear <= 2040
+        && isNonEmptyString(data.subject, 2, 100)
+        && (!('shift' in data) || isOptionalString(data.shift, 80))
+        && data.totalPages is int && data.totalPages >= 1 && data.totalPages <= 1000
+        && data.pagesProcessed is int && data.pagesProcessed >= 0 && data.pagesProcessed <= 1000
+        && data.failedPageRanges is list && data.failedPageRanges.size() <= 200
+        && (data.failedPageRanges.size() == 0 || (data.failedPageRanges[0] is string && data.failedPageRanges[0].size() <= 40))
+        && data.extractedCount is int && data.extractedCount >= 0
+        && data.importedCount is int && data.importedCount >= 0
+        && data.duplicateCount is int && data.duplicateCount >= 0
+        && data.reviewCount is int && data.reviewCount >= 0
+        && data.errorMessages is list && data.errorMessages.size() <= 100
+        && (data.errorMessages.size() == 0 || (data.errorMessages[0] is string && data.errorMessages[0].size() <= 400))
+        && data.status in ['uploading', 'queued', 'processing', 'paused', 'completed', 'failed']
+        && isValidId(data.createdByUid)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMockTest(data) {
+      return data.keys().hasAll(['title', 'examName', 'testType', 'difficulty', 'questionIds', 'durationMinutes', 'marksPerCorrect', 'negativeMarks', 'isTimed', 'active', 'createdByUid', 'createdAt'])
+        && data.keys().hasOnly(['title', 'examName', 'testType', 'subject', 'chapter', 'topic', 'difficulty', 'questionIds', 'durationMinutes', 'marksPerCorrect', 'negativeMarks', 'isTimed', 'active', 'createdByUid', 'createdAt'])
+        && isNonEmptyString(data.title, 2, 160)
+        && isNonEmptyString(data.examName, 2, 100)
+        && data.testType in ['pyq', 'ai_mock', 'subject', 'chapter', 'topic', 'current_affairs', 'full_length']
+        && (!('subject' in data) || isOptionalString(data.subject, 100))
+        && (!('chapter' in data) || isOptionalString(data.chapter, 140))
+        && (!('topic' in data) || isOptionalString(data.topic, 140))
+        && data.difficulty in ['easy', 'medium', 'hard', 'mixed']
+        && data.questionIds is list && data.questionIds.size() >= 1 && data.questionIds.size() <= 200
+        && data.questionIds[0] is string && data.questionIds[0].size() <= 128
+        && data.durationMinutes is int && data.durationMinutes >= 0 && data.durationMinutes <= 360
+        && data.marksPerCorrect is number && data.marksPerCorrect >= 0.5 && data.marksPerCorrect <= 20
+        && data.negativeMarks is number && data.negativeMarks >= 0 && data.negativeMarks <= 10
+        && data.isTimed is bool
+        && data.active is bool
+        && isValidId(data.createdByUid)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidTestAttempt(data) {
+      return data.keys().hasAll(['studentUid', 'studentCode', 'studentName', 'examName', 'testType', 'mode', 'questionIds', 'responses', 'markedForReview', 'timeSpentByQuestion', 'totalQuestions', 'correctCount', 'incorrectCount', 'unansweredCount', 'totalMarks', 'maxMarks', 'percentage', 'accuracy', 'timeTakenSeconds', 'subjectBreakdown', 'chapterBreakdown', 'topicBreakdown', 'weakSubjects', 'weakChapters', 'weakTopics', 'slowQuestionIds', 'status', 'startedAt', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['studentUid', 'studentDocId', 'studentCode', 'studentName', 'examName', 'testType', 'mode', 'subject', 'chapter', 'topic', 'questionIds', 'responses', 'markedForReview', 'timeSpentByQuestion', 'totalQuestions', 'correctCount', 'incorrectCount', 'unansweredCount', 'totalMarks', 'maxMarks', 'percentage', 'accuracy', 'timeTakenSeconds', 'subjectBreakdown', 'chapterBreakdown', 'topicBreakdown', 'difficultyBreakdown', 'weakSubjects', 'weakChapters', 'weakTopics', 'slowQuestionIds', 'aiRecommendations', 'scoreReceipt', 'revealedKeys', 'status', 'startedAt', 'submittedAt', 'createdAt', 'updatedAt'])
+        && isValidId(data.studentUid)
+        && (!('studentDocId' in data) || isOptionalString(data.studentDocId, 128))
+        && isNonEmptyString(data.studentCode, 2, 24)
+        && isNonEmptyString(data.studentName, 2, 120)
+        && isNonEmptyString(data.examName, 2, 100)
+        && data.testType in ['pyq', 'ai_mock', 'subject', 'chapter', 'topic', 'current_affairs', 'full_length']
+        && data.mode in ['exam', 'practice']
+        && (!('subject' in data) || isOptionalString(data.subject, 100))
+        && (!('chapter' in data) || isOptionalString(data.chapter, 140))
+        && (!('topic' in data) || isOptionalString(data.topic, 140))
+        && data.questionIds is list && data.questionIds.size() >= 1 && data.questionIds.size() <= 200
+        && data.questionIds[0] is string && data.questionIds[0].size() <= 128
+        && data.responses is map
+        && data.markedForReview is list && data.markedForReview.size() <= 200
+        && (data.markedForReview.size() == 0 || (data.markedForReview[0] is string && data.markedForReview[0].size() <= 128))
+        && data.timeSpentByQuestion is map
+        && data.totalQuestions is int && data.totalQuestions >= 1 && data.totalQuestions <= 200
+        && data.correctCount is int && data.correctCount >= 0 && data.correctCount <= 200
+        && data.incorrectCount is int && data.incorrectCount >= 0 && data.incorrectCount <= 200
+        && data.unansweredCount is int && data.unansweredCount >= 0 && data.unansweredCount <= 200
+        && data.totalMarks is number && data.totalMarks >= -1000 && data.totalMarks <= 5000
+        && data.maxMarks is number && data.maxMarks >= 1 && data.maxMarks <= 5000
+        && data.percentage is number && data.percentage >= -100 && data.percentage <= 100
+        && data.accuracy is number && data.accuracy >= 0 && data.accuracy <= 100
+        && data.timeTakenSeconds is int && data.timeTakenSeconds >= 0 && data.timeTakenSeconds <= 86400
+        && data.subjectBreakdown is list && data.subjectBreakdown.size() <= 40
+        && (data.subjectBreakdown.size() == 0 || data.subjectBreakdown[0] is map)
+        && data.chapterBreakdown is list && data.chapterBreakdown.size() <= 100
+        && (data.chapterBreakdown.size() == 0 || data.chapterBreakdown[0] is map)
+        && data.topicBreakdown is list && data.topicBreakdown.size() <= 150
+        && (data.topicBreakdown.size() == 0 || data.topicBreakdown[0] is map)
+        && (!('difficultyBreakdown' in data) || (data.difficultyBreakdown is list && data.difficultyBreakdown.size() <= 10 && (data.difficultyBreakdown.size() == 0 || data.difficultyBreakdown[0] is map)))
+        && data.weakSubjects is list && data.weakSubjects.size() <= 40
+        && (data.weakSubjects.size() == 0 || (data.weakSubjects[0] is string && data.weakSubjects[0].size() <= 100))
+        && data.weakChapters is list && data.weakChapters.size() <= 100
+        && (data.weakChapters.size() == 0 || (data.weakChapters[0] is string && data.weakChapters[0].size() <= 140))
+        && data.weakTopics is list && data.weakTopics.size() <= 150
+        && (data.weakTopics.size() == 0 || (data.weakTopics[0] is string && data.weakTopics[0].size() <= 140))
+        && data.slowQuestionIds is list && data.slowQuestionIds.size() <= 200
+        && (data.slowQuestionIds.size() == 0 || (data.slowQuestionIds[0] is string && data.slowQuestionIds[0].size() <= 128))
+        && (!('aiRecommendations' in data) || isOptionalString(data.aiRecommendations, 6000))
+        && (!('scoreReceipt' in data) || isOptionalString(data.scoreReceipt, 256))
+        && (!('revealedKeys' in data) || data.revealedKeys is map)
+        && data.status in ['in_progress', 'submitted']
+        && isNonEmptyString(data.startedAt, 6, 60)
+        && (!('submittedAt' in data) || isOptionalString(data.submittedAt, 60))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCurrentAffairsItem(data) {
+      return data.keys().hasAll(['date', 'month', 'year', 'category', 'titleEn', 'titleHi', 'summaryEn', 'summaryHi', 'sourceTitle', 'sourceUrl', 'publishedDate', 'linkedQuestionIds', 'status', 'autoCollected', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['date', 'month', 'year', 'category', 'titleEn', 'titleHi', 'summaryEn', 'summaryHi', 'sourceTitle', 'sourceUrl', 'publishedDate', 'linkedQuestionIds', 'status', 'autoCollected', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.date, 8, 20)
+        && isNonEmptyString(data.month, 6, 12)
+        && data.year is int && data.year >= 2020 && data.year <= 2040
+        && data.category in ['National', 'International', 'Bihar Current Affairs', 'Economy', 'Science and Technology', 'Sports', 'Awards and Honours', 'Government Schemes', 'Important Appointments', 'Environment']
+        && isNonEmptyString(data.titleEn, 3, 300)
+        && isNonEmptyString(data.titleHi, 3, 400)
+        && isNonEmptyString(data.summaryEn, 5, 2000)
+        && isNonEmptyString(data.summaryHi, 5, 2500)
+        && isNonEmptyString(data.sourceTitle, 2, 200)
+        && isNonEmptyString(data.sourceUrl, 4, 1000)
+        && isNonEmptyString(data.publishedDate, 4, 40)
+        && data.linkedQuestionIds is list && data.linkedQuestionIds.size() <= 20
+        && (data.linkedQuestionIds.size() == 0 || (data.linkedQuestionIds[0] is string && data.linkedQuestionIds[0].size() <= 128))
+        && data.status in ['pending_review', 'published', 'archived']
+        && data.autoCollected is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCurrentAffairsSettings(data) {
+      return data.keys().hasAll(['autoPublishEnabled', 'paused', 'updatedAt'])
+        && data.keys().hasOnly(['autoPublishEnabled', 'paused', 'lastRunAt', 'lastRunCount', 'updatedAt'])
+        && data.autoPublishEnabled is bool
+        && data.paused is bool
+        && (!('lastRunAt' in data) || isOptionalString(data.lastRunAt, 60))
+        && (!('lastRunCount' in data) || (data.lastRunCount is int && data.lastRunCount >= 0 && data.lastRunCount <= 1000))
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidDigitalGKBook(data) {
+      return data.keys().hasAll(['subject', 'title', 'description', 'chapters', 'pdfDownloadAllowed', 'updatedAt'])
+        && data.keys().hasOnly(['subject', 'title', 'description', 'chapters', 'pdfDownloadAllowed', 'updatedAt'])
+        && isNonEmptyString(data.subject, 2, 80)
+        && isNonEmptyString(data.title, 2, 160)
+        && isOptionalString(data.description, 500)
+        && data.chapters is list && data.chapters.size() <= 50
+        && (data.chapters.size() == 0 || data.chapters[0] is map)
+        && data.pdfDownloadAllowed is bool
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidStudyBookmark(data) {
+      return data.keys().hasAll(['userUid', 'bookId', 'subject', 'chapterId', 'chapterTitle', 'createdAt'])
+        && data.keys().hasOnly(['userUid', 'bookId', 'subject', 'chapterId', 'chapterTitle', 'note', 'createdAt'])
+        && isValidId(data.userUid)
+        && isNonEmptyString(data.bookId, 1, 128)
+        && isNonEmptyString(data.subject, 2, 80)
+        && isNonEmptyString(data.chapterId, 1, 80)
+        && isNonEmptyString(data.chapterTitle, 2, 160)
+        && (!('note' in data) || isOptionalString(data.note, 400))
+        && data.createdAt is timestamp;
+    }
+
+    // Existing Collection Rules
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isStaffOrAbove());
+      allow list: if isStaffOrAbove() || (isSignedIn() && existing().uid == request.auth.uid);
+      allow create: if isValidId(userId) && isVerifiedEmail() && isValidUserProfile(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time
+        && (isAdmin() || (isOwner(userId) && incoming().uid == request.auth.uid && incoming().role == 'student' && incoming().status == 'active'));
+      allow update: if isValidId(userId) && isVerifiedEmail() && isValidUserProfile(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time
+        && incoming().uid == existing().uid
+        && (isAdmin() || (isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'studentDocId', 'updatedAt']) && incoming().role == existing().role && incoming().status == existing().status));
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    match /admins/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId) && isAdmin() && isValidAdminRole(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(userId) && isAdmin() && isValidAdminRole(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    match /user_roles/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create, update: if isValidId(userId) && isAdmin() && isValidUserRoleAssignment(incoming()) && incoming().updatedAt == request.time;
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    match /students/{studentId} {
+      allow get: if isValidId(studentId) && (isStaffOrAbove() || (isSignedIn() && existing().uid == request.auth.uid));
+      allow list: if isStaffOrAbove() || (isSignedIn() && existing().uid == request.auth.uid);
+      allow create: if isValidId(studentId) && isVerifiedEmail() && isValidStudent(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time
+        && (isManagerOrAdmin() || (incoming().uid == request.auth.uid && incoming().status == 'active' && incoming().membershipStatus == 'none' && incoming().isDemo == false));
+      allow update: if isValidId(studentId) && isVerifiedEmail() && isValidStudent(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time
+        && (
+          isManagerOrAdmin() ||
+          (existing().uid == request.auth.uid
+            && incoming().uid == existing().uid
+            && incoming().studentCode == existing().studentCode
+            && incoming().status == existing().status
+            && incoming().isDemo == existing().isDemo
+            && incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'mobile', 'address', 'emergencyContact', 'profilePhotoUrl', 'idDocumentUrl', 'updatedAt']))
+        );
+      allow delete: if isValidId(studentId) && isAdmin();
+    }
+
+    match /staff/{staffId} {
+      allow get: if isValidId(staffId) && (isManagerOrAdmin() || (isSignedIn() && existing().uid == request.auth.uid));
+      allow list: if isManagerOrAdmin() || (isSignedIn() && existing().uid == request.auth.uid);
+      allow create: if isValidId(staffId) && isAdmin() && isValidStaff(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(staffId) && isAdmin() && isValidStaff(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(staffId) && isAdmin();
+    }
+
+    match /membership_plans/{planId} {
+      allow get: if isValidId(planId);
+      allow list: if true;
+      allow create: if isValidId(planId) && isAdmin() && isValidMembershipPlan(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(planId) && isAdmin() && isValidMembershipPlan(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(planId) && isAdmin();
+    }
+
+    match /memberships/{membershipId} {
+      allow get: if isValidId(membershipId) && (isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid));
+      allow list: if isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid);
+      allow create: if isValidId(membershipId) && isVerifiedEmail() && isValidMembership(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time
+        && (isManagerOrAdmin() || (incoming().studentUid == request.auth.uid && incoming().status == 'pending' && incoming().isDemo == false));
+      allow update: if isValidId(membershipId) && isVerifiedEmail() && isValidMembership(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time
+        && (
+          isManagerOrAdmin() ||
+          (existing().studentUid == request.auth.uid
+            && existing().status == 'pending'
+            && incoming().status == 'active'
+            && ('paymentId' in incoming()) && isNonEmptyString(incoming().paymentId, 4, 128)
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'paymentId', 'updatedAt']))
+        );
+      allow delete: if isValidId(membershipId) && isAdmin();
+    }
+
+    match /seats/{seatId} {
+      allow get: if isValidId(seatId);
+      allow list: if true;
+      allow create: if isValidId(seatId) && isManagerOrAdmin() && isValidSeat(incoming())
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(seatId) && isVerifiedEmail() && isValidSeat(incoming())
+        && incoming().updatedAt == request.time
+        && (
+          isStaffOrAbove() ||
+          (existing().status == 'available'
+            && incoming().status == 'reserved'
+            && incoming().assignedStudentUid == request.auth.uid
+            && incoming().seatCode == existing().seatCode
+            && incoming().zone == existing().zone
+            && incoming().rowLabel == existing().rowLabel
+            && incoming().colIndex == existing().colIndex
+            && incoming().isDemo == existing().isDemo
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'assignedStudentDocId', 'assignedStudentUid', 'assignedStudentCode', 'updatedAt'])) ||
+          (existing().status == 'reserved'
+            && existing().assignedStudentUid == request.auth.uid
+            && incoming().status == 'available'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'assignedStudentDocId', 'assignedStudentUid', 'assignedStudentCode', 'updatedAt']))
+        );
+      allow delete: if isValidId(seatId) && isAdmin();
+    }
+
+    match /seat_bookings/{bookingId} {
+      allow get: if isValidId(bookingId) && (isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid));
+      allow list: if isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid);
+      allow create: if isValidId(bookingId) && isVerifiedEmail() && isValidSeatBooking(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/seats/$(incoming().seatId))
+        && (isStaffOrAbove() || (incoming().studentUid == request.auth.uid && incoming().status == 'pending' && incoming().isDemo == false));
+      allow update: if isValidId(bookingId) && isVerifiedEmail() && isValidSeatBooking(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time
+        && (
+          isStaffOrAbove() ||
+          (existing().studentUid == request.auth.uid
+            && existing().status == 'pending'
+            && incoming().status == 'cancelled'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']))
+        );
+      allow delete: if isValidId(bookingId) && isAdmin();
+    }
+
+    match /attendance/{attendanceId} {
+      allow get: if isValidId(attendanceId) && (isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid));
+      allow list: if isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid);
+      allow create: if isValidId(attendanceId) && isVerifiedEmail() && isValidAttendance(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time
+        && (isStaffOrAbove() || (incoming().studentUid == request.auth.uid && incoming().isDemo == false));
+      allow update: if isValidId(attendanceId) && isVerifiedEmail() && isValidAttendance(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time
+        && (
+          isStaffOrAbove() ||
+          (existing().studentUid == request.auth.uid
+            && !('checkOutTime' in existing())
+            && incoming().diff(existing()).affectedKeys().hasOnly(['checkOutTime', 'durationMinutes', 'updatedAt']))
+        );
+      allow delete: if isValidId(attendanceId) && isAdmin();
+    }
+
+    match /book_categories/{categoryId} {
+      allow get: if isValidId(categoryId);
+      allow list: if true;
+      allow create: if isValidId(categoryId) && isManagerOrAdmin() && isValidBookCategory(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(categoryId) && isManagerOrAdmin() && isValidBookCategory(incoming())
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(categoryId) && isAdmin();
+    }
+
+    match /books/{bookId} {
+      allow get: if isValidId(bookId);
+      allow list: if true;
+      allow create: if isValidId(bookId) && isManagerOrAdmin() && isValidBook(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(bookId) && isStaffOrAbove() && isValidBook(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(bookId) && isAdmin();
+    }
+
+    match /book_issues/{issueId} {
+      allow get: if isValidId(issueId) && (isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid));
+      allow list: if isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid);
+      allow create: if isValidId(issueId) && isVerifiedEmail() && isValidBookIssue(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/books/$(incoming().bookId))
+        && (isStaffOrAbove() || (incoming().studentUid == request.auth.uid && incoming().status == 'requested' && incoming().fineAmount == 0 && incoming().isDemo == false));
+      allow update: if isValidId(issueId) && isStaffOrAbove() && isValidBookIssue(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time
+        && existing().status != 'returned';
+      allow delete: if isValidId(issueId) && isAdmin();
+    }
+
+    match /payments/{paymentId} {
+      allow get: if isValidId(paymentId) && (isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid));
+      allow list: if isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid);
+      allow create: if isValidId(paymentId) && isVerifiedEmail() && isValidPayment(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time
+        && (isStaffOrAbove() || (incoming().studentUid == request.auth.uid && incoming().status == 'pending' && incoming().isDemo == false));
+      allow update: if isValidId(paymentId) && isVerifiedEmail() && isValidPayment(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (isStaffOrAbove() && existing().status == 'pending') ||
+          (existing().studentUid == request.auth.uid
+            && existing().status == 'pending'
+            && incoming().status == 'verified'
+            && incoming().amount == existing().amount
+            && ('razorpayOrderId' in incoming()) && isNonEmptyString(incoming().razorpayOrderId, 6, 128)
+            && ('razorpayPaymentId' in incoming()) && isNonEmptyString(incoming().razorpayPaymentId, 6, 128)
+            && ('razorpaySignature' in incoming()) && isNonEmptyString(incoming().razorpaySignature, 16, 256)
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'razorpayOrderId', 'razorpayPaymentId', 'razorpaySignature', 'updatedAt']))
+        );
+      allow delete: if isValidId(paymentId) && isAdmin();
+    }
+
+    match /expenses/{expenseId} {
+      allow get: if isValidId(expenseId) && isManagerOrAdmin();
+      allow list: if isManagerOrAdmin();
+      allow create: if isValidId(expenseId) && isManagerOrAdmin() && isValidExpense(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(expenseId) && isManagerOrAdmin() && isValidExpense(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(expenseId) && isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow get: if isValidId(notificationId) && (isStaffOrAbove() || (isSignedIn() && (existing().recipientUid == request.auth.uid || existing().recipientUid == 'ALL_STUDENTS')));
+      allow list: if isStaffOrAbove() || (isSignedIn() && (existing().recipientUid == request.auth.uid || existing().recipientUid == 'ALL_STUDENTS'));
+      allow create: if isValidId(notificationId) && isVerifiedEmail() && isValidNotification(incoming())
+        && incoming().createdAt == request.time
+        && (isStaffOrAbove() || incoming().recipientUid == request.auth.uid || incoming().recipientUid == 'ADMIN');
+      allow update: if isValidId(notificationId) && isVerifiedEmail() && isValidNotification(incoming())
+        && incoming().createdAt == existing().createdAt
+        && (isStaffOrAbove() || (existing().recipientUid == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['read'])));
+      allow delete: if isValidId(notificationId) && isAdmin();
+    }
+
+    match /enquiries/{enquiryId} {
+      allow get: if isValidId(enquiryId) && isStaffOrAbove();
+      allow list: if isStaffOrAbove();
+      allow create: if isValidId(enquiryId) && isValidEnquiry(incoming())
+        && incoming().status == 'new'
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(enquiryId) && isStaffOrAbove() && isValidEnquiry(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(enquiryId) && isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow get: if isValidId(announcementId);
+      allow list: if true;
+      allow create: if isValidId(announcementId) && isManagerOrAdmin() && isValidAnnouncement(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(announcementId) && isManagerOrAdmin() && isValidAnnouncement(incoming())
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(announcementId) && isAdmin();
+    }
+
+    match /gallery/{galleryId} {
+      allow get: if isValidId(galleryId);
+      allow list: if true;
+      allow create: if isValidId(galleryId) && isManagerOrAdmin() && isValidGalleryItem(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(galleryId) && isManagerOrAdmin() && isValidGalleryItem(incoming())
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(galleryId) && isAdmin();
+    }
+
+    match /library_settings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow list: if true;
+      allow create, update: if isValidId(settingId) && isAdmin() && isValidLibrarySettings(incoming())
+        && incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /audit_logs/{logId} {
+      allow get: if isValidId(logId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(logId) && isVerifiedEmail() && isValidAuditLog(incoming())
+        && incoming().actorUid == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // Competitive Examination & AI Learning Collection Rules
+    match /exams/{examId} {
+      allow get: if isValidId(examId);
+      allow list: if true;
+      allow create: if isValidId(examId) && isManagerOrAdmin() && isValidExamCategory(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(examId) && isManagerOrAdmin() && isValidExamCategory(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(examId) && isAdmin();
+    }
+
+    match /exam_subjects/{subjectId} {
+      allow get: if isValidId(subjectId);
+      allow list: if true;
+      allow create: if isValidId(subjectId) && isManagerOrAdmin() && isValidExamSubject(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(subjectId) && isManagerOrAdmin() && isValidExamSubject(incoming())
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(subjectId) && isAdmin();
+    }
+
+    match /exam_chapters/{chapterId} {
+      allow get: if isValidId(chapterId);
+      allow list: if true;
+      allow create: if isValidId(chapterId) && isManagerOrAdmin() && isValidExamChapter(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(chapterId) && isManagerOrAdmin() && isValidExamChapter(incoming())
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(chapterId) && isAdmin();
+    }
+
+    // Questions store cryptographic answerSeal only (plaintext answers never exposed to students!)
+    match /questions/{questionId} {
+      allow get: if isValidId(questionId) && (isStaffOrAbove() || (isSignedIn() && existing().published == true));
+      allow list: if isStaffOrAbove() || (isSignedIn() && existing().published == true);
+      allow create: if isValidId(questionId) && isStaffOrAbove() && isValidExamQuestion(incoming())
+        && incoming().published is bool
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(questionId) && isStaffOrAbove() && isValidExamQuestion(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(questionId) && isAdmin();
+    }
+
+    // Plaintext correct answers strictly locked to Staff / Manager / Admin
+    match /question_keys/{questionId} {
+      allow get: if isValidId(questionId) && isStaffOrAbove();
+      allow list: if isStaffOrAbove();
+      allow create, update: if isValidId(questionId) && isStaffOrAbove() && isValidQuestionKey(incoming())
+        && incoming().questionId == questionId
+        && incoming().updatedAt == request.time;
+      allow delete: if isValidId(questionId) && isAdmin();
+    }
+
+    match /uploaded_documents/{docId} {
+      allow get: if isValidId(docId) && isStaffOrAbove();
+      allow list: if isStaffOrAbove();
+      allow create: if isValidId(docId) && isStaffOrAbove() && isValidUploadedDocument(incoming())
+        && incoming().uploadedByUid == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(docId) && isStaffOrAbove() && isValidUploadedDocument(incoming())
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(docId) && isAdmin();
+    }
+
+    match /import_jobs/{jobId} {
+      allow get: if isValidId(jobId) && isStaffOrAbove();
+      allow list: if isStaffOrAbove();
+      allow create: if isValidId(jobId) && isStaffOrAbove() && isValidImportJob(incoming())
+        && incoming().createdByUid == request.auth.uid
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(jobId) && isStaffOrAbove() && isValidImportJob(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(jobId) && isAdmin();
+    }
+
+    match /mock_tests/{testId} {
+      allow get: if isValidId(testId) && (isManagerOrAdmin() || (isSignedIn() && existing().active == true));
+      allow list: if isManagerOrAdmin() || (isSignedIn() && existing().active == true);
+      allow create: if isValidId(testId) && isManagerOrAdmin() && isValidMockTest(incoming())
+        && incoming().createdByUid == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(testId) && isManagerOrAdmin() && isValidMockTest(incoming())
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(testId) && isAdmin();
+    }
+
+    match /test_attempts/{attemptId} {
+      allow get: if isValidId(attemptId) && (isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid));
+      allow list: if isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid);
+      allow create: if isValidId(attemptId) && isVerifiedEmail() && isValidTestAttempt(incoming())
+        && incoming().studentUid == request.auth.uid
+        && incoming().status == 'in_progress'
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(attemptId) && isVerifiedEmail() && isValidTestAttempt(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time
+        && incoming().studentUid == existing().studentUid
+        && (
+          isAdmin() ||
+          (existing().studentUid == request.auth.uid
+            && (
+              existing().status == 'in_progress' ||
+              (existing().status == 'submitted'
+                && incoming().status == 'submitted'
+                && incoming().diff(existing()).affectedKeys().hasOnly(['aiRecommendations', 'updatedAt']))
+            ))
+        );
+      allow delete: if isValidId(attemptId) && isAdmin();
+    }
+
+    match /current_affairs/{caId} {
+      allow get: if isValidId(caId) && (existing().status == 'published' || isStaffOrAbove());
+      allow list: if existing().status == 'published' || isStaffOrAbove();
+      allow create: if isValidId(caId) && isManagerOrAdmin() && isValidCurrentAffairsItem(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(caId) && isManagerOrAdmin() && isValidCurrentAffairsItem(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(caId) && isAdmin();
+    }
+
+    match /current_affairs_settings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow list: if true;
+      allow create, update: if isValidId(settingId) && isAdmin() && isValidCurrentAffairsSettings(incoming())
+        && incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /gk_books/{bookId} {
+      allow get: if isValidId(bookId);
+      allow list: if true;
+      allow create, update: if isValidId(bookId) && isManagerOrAdmin() && isValidDigitalGKBook(incoming())
+        && incoming().updatedAt == request.time;
+      allow delete: if isValidId(bookId) && isAdmin();
+    }
+
+    match /study_bookmarks/{bookmarkId} {
+      allow get: if isValidId(bookmarkId) && isSignedIn() && existing().userUid == request.auth.uid;
+      allow list: if isSignedIn() && existing().userUid == request.auth.uid;
+      allow create: if isValidId(bookmarkId) && isVerifiedEmail() && isValidStudyBookmark(incoming())
+        && incoming().userUid == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isValidId(bookmarkId) && isSignedIn() && existing().userUid == request.auth.uid;
+    }
+  }
+}

@@ -1,0 +1,703 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user account linking Firebase Auth UID to role and student/staff identity.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 200 },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "role": { "type": "string", "enum": ["student", "staff", "manager", "admin"] },
+        "studentDocId": { "type": "string", "maxLength": 128 },
+        "staffDocId": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["active", "inactive", "blocked"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "displayName", "role", "status", "createdAt", "updatedAt"]
+    },
+    "AdminRole": {
+      "title": "AdminRole",
+      "description": "Trusted administrator lookup record.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 200 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "UserRoleAssignment": {
+      "title": "UserRoleAssignment",
+      "description": "Server-trusted RBAC role and granular permissions record.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 200 },
+        "role": { "type": "string", "enum": ["admin", "manager", "staff", "student"] },
+        "permissions": { "type": "array" },
+        "active": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "permissions", "active", "updatedAt"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Library student/member profile with unique VL student ID and PII.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "studentCode": { "type": "string", "pattern": "^VL[0-9]{4,12}$", "maxLength": 24 },
+        "fullName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "mobile": { "type": "string", "minLength": 7, "maxLength": 20 },
+        "email": { "type": "string", "format": "email", "maxLength": 200 },
+        "fatherName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "address": { "type": "string", "minLength": 3, "maxLength": 400 },
+        "emergencyContact": { "type": "string", "minLength": 7, "maxLength": 30 },
+        "profilePhotoUrl": { "type": "string", "maxLength": 1000 },
+        "idDocumentUrl": { "type": "string", "maxLength": 1000 },
+        "seatId": { "type": "string", "maxLength": 128 },
+        "seatCode": { "type": "string", "maxLength": 16 },
+        "membershipId": { "type": "string", "maxLength": 128 },
+        "membershipPlanName": { "type": "string", "maxLength": 100 },
+        "membershipStatus": { "type": "string", "enum": ["active", "expired", "pending", "none"] },
+        "membershipExpiry": { "type": "string", "maxLength": 40 },
+        "status": { "type": "string", "enum": ["active", "inactive", "blocked"] },
+        "isDemo": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "studentCode", "fullName", "mobile", "email", "fatherName", "address", "emergencyContact", "membershipStatus", "status", "isDemo", "createdAt", "updatedAt"]
+    },
+    "StaffMember": {
+      "title": "StaffMember",
+      "description": "Library staff or manager account record.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "staffCode": { "type": "string", "maxLength": 24 },
+        "fullName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "email": { "type": "string", "format": "email", "maxLength": 200 },
+        "mobile": { "type": "string", "minLength": 7, "maxLength": 20 },
+        "role": { "type": "string", "enum": ["staff", "manager"] },
+        "permissions": { "type": "array" },
+        "shift": { "type": "string", "maxLength": 60 },
+        "monthlySalary": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "isDemo": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["staffCode", "fullName", "email", "mobile", "role", "permissions", "shift", "monthlySalary", "status", "isDemo", "createdAt", "updatedAt"]
+    },
+    "MembershipPlan": {
+      "title": "MembershipPlan",
+      "description": "Configurable library subscription plan.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "durationDays": { "type": "integer" },
+        "price": { "type": "number" },
+        "timings": { "type": "string", "maxLength": 100 },
+        "seatAccess": { "type": "string", "maxLength": 120 },
+        "facilities": { "type": "array" },
+        "terms": { "type": "string", "maxLength": 1000 },
+        "active": { "type": "boolean" },
+        "isDemo": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "durationDays", "price", "timings", "seatAccess", "facilities", "terms", "active", "isDemo", "createdAt", "updatedAt"]
+    },
+    "Membership": {
+      "title": "Membership",
+      "description": "Student subscription record linking student to plan and expiry.",
+      "type": "object",
+      "properties": {
+        "studentDocId": { "type": "string", "maxLength": 128 },
+        "studentUid": { "type": "string", "maxLength": 128 },
+        "studentCode": { "type": "string", "maxLength": 24 },
+        "studentName": { "type": "string", "maxLength": 120 },
+        "planId": { "type": "string", "maxLength": 128 },
+        "planName": { "type": "string", "maxLength": 100 },
+        "amount": { "type": "number" },
+        "startDate": { "type": "string", "maxLength": 40 },
+        "expiryDate": { "type": "string", "maxLength": 40 },
+        "status": { "type": "string", "enum": ["active", "expired", "pending", "cancelled"] },
+        "paymentId": { "type": "string", "maxLength": 128 },
+        "isDemo": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentDocId", "studentUid", "studentCode", "studentName", "planId", "planName", "amount", "startDate", "expiryDate", "status", "isDemo", "createdAt", "updatedAt"]
+    },
+    "Seat": {
+      "title": "Seat",
+      "description": "Physical study seat with zone, grid position, and real-time occupancy state.",
+      "type": "object",
+      "properties": {
+        "seatCode": { "type": "string", "maxLength": 16 },
+        "zone": { "type": "string", "maxLength": 60 },
+        "rowLabel": { "type": "string", "maxLength": 8 },
+        "colIndex": { "type": "integer" },
+        "status": { "type": "string", "enum": ["available", "occupied", "reserved", "maintenance"] },
+        "assignedStudentDocId": { "type": "string", "maxLength": 128 },
+        "assignedStudentUid": { "type": "string", "maxLength": 128 },
+        "assignedStudentCode": { "type": "string", "maxLength": 24 },
+        "shift": { "type": "string", "maxLength": 60 },
+        "isDemo": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["seatCode", "zone", "rowLabel", "colIndex", "status", "isDemo", "updatedAt"]
+    },
+    "SeatBooking": {
+      "title": "SeatBooking",
+      "description": "Seat booking, change, or cancellation request.",
+      "type": "object",
+      "properties": {
+        "seatId": { "type": "string", "maxLength": 128 },
+        "seatCode": { "type": "string", "maxLength": 16 },
+        "studentDocId": { "type": "string", "maxLength": 128 },
+        "studentUid": { "type": "string", "maxLength": 128 },
+        "studentCode": { "type": "string", "maxLength": 24 },
+        "studentName": { "type": "string", "maxLength": 120 },
+        "bookingType": { "type": "string", "enum": ["new", "change"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "cancelled", "released"] },
+        "notes": { "type": "string", "maxLength": 400 },
+        "isDemo": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["seatId", "seatCode", "studentDocId", "studentUid", "studentCode", "studentName", "bookingType", "status", "isDemo", "createdAt", "updatedAt"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Student daily check-in and check-out record with duration and method.",
+      "type": "object",
+      "properties": {
+        "studentDocId": { "type": "string", "maxLength": 128 },
+        "studentUid": { "type": "string", "maxLength": 128 },
+        "studentCode": { "type": "string", "maxLength": 24 },
+        "studentName": { "type": "string", "maxLength": 120 },
+        "date": { "type": "string", "maxLength": 20 },
+        "checkInTime": { "type": "string", "maxLength": 40 },
+        "checkOutTime": { "type": "string", "maxLength": 40 },
+        "durationMinutes": { "type": "integer" },
+        "method": { "type": "string", "enum": ["qr", "manual", "id"] },
+        "isLate": { "type": "boolean" },
+        "markedBy": { "type": "string", "maxLength": 128 },
+        "isDemo": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentDocId", "studentUid", "studentCode", "studentName", "date", "checkInTime", "durationMinutes", "method", "isLate", "isDemo", "createdAt", "updatedAt"]
+    },
+    "BookCategory": {
+      "title": "BookCategory",
+      "description": "Book inventory category classification.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "description": { "type": "string", "maxLength": 300 },
+        "shelfRange": { "type": "string", "maxLength": 40 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "shelfRange", "createdAt"]
+    },
+    "Book": {
+      "title": "Book",
+      "description": "Library book inventory record.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "author": { "type": "string", "minLength": 1, "maxLength": 150 },
+        "publisher": { "type": "string", "maxLength": 150 },
+        "isbn": { "type": "string", "maxLength": 32 },
+        "categoryId": { "type": "string", "maxLength": 128 },
+        "categoryName": { "type": "string", "maxLength": 80 },
+        "totalCopies": { "type": "integer" },
+        "availableCopies": { "type": "integer" },
+        "shelfNumber": { "type": "string", "maxLength": 32 },
+        "publicationYear": { "type": "integer" },
+        "coverUrl": { "type": "string", "maxLength": 1000 },
+        "isDemo": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "author", "isbn", "categoryName", "totalCopies", "availableCopies", "shelfNumber", "publicationYear", "isDemo", "createdAt", "updatedAt"]
+    },
+    "BookIssue": {
+      "title": "BookIssue",
+      "description": "Book issue, request, return, and fine tracking record.",
+      "type": "object",
+      "properties": {
+        "bookId": { "type": "string", "maxLength": 128 },
+        "bookTitle": { "type": "string", "maxLength": 200 },
+        "studentDocId": { "type": "string", "maxLength": 128 },
+        "studentUid": { "type": "string", "maxLength": 128 },
+        "studentCode": { "type": "string", "maxLength": 24 },
+        "studentName": { "type": "string", "maxLength": 120 },
+        "issueDate": { "type": "string", "maxLength": 40 },
+        "dueDate": { "type": "string", "maxLength": 40 },
+        "returnDate": { "type": "string", "maxLength": 40 },
+        "fineAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["requested", "issued", "returned", "overdue", "rejected"] },
+        "isDemo": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["bookId", "bookTitle", "studentDocId", "studentUid", "studentCode", "studentName", "fineAmount", "status", "isDemo", "createdAt", "updatedAt"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Membership fee and fine payment transaction.",
+      "type": "object",
+      "properties": {
+        "receiptNumber": { "type": "string", "maxLength": 40 },
+        "studentDocId": { "type": "string", "maxLength": 128 },
+        "studentUid": { "type": "string", "maxLength": 128 },
+        "studentCode": { "type": "string", "maxLength": 24 },
+        "studentName": { "type": "string", "maxLength": 120 },
+        "planId": { "type": "string", "maxLength": 128 },
+        "planName": { "type": "string", "maxLength": 100 },
+        "amount": { "type": "number" },
+        "method": { "type": "string", "enum": ["razorpay_upi", "razorpay_card", "razorpay_netbanking", "cash", "upi_offline"] },
+        "status": { "type": "string", "enum": ["verified", "pending", "failed", "refunded"] },
+        "razorpayOrderId": { "type": "string", "maxLength": 128 },
+        "razorpayPaymentId": { "type": "string", "maxLength": 128 },
+        "razorpaySignature": { "type": "string", "maxLength": 256 },
+        "notes": { "type": "string", "maxLength": 400 },
+        "isDemo": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["receiptNumber", "studentDocId", "studentUid", "studentCode", "studentName", "planName", "amount", "method", "status", "isDemo", "createdAt", "updatedAt"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Library operating expense entry.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 2, "maxLength": 150 },
+        "category": { "type": "string", "enum": ["electricity", "rent", "internet", "salary", "maintenance", "furniture", "other"] },
+        "amount": { "type": "number" },
+        "expenseDate": { "type": "string", "maxLength": 20 },
+        "notes": { "type": "string", "maxLength": 400 },
+        "recordedBy": { "type": "string", "maxLength": 128 },
+        "isDemo": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "category", "amount", "expenseDate", "recordedBy", "isDemo", "createdAt", "updatedAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "In-app notification and delivery channel record.",
+      "type": "object",
+      "properties": {
+        "recipientUid": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["membership_expiry", "payment_confirmation", "payment_pending", "seat_allocation", "seat_change", "attendance_confirmation", "book_return", "announcement"] },
+        "title": { "type": "string", "maxLength": 150 },
+        "message": { "type": "string", "maxLength": 600 },
+        "read": { "type": "boolean" },
+        "channel": { "type": "string", "enum": ["in_app", "whatsapp", "email", "sms"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["recipientUid", "type", "title", "message", "read", "channel", "createdAt"]
+    },
+    "Enquiry": {
+      "title": "Enquiry",
+      "description": "Public contact form enquiry saved for admin review.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "email": { "type": "string", "format": "email", "maxLength": 200 },
+        "phone": { "type": "string", "minLength": 7, "maxLength": 20 },
+        "subject": { "type": "string", "maxLength": 150 },
+        "message": { "type": "string", "minLength": 5, "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["new", "contacted", "resolved"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "phone", "subject", "message", "status", "createdAt", "updatedAt"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Library notice board announcement.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "body": { "type": "string", "minLength": 2, "maxLength": 1000 },
+        "priority": { "type": "string", "enum": ["normal", "important"] },
+        "published": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "body", "priority", "published", "createdAt"]
+    },
+    "GalleryItem": {
+      "title": "GalleryItem",
+      "description": "Public library photo gallery entry.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "category": { "type": "string", "maxLength": 60 },
+        "imageUrl": { "type": "string", "maxLength": 1000 },
+        "caption": { "type": "string", "maxLength": 300 },
+        "sortOrder": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "category", "imageUrl", "caption", "sortOrder", "createdAt"]
+    },
+    "LibrarySettings": {
+      "title": "LibrarySettings",
+      "description": "Public and operational configuration for VIDHYA LIBRARY / Gyan Adda.",
+      "type": "object",
+      "properties": {
+        "libraryName": { "type": "string", "maxLength": 120 },
+        "tagline": { "type": "string", "maxLength": 200 },
+        "address": { "type": "string", "maxLength": 300 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "whatsapp": { "type": "string", "maxLength": 30 },
+        "email": { "type": "string", "maxLength": 200 },
+        "openingHours": { "type": "string", "maxLength": 120 },
+        "is24HourAccess": { "type": "boolean" },
+        "mapLat": { "type": "number" },
+        "mapLng": { "type": "number" },
+        "mapUrl": { "type": "string", "maxLength": 500 },
+        "ratingText": { "type": "string", "maxLength": 100 },
+        "facilities": { "type": "array" },
+        "termsText": { "type": "string", "maxLength": 4000 },
+        "privacyText": { "type": "string", "maxLength": 4000 },
+        "razorpayEnabled": { "type": "boolean" },
+        "whatsappConfigured": { "type": "boolean" },
+        "emailConfigured": { "type": "boolean" },
+        "smsConfigured": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["libraryName", "tagline", "address", "phone", "whatsapp", "email", "openingHours", "is24HourAccess", "mapLat", "mapLng", "facilities", "updatedAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable administrative and security action log.",
+      "type": "object",
+      "properties": {
+        "actorUid": { "type": "string", "maxLength": 128 },
+        "actorEmail": { "type": "string", "maxLength": 200 },
+        "actorRole": { "type": "string", "maxLength": 40 },
+        "action": { "type": "string", "maxLength": 120 },
+        "targetType": { "type": "string", "maxLength": 80 },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "details": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["actorUid", "actorEmail", "actorRole", "action", "targetType", "targetId", "details", "createdAt"]
+    },
+    "ExamCategory": {
+      "title": "ExamCategory",
+      "description": "Competitive examination catalog and marking rules.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "categoryGroup": { "type": "string", "maxLength": 80 },
+        "code": { "type": "string", "maxLength": 32 },
+        "defaultDurationMinutes": { "type": "integer" },
+        "marksPerCorrect": { "type": "number" },
+        "negativeMarks": { "type": "number" },
+        "description": { "type": "string", "maxLength": 400 },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "categoryGroup", "code", "defaultDurationMinutes", "marksPerCorrect", "negativeMarks", "description", "active", "createdAt", "updatedAt"]
+    },
+    "ExamSubject": {
+      "title": "ExamSubject",
+      "description": "Subject linked to an examination.",
+      "type": "object",
+      "properties": {
+        "examName": { "type": "string", "maxLength": 100 },
+        "name": { "type": "string", "maxLength": 100 },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["examName", "name", "active", "createdAt"]
+    },
+    "ExamChapter": {
+      "title": "ExamChapter",
+      "description": "Chapter and syllabus topics inside a subject.",
+      "type": "object",
+      "properties": {
+        "examName": { "type": "string", "maxLength": 100 },
+        "subjectName": { "type": "string", "maxLength": 100 },
+        "name": { "type": "string", "maxLength": 140 },
+        "topics": { "type": "array" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["examName", "subjectName", "name", "topics", "active", "createdAt"]
+    },
+    "ExamQuestion": {
+      "title": "ExamQuestion",
+      "description": "Central question bank entry with server-sealed answer key.",
+      "type": "object",
+      "properties": {
+        "questionCode": { "type": "string", "maxLength": 40 },
+        "examName": { "type": "string", "maxLength": 100 },
+        "examCategory": { "type": "string", "maxLength": 80 },
+        "subject": { "type": "string", "maxLength": 100 },
+        "chapter": { "type": "string", "maxLength": 140 },
+        "topic": { "type": "string", "maxLength": 140 },
+        "questionText": { "type": "string", "maxLength": 3000 },
+        "options": { "type": "array" },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+        "examYear": { "type": "integer" },
+        "examShift": { "type": "string", "maxLength": 80 },
+        "source": { "type": "string", "enum": ["pyq", "ai_generated", "manual", "current_affairs", "gk_book"] },
+        "sourceDocumentId": { "type": "string", "maxLength": 128 },
+        "language": { "type": "string", "enum": ["en", "hi", "bilingual"] },
+        "verificationStatus": { "type": "string", "enum": ["verified", "ai_derived", "needs_review"] },
+        "published": { "type": "boolean" },
+        "usageCount": { "type": "integer" },
+        "hasDiagramOrTable": { "type": "boolean" },
+        "diagramDescription": { "type": "string", "maxLength": 1000 },
+        "fingerprint": { "type": "string", "maxLength": 128 },
+        "normalizedText": { "type": "string", "maxLength": 3000 },
+        "answerSeal": { "type": "string", "maxLength": 4000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["questionCode", "examName", "examCategory", "subject", "chapter", "topic", "questionText", "options", "difficulty", "examYear", "source", "language", "verificationStatus", "published", "fingerprint", "normalizedText", "answerSeal", "createdAt", "updatedAt"]
+    },
+    "QuestionKey": {
+      "title": "QuestionKey",
+      "description": "Protected plaintext answer key and explanation restricted to staff/admin.",
+      "type": "object",
+      "properties": {
+        "questionId": { "type": "string", "maxLength": 128 },
+        "correctIndex": { "type": "integer" },
+        "explanation": { "type": "string", "maxLength": 3000 },
+        "derivedBy": { "type": "string", "enum": ["official_key", "ai_derived", "admin_manual"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["questionId", "correctIndex", "explanation", "derivedBy", "updatedAt"]
+    },
+    "UploadedDocument": {
+      "title": "UploadedDocument",
+      "description": "Uploaded PYQ PDF metadata record.",
+      "type": "object",
+      "properties": {
+        "fileName": { "type": "string", "maxLength": 200 },
+        "fileSizeBytes": { "type": "integer" },
+        "totalPages": { "type": "integer" },
+        "storageUrl": { "type": "string", "maxLength": 1000 },
+        "examName": { "type": "string", "maxLength": 100 },
+        "examYear": { "type": "integer" },
+        "subject": { "type": "string", "maxLength": 100 },
+        "shift": { "type": "string", "maxLength": 80 },
+        "uploadedByUid": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["uploaded", "processing", "completed", "failed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fileName", "fileSizeBytes", "totalPages", "examName", "examYear", "subject", "uploadedByUid", "status", "createdAt"]
+    },
+    "ImportJob": {
+      "title": "ImportJob",
+      "description": "Background PDF/OCR question extraction job status and counters.",
+      "type": "object",
+      "properties": {
+        "documentId": { "type": "string", "maxLength": 128 },
+        "fileName": { "type": "string", "maxLength": 200 },
+        "examName": { "type": "string", "maxLength": 100 },
+        "examYear": { "type": "integer" },
+        "subject": { "type": "string", "maxLength": 100 },
+        "shift": { "type": "string", "maxLength": 80 },
+        "totalPages": { "type": "integer" },
+        "pagesProcessed": { "type": "integer" },
+        "failedPageRanges": { "type": "array" },
+        "extractedCount": { "type": "integer" },
+        "importedCount": { "type": "integer" },
+        "duplicateCount": { "type": "integer" },
+        "reviewCount": { "type": "integer" },
+        "errorMessages": { "type": "array" },
+        "status": { "type": "string", "enum": ["uploading", "queued", "processing", "paused", "completed", "failed"] },
+        "createdByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["documentId", "fileName", "examName", "examYear", "subject", "totalPages", "pagesProcessed", "failedPageRanges", "extractedCount", "importedCount", "duplicateCount", "reviewCount", "errorMessages", "status", "createdByUid", "createdAt", "updatedAt"]
+    },
+    "MockTest": {
+      "title": "MockTest",
+      "description": "Curated or AI-generated mock test definition.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 160 },
+        "examName": { "type": "string", "maxLength": 100 },
+        "testType": { "type": "string", "enum": ["pyq", "ai_mock", "subject", "chapter", "topic", "current_affairs", "full_length"] },
+        "subject": { "type": "string", "maxLength": 100 },
+        "chapter": { "type": "string", "maxLength": 140 },
+        "topic": { "type": "string", "maxLength": 140 },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard", "mixed"] },
+        "questionIds": { "type": "array" },
+        "durationMinutes": { "type": "integer" },
+        "marksPerCorrect": { "type": "number" },
+        "negativeMarks": { "type": "number" },
+        "isTimed": { "type": "boolean" },
+        "active": { "type": "boolean" },
+        "createdByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "examName", "testType", "difficulty", "questionIds", "durationMinutes", "marksPerCorrect", "negativeMarks", "isTimed", "active", "createdByUid", "createdAt"]
+    },
+    "TestAttempt": {
+      "title": "TestAttempt",
+      "description": "Student examination attempt, responses, server-scored marks, and analytics.",
+      "type": "object",
+      "properties": {
+        "studentUid": { "type": "string", "maxLength": 128 },
+        "studentDocId": { "type": "string", "maxLength": 128 },
+        "studentCode": { "type": "string", "maxLength": 24 },
+        "studentName": { "type": "string", "maxLength": 120 },
+        "examName": { "type": "string", "maxLength": 100 },
+        "testType": { "type": "string", "enum": ["pyq", "ai_mock", "subject", "chapter", "topic", "current_affairs", "full_length"] },
+        "mode": { "type": "string", "enum": ["exam", "practice"] },
+        "subject": { "type": "string", "maxLength": 100 },
+        "chapter": { "type": "string", "maxLength": 140 },
+        "topic": { "type": "string", "maxLength": 140 },
+        "questionIds": { "type": "array" },
+        "responses": { "type": "object" },
+        "markedForReview": { "type": "array" },
+        "timeSpentByQuestion": { "type": "object" },
+        "totalQuestions": { "type": "integer" },
+        "correctCount": { "type": "integer" },
+        "incorrectCount": { "type": "integer" },
+        "unansweredCount": { "type": "integer" },
+        "totalMarks": { "type": "number" },
+        "maxMarks": { "type": "number" },
+        "percentage": { "type": "number" },
+        "accuracy": { "type": "number" },
+        "timeTakenSeconds": { "type": "integer" },
+        "subjectBreakdown": { "type": "array" },
+        "chapterBreakdown": { "type": "array" },
+        "topicBreakdown": { "type": "array" },
+        "difficultyBreakdown": { "type": "array" },
+        "weakSubjects": { "type": "array" },
+        "weakChapters": { "type": "array" },
+        "weakTopics": { "type": "array" },
+        "slowQuestionIds": { "type": "array" },
+        "aiRecommendations": { "type": "string", "maxLength": 6000 },
+        "scoreReceipt": { "type": "string", "maxLength": 256 },
+        "revealedKeys": { "type": "object" },
+        "status": { "type": "string", "enum": ["in_progress", "submitted"] },
+        "startedAt": { "type": "string", "maxLength": 60 },
+        "submittedAt": { "type": "string", "maxLength": 60 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentUid", "studentCode", "studentName", "examName", "testType", "mode", "questionIds", "responses", "markedForReview", "timeSpentByQuestion", "totalQuestions", "correctCount", "incorrectCount", "unansweredCount", "totalMarks", "maxMarks", "percentage", "accuracy", "timeTakenSeconds", "subjectBreakdown", "chapterBreakdown", "topicBreakdown", "weakSubjects", "weakChapters", "weakTopics", "slowQuestionIds", "status", "startedAt", "createdAt", "updatedAt"]
+    },
+    "CurrentAffairsItem": {
+      "title": "CurrentAffairsItem",
+      "description": "Grounded bilingual daily current affairs brief with verified source link.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "maxLength": 20 },
+        "month": { "type": "string", "maxLength": 12 },
+        "year": { "type": "integer" },
+        "category": { "type": "string", "enum": ["National", "International", "Bihar Current Affairs", "Economy", "Science and Technology", "Sports", "Awards and Honours", "Government Schemes", "Important Appointments", "Environment"] },
+        "titleEn": { "type": "string", "maxLength": 300 },
+        "titleHi": { "type": "string", "maxLength": 400 },
+        "summaryEn": { "type": "string", "maxLength": 2000 },
+        "summaryHi": { "type": "string", "maxLength": 2500 },
+        "sourceTitle": { "type": "string", "maxLength": 200 },
+        "sourceUrl": { "type": "string", "maxLength": 1000 },
+        "publishedDate": { "type": "string", "maxLength": 40 },
+        "linkedQuestionIds": { "type": "array" },
+        "status": { "type": "string", "enum": ["pending_review", "published", "archived"] },
+        "autoCollected": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["date", "month", "year", "category", "titleEn", "titleHi", "summaryEn", "summaryHi", "sourceTitle", "sourceUrl", "publishedDate", "linkedQuestionIds", "status", "autoCollected", "createdAt", "updatedAt"]
+    },
+    "CurrentAffairsSettings": {
+      "title": "CurrentAffairsSettings",
+      "description": "Scheduler and publication controls for automated current affairs.",
+      "type": "object",
+      "properties": {
+        "autoPublishEnabled": { "type": "boolean" },
+        "paused": { "type": "boolean" },
+        "lastRunAt": { "type": "string", "maxLength": 60 },
+        "lastRunCount": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["autoPublishEnabled", "paused", "updatedAt"]
+    },
+    "DigitalGKBook": {
+      "title": "DigitalGKBook",
+      "description": "Chapter-wise digital general knowledge book.",
+      "type": "object",
+      "properties": {
+        "subject": { "type": "string", "maxLength": 80 },
+        "title": { "type": "string", "maxLength": 160 },
+        "description": { "type": "string", "maxLength": 500 },
+        "chapters": { "type": "array" },
+        "pdfDownloadAllowed": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["subject", "title", "description", "chapters", "pdfDownloadAllowed", "updatedAt"]
+    },
+    "StudyBookmark": {
+      "title": "StudyBookmark",
+      "description": "Student bookmark for digital GK book chapters.",
+      "type": "object",
+      "properties": {
+        "userUid": { "type": "string", "maxLength": 128 },
+        "bookId": { "type": "string", "maxLength": 128 },
+        "subject": { "type": "string", "maxLength": 80 },
+        "chapterId": { "type": "string", "maxLength": 80 },
+        "chapterTitle": { "type": "string", "maxLength": 160 },
+        "note": { "type": "string", "maxLength": 400 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userUid", "bookId", "subject", "chapterId", "chapterTitle", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": { "$ref": "#/entities/UserProfile" }, "description": "User authentication profile and role link." },
+    "/admins/{userId}": { "schema": { "$ref": "#/entities/AdminRole" }, "description": "Administrator identity records." },
+    "/user_roles/{userId}": { "schema": { "$ref": "#/entities/UserRoleAssignment" }, "description": "RBAC role and permissions assignment." },
+    "/students/{studentId}": { "schema": { "$ref": "#/entities/Student" }, "description": "Registered student profiles." },
+    "/staff/{staffId}": { "schema": { "$ref": "#/entities/StaffMember" }, "description": "Staff and manager directory." },
+    "/membership_plans/{planId}": { "schema": { "$ref": "#/entities/MembershipPlan" }, "description": "Public membership plan catalog." },
+    "/memberships/{membershipId}": { "schema": { "$ref": "#/entities/Membership" }, "description": "Student membership subscriptions." },
+    "/seats/{seatId}": { "schema": { "$ref": "#/entities/Seat" }, "description": "Library study seat map." },
+    "/seat_bookings/{bookingId}": { "schema": { "$ref": "#/entities/SeatBooking" }, "description": "Seat booking and change requests." },
+    "/attendance/{attendanceId}": { "schema": { "$ref": "#/entities/AttendanceRecord" }, "description": "QR and manual attendance register." },
+    "/book_categories/{categoryId}": { "schema": { "$ref": "#/entities/BookCategory" }, "description": "Book categories." },
+    "/books/{bookId}": { "schema": { "$ref": "#/entities/Book" }, "description": "Library book inventory." },
+    "/book_issues/{issueId}": { "schema": { "$ref": "#/entities/BookIssue" }, "description": "Book issue and return ledger." },
+    "/payments/{paymentId}": { "schema": { "$ref": "#/entities/Payment" }, "description": "Online and offline payment records." },
+    "/expenses/{expenseId}": { "schema": { "$ref": "#/entities/Expense" }, "description": "Library operational expenses." },
+    "/notifications/{notificationId}": { "schema": { "$ref": "#/entities/Notification" }, "description": "In-app user and admin notifications." },
+    "/enquiries/{enquiryId}": { "schema": { "$ref": "#/entities/Enquiry" }, "description": "Contact form enquiries." },
+    "/announcements/{announcementId}": { "schema": { "$ref": "#/entities/Announcement" }, "description": "Library announcements." },
+    "/gallery/{galleryId}": { "schema": { "$ref": "#/entities/GalleryItem" }, "description": "Library gallery photos." },
+    "/library_settings/{settingId}": { "schema": { "$ref": "#/entities/LibrarySettings" }, "description": "Library settings and facilities." },
+    "/audit_logs/{logId}": { "schema": { "$ref": "#/entities/AuditLog" }, "description": "Immutable security audit trail." },
+    "/exams/{examId}": { "schema": { "$ref": "#/entities/ExamCategory" }, "description": "Competitive examination categories and marking schemes." },
+    "/exam_subjects/{subjectId}": { "schema": { "$ref": "#/entities/ExamSubject" }, "description": "Examination subjects." },
+    "/exam_chapters/{chapterId}": { "schema": { "$ref": "#/entities/ExamChapter" }, "description": "Subject chapters and topics." },
+    "/questions/{questionId}": { "schema": { "$ref": "#/entities/ExamQuestion" }, "description": "Central question bank without plaintext answer keys." },
+    "/question_keys/{questionId}": { "schema": { "$ref": "#/entities/QuestionKey" }, "description": "Staff/admin-only plaintext answer keys." },
+    "/uploaded_documents/{docId}": { "schema": { "$ref": "#/entities/UploadedDocument" }, "description": "Uploaded PYQ PDF file metadata." },
+    "/import_jobs/{jobId}": { "schema": { "$ref": "#/entities/ImportJob" }, "description": "Resumable AI PDF extraction job tracking." },
+    "/mock_tests/{testId}": { "schema": { "$ref": "#/entities/MockTest" }, "description": "Mock test blueprints." },
+    "/test_attempts/{attemptId}": { "schema": { "$ref": "#/entities/TestAttempt" }, "description": "Student exam attempts, responses, and server-scored analytics." },
+    "/current_affairs/{caId}": { "schema": { "$ref": "#/entities/CurrentAffairsItem" }, "description": "Bilingual grounded daily current affairs." },
+    "/current_affairs_settings/{settingId}": { "schema": { "$ref": "#/entities/CurrentAffairsSettings" }, "description": "Daily current affairs scheduler controls." },
+    "/gk_books/{bookId}": { "schema": { "$ref": "#/entities/DigitalGKBook" }, "description": "Digital chapter-wise GK books." },
+    "/study_bookmarks/{bookmarkId}": { "schema": { "$ref": "#/entities/StudyBookmark" }, "description": "Student chapter bookmarks." }
+  }
+}
