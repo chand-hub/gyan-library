@@ -152,7 +152,7 @@ export const AttendancePanel: React.FC<AttendancePanelProps> = ({
             Scan student QR pass or enter Student ID (e.g. VL2026001) to toggle Check-In / Check-Out.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setScannerOpen((v) => !v)}
@@ -185,7 +185,7 @@ export const AttendancePanel: React.FC<AttendancePanelProps> = ({
         }}
         className="p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm flex flex-col sm:flex-row gap-3"
       >
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           <QrCode className="w-4 h-4 text-outline absolute left-3 top-2.5" />
           <input
             type="text"
@@ -197,7 +197,7 @@ export const AttendancePanel: React.FC<AttendancePanelProps> = ({
         </div>
         <button
           type="submit"
-          className="inline-flex items-center justify-center gap-1.5 px-5 py-2 rounded bg-primary text-on-primary text-sm font-semibold whitespace-nowrap hover:bg-primary-container cursor-pointer"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2 rounded bg-primary text-on-primary text-sm font-semibold whitespace-nowrap hover:bg-primary-container cursor-pointer"
         >
           <UserCheck className="w-4 h-4" /> Mark Check-In / Out
         </button>
@@ -205,17 +205,17 @@ export const AttendancePanel: React.FC<AttendancePanelProps> = ({
 
       {/* Date Filter & Table */}
       <div className="rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 bg-surface-container-low dark:bg-slate-800/80 border-b border-outline-variant dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+        <div className="px-4 sm:px-5 py-3.5 bg-surface-container-low dark:bg-slate-800/80 border-b border-outline-variant dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
           <span className="text-sm font-semibold text-primary dark:text-white">
             Register Entries ({filteredRecords.length})
           </span>
-          <div className="flex items-center gap-2">
-            <Search className="w-3.5 h-3.5 text-outline" />
+          <div className="flex flex-wrap items-center gap-2 max-w-full">
+            <Search className="w-3.5 h-3.5 text-outline shrink-0" />
             <input
               type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="px-2.5 py-1 text-xs rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-900 text-on-surface dark:text-white"
+              className="min-w-0 px-2.5 py-1 text-xs rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-900 text-on-surface dark:text-white"
             />
             {dateFilter && (
               <button

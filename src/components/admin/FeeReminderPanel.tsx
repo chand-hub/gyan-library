@@ -1050,28 +1050,28 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
             : 'bg-warning-container/60 border-warning/40 text-on-warning-container'
         }`}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 min-w-0">
           {waConfig?.configured ? (
             <ShieldCheck className="w-5 h-5 text-success shrink-0 mt-0.5" />
           ) : (
             <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
           )}
-          <div className="text-xs space-y-1">
+          <div className="text-xs space-y-1 min-w-0 break-words">
             <p className="font-semibold text-sm">
               {waConfig?.configured
                 ? `Official Meta WhatsApp Cloud API (${waConfig.apiVersion}) Connected`
                 : 'Meta WhatsApp Cloud API Credentials Not Configured on Server'}
             </p>
-            <p className="opacity-90">
+            <p className="opacity-90 break-words">
               {waConfig?.configured
                 ? `Phone Number ID active · Webhook endpoint: ${waConfig.webhookPath} (${waConfig.webhookVerifyTokenConfigured ? 'Verify Token Set' : 'Verify Token Missing'})`
                 : 'Configure server environment variables WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_WEBHOOK_VERIFY_TOKEN, and WHATSAPP_APP_SECRET to send live template messages.'}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 max-w-full">
           <span
-            className={`px-2.5 py-1 rounded-full font-label text-[11px] font-semibold ${
+            className={`px-2.5 py-1 rounded-full font-label text-[11px] font-semibold max-w-full text-center ${
               settings.globalPaused
                 ? 'bg-warning-container text-on-warning-container'
                 : 'bg-success-container text-on-success-container'
@@ -1083,7 +1083,7 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
       </div>
 
       {/* 10 KPI Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3.5">
         {[
           { label: 'Enrolled Fee Accounts', value: metrics.totalStudents, tone: 'text-primary' },
           { label: 'Total Fee Expected', value: `₹${metrics.totalExpected.toLocaleString('en-IN')}`, tone: 'text-primary' },
@@ -1098,10 +1098,10 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
         ].map((card) => (
           <div
             key={card.label}
-            className="bg-surface-container-lowest rounded-lg border border-outline-variant p-4 shadow-sm"
+            className="min-w-0 bg-surface-container-lowest rounded-lg border border-outline-variant p-3.5 sm:p-4 shadow-sm"
           >
-            <p className="font-label text-xs text-on-surface-variant">{card.label}</p>
-            <p className={`font-headline text-xl font-bold tabular-nums mt-1 ${card.tone}`}>
+            <p className="font-label text-xs text-on-surface-variant break-words">{card.label}</p>
+            <p className={`font-headline text-lg sm:text-xl font-bold tabular-nums mt-1 ${card.tone}`}>
               {card.value}
             </p>
           </div>
@@ -1140,7 +1140,7 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
       {subTab === 'ledger' && (
         <div className="space-y-4">
           <div className="bg-surface-container-lowest rounded-lg border border-outline-variant p-4 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-            <div className="relative flex-1 max-w-md">
+            <div className="relative w-full md:flex-1 md:max-w-md min-w-0">
               <Search className="w-4 h-4 text-outline absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="search"
@@ -1151,12 +1151,12 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 max-w-full">
               <select
                 aria-label="Filter by payment status"
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value as any)}
-                className="px-3 py-2 rounded border border-outline-variant bg-surface text-xs font-semibold text-on-surface"
+                className="w-full sm:w-auto max-w-full px-3 py-2 rounded border border-outline-variant bg-surface text-xs font-semibold text-on-surface"
               >
                 <option value="ALL">Payment: All</option>
                 <option value="paid">Paid</option>
@@ -1169,7 +1169,7 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
                 aria-label="Filter by reminder status"
                 value={reminderFilter}
                 onChange={(e) => setReminderFilter(e.target.value as any)}
-                className="px-3 py-2 rounded border border-outline-variant bg-surface text-xs font-semibold text-on-surface"
+                className="w-full sm:w-auto max-w-full px-3 py-2 rounded border border-outline-variant bg-surface text-xs font-semibold text-on-surface"
               >
                 <option value="ALL">Reminder: All</option>
                 <option value="active">Active (24h)</option>
@@ -1502,7 +1502,7 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
 
       {/* Sub-Tab 4: Scheduler & Template Settings */}
       {subTab === 'settings' && (
-        <div className="bg-surface-container-lowest rounded-lg border border-outline-variant p-6 max-w-3xl space-y-5 shadow-sm">
+        <div className="bg-surface-container-lowest rounded-lg border border-outline-variant p-4 sm:p-6 max-w-3xl space-y-5 shadow-sm">
           <div>
             <h2 className="font-headline text-lg font-bold text-on-surface">
               24-Hour Automated Reminder & Meta Template Settings
@@ -1666,13 +1666,13 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
 
       {/* Enroll / Edit Modal */}
       {enrollOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/50 p-3 sm:p-4 overflow-y-auto">
           <form
             onSubmit={handleSaveStudentFee}
-            className="w-full max-w-xl bg-surface-container-lowest border border-outline-variant rounded-xl p-6 space-y-4 shadow-xl"
+            className="w-full max-w-xl bg-surface-container-lowest border border-outline-variant rounded-xl p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto my-auto shadow-xl"
           >
-            <div className="flex items-center justify-between border-b border-outline-variant pb-3">
-              <h3 className="font-headline text-lg font-bold text-on-surface">
+            <div className="flex items-center justify-between gap-2 border-b border-outline-variant pb-3">
+              <h3 className="font-headline text-lg font-bold text-on-surface break-words min-w-0">
                 {editingFee ? `Edit Fee Profile · ${editingFee.studentName}` : 'Enroll Student into Fee Ledger'}
               </h3>
               <button
@@ -1855,27 +1855,27 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
 
       {/* Record Manual Payment Modal */}
       {paymentModalStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/50 p-3 sm:p-4 overflow-y-auto">
           <form
             onSubmit={handleRecordPayment}
-            className="w-full max-w-md bg-surface-container-lowest border border-outline-variant rounded-xl p-6 space-y-4 shadow-xl"
+            className="w-full max-w-md bg-surface-container-lowest border border-outline-variant rounded-xl p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto my-auto shadow-xl"
           >
-            <div className="flex items-center justify-between border-b border-outline-variant pb-3">
+            <div className="flex items-center justify-between gap-2 border-b border-outline-variant pb-3">
               <h3 className="font-headline text-lg font-bold text-on-surface">Record Manual Payment</h3>
               <button
                 type="button"
                 onClick={() => setPaymentModalStudent(null)}
-                className="p-1 text-on-surface-variant hover:text-on-surface"
+                className="p-1 text-on-surface-variant hover:text-on-surface shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant space-y-1 text-xs">
-              <p className="font-semibold text-sm text-on-surface">
+              <p className="font-semibold text-sm text-on-surface break-words">
                 {paymentModalStudent.studentName} ({paymentModalStudent.studentCode})
               </p>
-              <div className="flex justify-between text-on-surface-variant">
+              <div className="flex flex-wrap justify-between gap-2 text-on-surface-variant">
                 <span>Total Payable: ₹{paymentModalStudent.totalPayable.toLocaleString('en-IN')}</span>
                 <span>Already Paid: ₹{paymentModalStudent.totalPaid.toLocaleString('en-IN')}</span>
               </div>
@@ -1884,7 +1884,7 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-on-surface-variant mb-1">Amount Received (₹)</label>
                 <input
@@ -1978,29 +1978,29 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
 
       {/* Manual WhatsApp Confirmation Modal */}
       {sendModalStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/50 p-4">
-          <div className="w-full max-w-lg bg-surface-container-lowest border border-outline-variant rounded-xl p-6 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-outline-variant pb-3">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/50 p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-lg bg-surface-container-lowest border border-outline-variant rounded-xl p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto my-auto shadow-xl">
+            <div className="flex items-center justify-between gap-2 border-b border-outline-variant pb-3">
               <h3 className="font-headline text-lg font-bold text-on-surface">
                 Confirm WhatsApp Fee Reminder
               </h3>
               <button
                 type="button"
                 onClick={() => setSendModalStudent(null)}
-                className="p-1 text-on-surface-variant hover:text-on-surface"
+                className="p-1 text-on-surface-variant hover:text-on-surface shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs bg-surface-container-low p-3.5 rounded-lg border border-outline-variant">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-surface-container-low p-3.5 rounded-lg border border-outline-variant">
+              <div className="min-w-0">
                 <span className="text-on-surface-variant block">Student</span>
-                <span className="font-semibold text-on-surface">{sendModalStudent.studentName}</span>
+                <span className="font-semibold text-on-surface break-words">{sendModalStudent.studentName}</span>
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="text-on-surface-variant block">Recipient WhatsApp</span>
-                <span className="font-mono font-semibold text-on-surface">
+                <span className="font-mono font-semibold text-on-surface break-all">
                   {sendModalStudent.parentWhatsapp || sendModalStudent.studentWhatsapp || 'Missing'}
                 </span>
               </div>
@@ -2020,12 +2020,12 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
               <p className="text-xs font-semibold text-on-surface-variant mb-1.5">
                 Live Template Message Preview ({settings.templateName})
               </p>
-              <div className="p-3.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface leading-relaxed">
+              <div className="p-3.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface leading-relaxed break-words">
                 {buildRenderedPreview(sendModalStudent)}
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex flex-wrap justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setSendModalStudent(null)}
@@ -2049,21 +2049,21 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
 
       {/* Student Payment & Reminder History Modal */}
       {historyModalStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/50 p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl bg-surface-container-lowest border border-outline-variant rounded-xl p-6 space-y-5 shadow-xl">
-            <div className="flex items-center justify-between border-b border-outline-variant pb-3">
-              <div>
-                <h3 className="font-headline text-lg font-bold text-on-surface">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/50 p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl bg-surface-container-lowest border border-outline-variant rounded-xl p-4 sm:p-6 space-y-5 max-h-[90dvh] overflow-y-auto my-auto shadow-xl">
+            <div className="flex items-center justify-between gap-2 border-b border-outline-variant pb-3">
+              <div className="min-w-0">
+                <h3 className="font-headline text-lg font-bold text-on-surface break-words">
                   Fee & Reminder History · {historyModalStudent.studentName}
                 </h3>
-                <p className="text-xs text-on-surface-variant font-mono">
+                <p className="text-xs text-on-surface-variant font-mono break-words">
                   {historyModalStudent.studentCode} · Remaining ₹{historyModalStudent.remainingBalance.toLocaleString('en-IN')}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setHistoryModalStudent(null)}
-                className="p-1 text-on-surface-variant hover:text-on-surface"
+                className="p-1 text-on-surface-variant hover:text-on-surface shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2088,8 +2088,8 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
                 </button>
               )}
               {historyModalStudent.nextReminderAt && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-surface-container-low text-xs text-on-surface-variant font-mono">
-                  <Clock className="w-3.5 h-3.5" /> Next 24h schedule: {historyModalStudent.nextReminderAt.slice(0, 16).replace('T', ' ')}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-surface-container-low text-xs text-on-surface-variant font-mono break-all">
+                  <Clock className="w-3.5 h-3.5 shrink-0" /> Next 24h schedule: {historyModalStudent.nextReminderAt.slice(0, 16).replace('T', ' ')}
                 </span>
               )}
             </div>
@@ -2103,14 +2103,14 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
               ) : (
                 <div className="divide-y divide-outline-variant border border-outline-variant rounded-lg">
                   {studentHistoryPayments.map((p) => (
-                    <div key={p.id} className="px-3.5 py-2.5 flex items-center justify-between text-xs">
-                      <div>
+                    <div key={p.id} className="px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div className="min-w-0 break-words">
                         <span className="font-mono font-semibold text-on-surface">{p.paymentDate}</span>
                         <span className="mx-2 text-outline">·</span>
                         <span className="font-medium text-on-surface">{p.paymentMethod}</span>
-                        {p.transactionRef && <span className="ml-2 text-on-surface-variant font-mono">({p.transactionRef})</span>}
+                        {p.transactionRef && <span className="ml-2 text-on-surface-variant font-mono break-all">({p.transactionRef})</span>}
                       </div>
-                      <div className="text-right tabular-nums">
+                      <div className="text-right tabular-nums shrink-0">
                         <span className="font-bold text-success">+₹{p.amountReceived}</span>
                         <span className="ml-2 text-on-surface-variant">Bal: ₹{p.balanceAfterPayment}</span>
                       </div>
@@ -2129,9 +2129,9 @@ export const FeeReminderPanel: React.FC<FeeReminderPanelProps> = ({
               ) : (
                 <div className="divide-y divide-outline-variant border border-outline-variant rounded-lg max-h-56 overflow-y-auto">
                   {studentHistoryReminders.map((r) => (
-                    <div key={r.id} className="px-3.5 py-2.5 flex items-center justify-between gap-3 text-xs">
+                    <div key={r.id} className="px-3.5 py-2.5 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 text-xs">
                       <div className="min-w-0">
-                        <p className="font-mono text-on-surface">
+                        <p className="font-mono text-on-surface break-words">
                           {(r.sentAt || r.scheduledFor).slice(0, 19).replace('T', ' ')} · {r.triggerType}
                         </p>
                         {r.errorMessage && <p className="text-error truncate">{r.errorMessage}</p>}

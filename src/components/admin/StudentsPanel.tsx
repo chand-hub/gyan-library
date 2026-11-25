@@ -377,7 +377,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           <Search className="w-4 h-4 text-outline absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -387,7 +387,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
             className="w-full pl-9 pr-3 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-900 text-on-surface dark:text-white placeholder:text-outline focus:border-secondary focus:outline-none"
           />
         </div>
-        <div className="flex gap-1 p-1 rounded bg-surface-container-low dark:bg-slate-900 border border-outline-variant dark:border-slate-800">
+        <div className="flex flex-wrap gap-1 p-1 rounded bg-surface-container-low dark:bg-slate-900 border border-outline-variant dark:border-slate-800 max-w-full">
           {(['ALL', 'active', 'inactive', 'blocked'] as const).map((st) => (
             <button
               key={st}
@@ -488,38 +488,38 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
 
       {/* View Full Student Profile Modal */}
       {viewingStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-2xl bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-6 space-y-5 max-h-[90vh] overflow-y-auto text-on-surface dark:text-slate-100 shadow-2xl">
-            <div className="flex items-start justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
-              <div>
-                <h3 className="font-display text-xl font-bold text-primary dark:text-white">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-4 sm:p-6 space-y-5 max-h-[90dvh] overflow-y-auto my-auto text-on-surface dark:text-slate-100 shadow-2xl">
+            <div className="flex items-start justify-between gap-2 border-b border-outline-variant dark:border-slate-800 pb-3">
+              <div className="min-w-0">
+                <h3 className="font-display text-xl font-bold text-primary dark:text-white break-words">
                   {viewingStudent.fullName}
                 </h3>
-                <p className="font-mono text-xs text-on-surface-variant dark:text-slate-400">
+                <p className="font-mono text-xs text-on-surface-variant dark:text-slate-400 break-words">
                   {viewingStudent.studentCode} · Seat {viewingStudent.seatCode || 'Unassigned'} ·{' '}
                   {viewingStudent.membershipPlanName || 'No Plan'}
                 </p>
               </div>
-              <button type="button" onClick={() => setViewingStudent(null)} className="p-1 text-on-surface-variant hover:text-primary cursor-pointer">
+              <button type="button" onClick={() => setViewingStudent(null)} className="p-1 text-on-surface-variant hover:text-primary shrink-0 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs text-on-surface dark:text-slate-200">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-on-surface dark:text-slate-200">
+              <div className="min-w-0">
                 <span className="text-on-surface-variant dark:text-slate-400">Mobile:</span> {viewingStudent.mobile}
               </div>
-              <div>
+              <div className="min-w-0 break-all">
                 <span className="text-on-surface-variant dark:text-slate-400">Email:</span> {viewingStudent.email}
               </div>
-              <div>
+              <div className="min-w-0 break-words">
                 <span className="text-on-surface-variant dark:text-slate-400">Father&apos;s Name:</span> {viewingStudent.fatherName}
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="text-on-surface-variant dark:text-slate-400">Emergency Contact:</span>{' '}
                 {viewingStudent.emergencyContact}
               </div>
-              <div className="col-span-2">
+              <div className="sm:col-span-2 min-w-0 break-words">
                 <span className="text-on-surface-variant dark:text-slate-400">Address:</span> {viewingStudent.address}
               </div>
             </div>
@@ -535,7 +535,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
                   .map((a) => (
                     <div
                       key={a.id}
-                      className="flex justify-between py-1.5 border-b border-outline-variant/50 dark:border-slate-800"
+                      className="flex flex-wrap justify-between gap-2 py-1.5 border-b border-outline-variant/50 dark:border-slate-800"
                     >
                       <span className="font-mono">{a.date}</span>
                       <span>
@@ -556,9 +556,9 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
                   .map((p) => (
                     <div
                       key={p.id}
-                      className="flex justify-between py-1.5 border-b border-outline-variant/50 dark:border-slate-800"
+                      className="flex flex-wrap justify-between gap-2 py-1.5 border-b border-outline-variant/50 dark:border-slate-800"
                     >
-                      <span className="font-mono">
+                      <span className="font-mono break-words">
                         {p.receiptNumber} · {p.planName}
                       </span>
                       <span className="font-mono font-semibold">
@@ -574,18 +574,18 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
 
       {/* Add / Edit Student Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-6 space-y-4 max-h-[90vh] overflow-y-auto text-on-surface dark:text-slate-100 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-lg bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto my-auto text-on-surface dark:text-slate-100 shadow-2xl">
+            <div className="flex items-center justify-between gap-2 border-b border-outline-variant dark:border-slate-800 pb-3">
               <h3 className="font-display text-lg font-bold text-primary dark:text-white">
                 {editingStudent ? `Edit ${editingStudent.studentCode}` : 'Register New Student'}
               </h3>
-              <button type="button" onClick={() => setShowAddModal(false)} className="text-on-surface-variant hover:text-primary cursor-pointer">
+              <button type="button" onClick={() => setShowAddModal(false)} className="text-on-surface-variant hover:text-primary shrink-0 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleSaveStudent} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Full Name</label>
                   <input
@@ -607,7 +607,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Email</label>
                   <input
@@ -649,7 +649,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
                   className={inputCls}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Assign Study Seat</label>
                   <select
@@ -696,8 +696,8 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
 
       {/* Bulk CSV Import Modal */}
       {showCsvModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-6 space-y-4 text-on-surface dark:text-slate-100 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-lg bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto my-auto text-on-surface dark:text-slate-100 shadow-2xl">
             <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
               <h3 className="font-display text-lg font-bold text-primary dark:text-white">
                 Bulk Student CSV Import

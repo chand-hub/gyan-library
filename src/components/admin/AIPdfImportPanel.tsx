@@ -861,10 +861,10 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
 
       {cooldown.active && (
         <div className="p-4 rounded-lg bg-warning-container border border-warning/40 text-xs text-on-warning-container flex flex-wrap items-center justify-between gap-3">
-          <div className="space-y-0.5">
+          <div className="space-y-0.5 min-w-0 break-words">
             <p className="font-bold text-sm flex items-center gap-1.5">
-              <Clock className="w-4 h-4" />
-              Shared Gemini API Cooldown Active · Retry in {formatCooldownRemaining(cooldown.remainingSeconds)}
+              <Clock className="w-4 h-4 shrink-0" />
+              <span>Shared Gemini API Cooldown Active · Retry in {formatCooldownRemaining(cooldown.remainingSeconds)}</span>
             </p>
             <p>{cooldown.reason || 'Resume & Retry controls are paused until quota cooldown ends.'}</p>
           </div>
@@ -873,18 +873,18 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
 
       {resumeTarget && (
         <div className="p-4 rounded-lg bg-warning-container border border-warning/40 text-xs text-on-warning-container flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="font-bold text-sm">
+          <div className="min-w-0 break-words">
+            <p className="font-bold text-sm break-all">
               Resuming Checkpoint: {resumeTarget.fileName} ({resumeTarget.pagesProcessed}/{resumeTarget.totalPages} pages saved)
             </p>
             <p className="opacity-90 mt-0.5">
-              Select "{resumeTarget.fileName}" below and click Upload &amp; Start AI Extraction to skip {resumeTarget.skipPages.length} completed pages and process only remaining/failed pages.
+              Select &quot;{resumeTarget.fileName}&quot; below and click Upload &amp; Start AI Extraction to skip {resumeTarget.skipPages.length} completed pages and process only remaining/failed pages.
             </p>
           </div>
           <button
             type="button"
             onClick={() => setResumeTarget(null)}
-            className="px-3 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary font-semibold"
+            className="px-3 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary font-semibold shrink-0"
           >
             Cancel Resume
           </button>
@@ -894,7 +894,7 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
       {/* Explicit Upload Policy & Form */}
       <form
         onSubmit={handleUploadAndProcess}
-        className="p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-5"
+        className="p-4 sm:p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-5"
       >
         <div className="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface-variant flex flex-wrap items-center justify-between gap-2">
           <span>
@@ -903,7 +903,7 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
           <span className="font-semibold text-secondary">Auto-Checkpoint + Duplicate Guard Active</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs font-semibold text-on-surface-variant mb-1">Examination</label>
             <select
@@ -959,9 +959,9 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
           <label className="block text-xs font-semibold text-on-surface-variant mb-2">
             Select PDF Question Papers (Single or Multiple)
           </label>
-          <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-outline-variant rounded-xl bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors">
+          <label className="flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed border-outline-variant rounded-xl bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors text-center">
             <FileUp className="w-8 h-8 text-secondary mb-2" />
-            <span className="text-sm font-semibold text-on-surface">
+            <span className="text-sm font-semibold text-on-surface break-all max-w-full">
               {selectedFiles.length > 0
                 ? `${selectedFiles.length} PDF file(s) selected (${selectedFiles.map((f) => f.name).join(', ')})`
                 : 'Choose PDF file(s) up to 25 MB each'}
@@ -979,9 +979,9 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
 
         {uploadingState && (
           <div className="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant space-y-2">
-            <div className="flex items-center justify-between text-xs text-on-surface">
-              <span>{uploadingState}</span>
-              <span className="tabular-nums font-bold">{uploadProgress}%</span>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-on-surface">
+              <span className="min-w-0 break-words">{uploadingState}</span>
+              <span className="tabular-nums font-bold shrink-0">{uploadProgress}%</span>
             </div>
             <div className="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden">
               <div
@@ -996,30 +996,30 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
           <button
             type="submit"
             disabled={Boolean(uploadingState) || selectedFiles.length === 0 || cooldown.active}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary transition-colors disabled:opacity-40 cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary transition-colors disabled:opacity-40 cursor-pointer"
           >
-            <Upload className="w-4 h-4" />{' '}
-            {resumeTarget ? 'Upload PDF & Resume Checkpoint' : 'Upload & Start AI Extraction'}
+            <Upload className="w-4 h-4 shrink-0" />{' '}
+            <span>{resumeTarget ? 'Upload PDF & Resume Checkpoint' : 'Upload & Start AI Extraction'}</span>
           </button>
         </div>
       </form>
 
       {/* Active Extraction Progress, Counters & Controls */}
       {activeJob && (
-        <div className="p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-5">
+        <div className="p-4 sm:p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-outline-variant">
-            <div>
-              <p className="text-xs text-on-surface-variant">
-                Job ID: <span className="font-mono text-primary">{activeJob.jobId}</span> · {activeJob.examName} ({activeJob.examYear})
+            <div className="min-w-0">
+              <p className="text-xs text-on-surface-variant break-words">
+                Job ID: <span className="font-mono text-primary break-all">{activeJob.jobId}</span> · {activeJob.examName} ({activeJob.examYear})
                 {activeJob.modelUsed ? ` · Model: ${activeJob.modelUsed}` : ''}
                 {activeJob.lastSuccessfulExtractionAt
                   ? ` · Last OK Batch: ${new Date(activeJob.lastSuccessfulExtractionAt).toLocaleTimeString('en-IN')}`
                   : ''}
               </p>
-              <h3 className="font-headline text-lg font-bold text-on-surface flex items-center gap-2 mt-0.5">
-                {activeJob.status === 'processing' && <Loader2 className="w-4 h-4 animate-spin text-secondary" />}
-                <span>{activeJob.fileName}</span>
-                <span className="text-xs uppercase font-mono px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container">
+              <h3 className="font-headline text-lg font-bold text-on-surface flex flex-wrap items-center gap-2 mt-0.5">
+                {activeJob.status === 'processing' && <Loader2 className="w-4 h-4 animate-spin text-secondary shrink-0" />}
+                <span className="break-all">{activeJob.fileName}</span>
+                <span className="text-xs uppercase font-mono px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container shrink-0">
                   {activeJob.status}
                 </span>
               </h3>
@@ -1100,7 +1100,7 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
           </div>
 
           {/* Page & Question Counters */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
             {[
               ['Total Pages', activeJob.totalPages, 'text-on-surface'],
               ['Completed Pages', activeJob.completedPages, 'text-success'],
@@ -1110,8 +1110,8 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
               ['Duplicates Skipped', importSummary ? importSummary.duplicates : activeJob.duplicateCount, 'text-on-surface'],
               ['Needs Review', importSummary ? importSummary.needsReview : activeJob.reviewCount, 'text-on-surface'],
             ].map(([label, val, colorCls]) => (
-              <div key={String(label)} className="p-3 rounded-lg bg-surface-container-low border border-outline-variant">
-                <p className="text-[11px] text-on-surface-variant">{label}</p>
+              <div key={String(label)} className="min-w-0 p-3 rounded-lg bg-surface-container-low border border-outline-variant">
+                <p className="text-[11px] text-on-surface-variant truncate">{label}</p>
                 <p className={`text-xl font-bold tabular-nums mt-0.5 ${colorCls}`}>{val}</p>
               </div>
             ))}
@@ -1177,7 +1177,7 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
               {activeJob.extractedQuestions.slice(0, 20).map((q, idx) => (
                 <div
                   key={q.tempId}
-                  className="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant text-xs space-y-1.5"
+                  className="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant text-xs space-y-1.5 min-w-0 break-words"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 text-on-surface-variant">
                     <span>
@@ -1204,11 +1204,11 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
 
       {/* Persisted Firestore Checkpoint Jobs History */}
       {savedJobs.length > 0 && (
-        <div className="p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="p-4 sm:p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="font-headline text-base font-bold text-on-surface flex items-center gap-2">
-              <History className="w-4 h-4 text-secondary" />
-              Saved Extraction Checkpoints
+              <History className="w-4 h-4 text-secondary shrink-0" />
+              <span>Saved Extraction Checkpoints</span>
             </h3>
             <span className="text-xs text-on-surface-variant">Resume incomplete papers without re-processing completed pages</span>
           </div>
@@ -1225,14 +1225,14 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
                   key={job.id}
                   className="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant flex flex-wrap items-center justify-between gap-3 text-xs"
                 >
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-semibold text-on-surface">
+                  <div className="space-y-0.5 min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-on-surface break-all">
                       {job.fileName}{' '}
-                      <span className="text-[11px] font-mono uppercase px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container ml-1">
+                      <span className="inline-block text-[11px] font-mono uppercase px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container ml-1">
                         {job.status}
                       </span>
                     </p>
-                    <p className="text-on-surface-variant tabular-nums">
+                    <p className="text-on-surface-variant tabular-nums break-words">
                       {job.examName} ({job.examYear}) · Completed: <strong className="text-success">{job.pagesProcessed}</strong>/{job.totalPages} pages · Failed: <strong className="text-error">{failedCount}</strong> · Pending: <strong className="text-warning">{pendingCount}</strong> · Saved Qs: <strong className="text-on-surface">{job.importedCount}</strong>
                     </p>
                   </div>
@@ -1240,7 +1240,7 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
                   <button
                     type="button"
                     onClick={() => handleOpenSavedJob(job)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-on-primary font-semibold hover:bg-primary-container transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-on-primary font-semibold hover:bg-primary-container transition-colors shrink-0"
                   >
                     <Play className="w-3.5 h-3.5" />
                     {job.status === 'completed' ? 'Inspect' : 'Load / Resume'}

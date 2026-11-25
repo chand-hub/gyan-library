@@ -282,19 +282,19 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 text-xs font-semibold text-on-surface dark:text-white hover:bg-surface-container-low dark:hover:bg-slate-800 shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 text-xs font-semibold text-on-surface dark:text-white hover:bg-surface-container-low dark:hover:bg-slate-800 shadow-xs shrink-0"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Exam Hub
           </button>
-          <div>
-            <p className="text-xs font-semibold text-secondary dark:text-blue-400 font-mono">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-secondary dark:text-blue-400 font-mono break-words">
               {attempt.examName} · {attempt.submittedAt?.slice(0, 10) || 'Completed'} · {attempt.totalQuestions} Questions
             </p>
-            <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
+            <h2 className="font-display text-2xl font-bold text-primary dark:text-white break-words">
               Detailed Performance Report
             </h2>
           </div>
@@ -304,9 +304,9 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
           type="button"
           onClick={handleGenerateAiRecommendations}
           disabled={loadingAdvice || aiCooldown.active}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary text-on-secondary text-xs sm:text-sm font-bold hover:bg-primary transition-colors disabled:opacity-50 shadow-xs"
+          className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary text-on-secondary text-xs sm:text-sm font-bold hover:bg-primary transition-colors disabled:opacity-50 shadow-xs"
         >
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="w-4 h-4 shrink-0" />
           {loadingAdvice
             ? 'Analyzing Attempt...'
             : aiCooldown.active
@@ -318,31 +318,31 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
       </div>
 
       {/* Final Performance Summary Banner */}
-      <div className={`p-5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${performanceTier.tone}`}>
-        <div className="flex items-start gap-3">
+      <div className={`p-4 sm:p-5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${performanceTier.tone}`}>
+        <div className="flex items-start gap-3 min-w-0">
           <Award className="w-6 h-6 shrink-0 mt-0.5" />
-          <div>
+          <div className="min-w-0">
             <p className="text-xs uppercase tracking-wider font-bold opacity-85">
               Final Performance Summary
             </p>
-            <h3 className="font-display text-lg font-bold">{performanceTier.label}</h3>
-            <p className="text-xs opacity-90 mt-0.5">{performanceTier.note}</p>
+            <h3 className="font-display text-lg font-bold break-words">{performanceTier.label}</h3>
+            <p className="text-xs opacity-90 mt-0.5 break-words">{performanceTier.note}</p>
           </div>
         </div>
         {recommendedNextTarget && (
           <button
             type="button"
             onClick={() => onPracticeWeakTopic(recommendedNextTarget.name, recommendedNextTarget.type)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-container shrink-0 shadow-xs"
+            className="w-full sm:w-auto sm:max-w-xs justify-center inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-container shadow-xs text-left"
           >
-            <Play className="w-3.5 h-3.5" />
-            Practice Recommended: {recommendedNextTarget.name}
+            <Play className="w-3.5 h-3.5 shrink-0" />
+            <span className="break-words">Practice Recommended: {recommendedNextTarget.name}</span>
           </button>
         )}
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
         {[
           { label: 'Total Marks', val: `${attempt.totalMarks} / ${attempt.maxMarks}` },
           { label: 'Score %', val: `${attempt.percentage}%` },
@@ -358,12 +358,12 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
         ].map((card) => (
           <div
             key={card.label}
-            className="p-3.5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-xs"
+            className="min-w-0 p-3.5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-xs"
           >
             <p className="text-[11px] font-medium text-on-surface-variant dark:text-slate-400">
               {card.label}
             </p>
-            <p className="mt-1 font-display text-lg font-bold text-primary dark:text-white font-mono tabular-nums">
+            <p className="mt-1 font-display text-base sm:text-lg font-bold text-primary dark:text-white font-mono tabular-nums break-words">
               {card.val}
             </p>
           </div>
@@ -372,10 +372,10 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
 
       {/* Difficulty-Wise Accuracy Breakdown */}
       {difficultyBreakdown.length > 0 && (
-        <div className="p-5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-4 shadow-sm">
-          <div className="flex items-center justify-between">
+        <div className="p-4 sm:p-5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-xs font-bold uppercase tracking-wider text-primary dark:text-blue-300 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-secondary dark:text-blue-400" /> Difficulty-Wise Performance Breakdown
+              <Layers className="w-4 h-4 text-secondary dark:text-blue-400 shrink-0" /> Difficulty-Wise Performance Breakdown
             </h3>
             <span className="text-xs text-on-surface-variant dark:text-slate-400">
               Balanced across question complexity
@@ -388,9 +388,9 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
               return (
                 <div
                   key={d.name}
-                  className="p-4 rounded-xl bg-surface-container-low dark:bg-slate-800/80 border border-outline-variant/60 dark:border-slate-700 space-y-2"
+                  className="min-w-0 p-4 rounded-xl bg-surface-container-low dark:bg-slate-800/80 border border-outline-variant/60 dark:border-slate-700 space-y-2"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold text-on-surface dark:text-white">{label}</span>
                     <span className="text-xs font-bold text-secondary dark:text-blue-400 font-mono tabular-nums">
                       {d.accuracy}% Accuracy
@@ -408,7 +408,7 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
                       style={{ width: `${Math.min(100, d.accuracy)}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-on-surface-variant dark:text-slate-300 font-mono tabular-nums">
+                  <p className="text-[11px] text-on-surface-variant dark:text-slate-300 font-mono tabular-nums break-words">
                     Total {d.total} · Correct {d.correct} · Wrong {d.incorrect} · Avg {d.avgTimeSeconds}s
                   </p>
                 </div>
@@ -420,15 +420,15 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
 
       {/* AI Personalized Recommendations */}
       {(aiAdvice || adviceError) && (
-        <div className="p-6 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-secondary/40 space-y-3 shadow-sm">
+        <div className="p-4 sm:p-6 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-secondary/40 space-y-3 shadow-sm">
           <div className="flex items-center gap-2 text-sm font-bold text-primary dark:text-white">
-            <Sparkles className="w-4 h-4 text-secondary dark:text-blue-400" />
+            <Sparkles className="w-4 h-4 text-secondary dark:text-blue-400 shrink-0" />
             <span>Personalized AI Study Plan (Grounded in Your Attempt Metrics)</span>
           </div>
           {adviceError ? (
-            <p className="text-xs text-error dark:text-rose-300 font-medium">{adviceError}</p>
+            <p className="text-xs text-error dark:text-rose-300 font-medium break-words">{adviceError}</p>
           ) : (
-            <div className="text-sm text-on-surface-variant dark:text-slate-200 leading-relaxed whitespace-pre-line">
+            <div className="text-sm text-on-surface-variant dark:text-slate-200 leading-relaxed whitespace-pre-line break-words">
               {aiAdvice}
             </div>
           )}
@@ -436,8 +436,8 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
       )}
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="p-5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="min-w-0 overflow-hidden p-4 sm:p-5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
           <h3 className="text-xs font-bold uppercase tracking-wider text-primary dark:text-blue-300 mb-3">
             Subject-Wise Accuracy (%)
           </h3>
@@ -461,9 +461,9 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
           </div>
         </div>
 
-        <div className="p-5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+        <div className="min-w-0 overflow-hidden p-4 sm:p-5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
           <h3 className="text-xs font-bold uppercase tracking-wider text-primary dark:text-blue-300 mb-3 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-secondary dark:text-blue-400" /> Historical Progress Comparison
+            <TrendingUp className="w-4 h-4 text-secondary dark:text-blue-400 shrink-0" /> Historical Progress Comparison
           </h3>
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -488,8 +488,8 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
       </div>
 
       {/* Diagnostic Strengths & Suggested Chapters for Improvement */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-2 shadow-xs">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="min-w-0 p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-2 shadow-xs">
           <p className="text-xs font-bold text-success dark:text-emerald-400">Strong Subjects</p>
           {strongSubjects.length === 0 ? (
             <p className="text-xs text-on-surface-variant dark:text-slate-400">
@@ -498,13 +498,13 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
           ) : (
             <ul className="space-y-1 text-xs text-on-surface dark:text-white font-medium">
               {strongSubjects.map((s) => (
-                <li key={s}>· {s}</li>
+                <li key={s} className="break-words">· {s}</li>
               ))}
             </ul>
           )}
         </div>
 
-        <div className="p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-2 shadow-xs">
+        <div className="min-w-0 p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-2 shadow-xs">
           <p className="text-xs font-bold text-error dark:text-rose-400">Weak Subjects</p>
           {(attempt.weakSubjects || []).length === 0 ? (
             <p className="text-xs text-on-surface-variant dark:text-slate-400">
@@ -513,13 +513,13 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
           ) : (
             <ul className="space-y-1 text-xs text-on-surface dark:text-white font-medium">
               {attempt.weakSubjects.map((s) => (
-                <li key={s}>· {s}</li>
+                <li key={s} className="break-words">· {s}</li>
               ))}
             </ul>
           )}
         </div>
 
-        <div className="p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-2 shadow-xs">
+        <div className="min-w-0 p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-2 shadow-xs">
           <p className="text-xs font-bold text-warning dark:text-amber-400">
             Suggested Chapters for Improvement
           </p>
@@ -530,8 +530,8 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
           ) : (
             <div className="space-y-2">
               {suggestedChapters.map((ch) => (
-                <div key={ch.name} className="flex items-center justify-between gap-2 text-xs">
-                  <span className="text-on-surface dark:text-white truncate font-medium">
+                <div key={ch.name} className="flex items-center justify-between gap-2 text-xs min-w-0">
+                  <span className="text-on-surface dark:text-white truncate font-medium min-w-0">
                     {ch.name}{' '}
                     <span className="text-secondary dark:text-blue-400 font-mono tabular-nums">
                       ({ch.accuracy}%)
@@ -550,9 +550,9 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
           )}
         </div>
 
-        <div className="p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-2 shadow-xs">
+        <div className="min-w-0 p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-2 shadow-xs">
           <p className="text-xs font-bold text-primary dark:text-blue-300 flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-secondary dark:text-blue-400" /> Repeated Mistakes &amp; Speed
+            <Clock className="w-3.5 h-3.5 text-secondary dark:text-blue-400 shrink-0" /> Repeated Mistakes &amp; Speed
           </p>
           <p className="text-xs text-on-surface-variant dark:text-slate-300">
             Slow questions (&gt;45s / 1.6x avg):{' '}
@@ -562,13 +562,13 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
           </p>
           {repeatedMistakeTopics.length > 0 && (
             <div className="space-y-1.5 pt-1">
-              <p className="text-xs text-warning dark:text-amber-300 font-medium">
+              <p className="text-xs text-warning dark:text-amber-300 font-medium break-words">
                 Repeated mistakes: {repeatedMistakeTopics.slice(0, 3).join(', ')}
               </p>
               <button
                 type="button"
                 onClick={() => onPracticeWeakTopic(repeatedMistakeTopics[0], 'topic')}
-                className="px-2.5 py-1 rounded-md bg-primary text-on-primary text-[11px] font-semibold hover:bg-primary-container"
+                className="px-2.5 py-1 rounded-md bg-primary text-on-primary text-[11px] font-semibold hover:bg-primary-container break-words text-left"
               >
                 Drill {repeatedMistakeTopics[0]}
               </button>
@@ -579,9 +579,9 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
 
       {/* Chapter & Topic Table */}
       <div className="rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 overflow-hidden shadow-sm">
-        <div className="px-5 py-4 border-b border-outline-variant/60 dark:border-slate-800 flex items-center justify-between">
+        <div className="px-4 sm:px-5 py-4 border-b border-outline-variant/60 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-bold text-primary dark:text-white flex items-center gap-2">
-            <Target className="w-4 h-4 text-secondary dark:text-blue-400" /> Chapter &amp; Topic Accuracy Breakdown
+            <Target className="w-4 h-4 text-secondary dark:text-blue-400 shrink-0" /> Chapter &amp; Topic Accuracy Breakdown
           </h3>
         </div>
         <div className="overflow-x-auto">
@@ -620,7 +620,7 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
                     <button
                       type="button"
                       onClick={() => onPracticeWeakTopic(row.name, 'chapter')}
-                      className="px-2.5 py-1 rounded-md bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary transition-colors"
+                      className="px-2.5 py-1 rounded-md bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary transition-colors whitespace-nowrap"
                     >
                       Retake Chapter
                     </button>
@@ -633,7 +633,7 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
       </div>
 
       {/* Question-by-Question Solution Review */}
-      <div className="rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 p-5 space-y-4 shadow-sm">
+      <div className="rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 p-4 sm:p-5 space-y-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-sm font-bold text-primary dark:text-white">
             Solution Review &amp; Explanations
@@ -668,14 +668,14 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
             return (
               <div
                 key={item.qId}
-                className="p-4 rounded-xl bg-surface-container-low/50 dark:bg-slate-800/50 border border-outline-variant dark:border-slate-700 space-y-3"
+                className="min-w-0 p-4 rounded-xl bg-surface-container-low/50 dark:bg-slate-800/50 border border-outline-variant dark:border-slate-700 space-y-3"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <span className="font-bold text-secondary dark:text-blue-400">
+                  <span className="font-bold text-secondary dark:text-blue-400 break-words min-w-0">
                     Q{item.idx} · {item.q.subject} · {item.q.topic} ·{' '}
                     <span className="uppercase">{item.q.difficulty === 'medium' ? 'moderate' : item.q.difficulty}</span>
                   </span>
-                  <div className="flex items-center gap-3 font-mono tabular-nums">
+                  <div className="flex flex-wrap items-center gap-3 font-mono tabular-nums">
                     <span className="text-on-surface-variant dark:text-slate-300">Time: {item.timeSec}s</span>
                     {item.isCorrect ? (
                       <span className="inline-flex items-center gap-1 text-success dark:text-emerald-400 font-semibold">
@@ -690,7 +690,7 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
                     )}
                   </div>
                 </div>
-                <p className="text-sm text-on-surface dark:text-white font-medium">{item.q.questionText}</p>
+                <p className="text-sm text-on-surface dark:text-white font-medium break-words">{item.q.questionText}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {item.q.options.map((opt, oi) => {
                     const isRight = oi === item.key!.correctIndex;
@@ -698,7 +698,7 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
                     return (
                       <div
                         key={oi}
-                        className={`p-2.5 rounded-lg border ${
+                        className={`p-2.5 rounded-lg border break-words ${
                           isRight
                             ? 'bg-success-container/70 dark:bg-emerald-950/60 border-success text-on-success-container dark:text-emerald-100 font-medium'
                             : isPicked
@@ -712,7 +712,7 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
                     );
                   })}
                 </div>
-                <div className="p-3 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant/60 dark:border-slate-700 text-xs text-on-surface-variant dark:text-slate-300 leading-relaxed">
+                <div className="p-3 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant/60 dark:border-slate-700 text-xs text-on-surface-variant dark:text-slate-300 leading-relaxed break-words">
                   <span className="font-semibold text-primary dark:text-white">Explanation: </span>
                   {item.key.explanation}
                 </div>

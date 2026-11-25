@@ -17,12 +17,12 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   const iconBoxBg = isLightOnNavy ? 'bg-secondary text-white' : 'bg-primary text-white';
 
   return (
-    <span className="inline-flex items-center gap-2.5 whitespace-nowrap shrink-0">
+    <span className="inline-flex items-center gap-2 sm:gap-2.5 whitespace-nowrap shrink-0 max-w-full">
       <span
-        className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm ${iconBoxBg}`}
+        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm ${iconBoxBg}`}
       >
         <svg
-          className="w-5 h-5"
+          className="w-4 h-4 sm:w-5 sm:h-5"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -36,14 +36,14 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
           <path d="M8 11h8" />
         </svg>
       </span>
-      <span className="flex flex-col text-left">
+      <span className="flex flex-col text-left min-w-0">
         <span
-          className={`font-headline text-base font-extrabold tracking-tight leading-none ${titleColor}`}
+          className={`font-headline text-sm sm:text-base font-extrabold tracking-tight leading-none ${titleColor}`}
         >
           {compact ? 'VIDHYA' : 'VIDHYA LIBRARY'}
         </span>
         {subtitle && (
-          <span className={`font-label text-[11px] font-semibold mt-0.5 leading-none ${subColor}`}>
+          <span className={`font-label text-[10px] sm:text-[11px] font-semibold mt-0.5 leading-none truncate ${subColor}`}>
             {subtitle}
           </span>
         )}

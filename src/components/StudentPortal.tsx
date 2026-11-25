@@ -860,7 +860,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       {/* Student Portal Navy Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-primary text-on-primary flex flex-col justify-between transform transition-transform duration-200 lg:translate-x-0 lg:static shrink-0 no-print ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 max-w-[85vw] sm:w-64 bg-primary text-on-primary flex flex-col justify-between transform transition-transform duration-200 lg:translate-x-0 lg:static shrink-0 no-print ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -939,22 +939,22 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant px-4 lg:px-8 py-3 flex items-center justify-between gap-4 no-print">
-          <div className="flex items-center gap-3 min-w-0">
+        <header className="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant px-3 sm:px-4 lg:px-8 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2 sm:gap-4 no-print">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open navigation menu"
-              className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low shrink-0"
+              className="lg:hidden inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low shrink-0"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="font-headline text-base sm:text-lg font-bold text-primary truncate">
+            <h1 className="font-headline text-sm sm:text-lg font-bold text-primary truncate">
               Student Learning Portal {activeStudent ? `· ${activeStudent.studentCode}` : ''}
             </h1>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
               onClick={() => {
@@ -992,7 +992,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             <button
               type="button"
               onClick={onGoPublic}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-outline-variant bg-surface-container-lowest text-xs font-semibold text-primary hover:bg-surface-container-low cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded border border-outline-variant bg-surface-container-lowest text-xs font-semibold text-primary hover:bg-surface-container-low cursor-pointer shrink-0"
             >
               <Home className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Website</span>
@@ -1002,7 +1002,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               type="button"
               onClick={onToggleDarkMode}
               aria-label="Toggle color theme"
-              className="p-2 rounded border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-primary hover:bg-surface-container-low cursor-pointer"
+              className="p-2 rounded border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-primary hover:bg-surface-container-low cursor-pointer shrink-0"
             >
               {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
@@ -1010,17 +1010,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             <button
               type="button"
               onClick={signOut}
-              className="lg:hidden px-3 py-1.5 rounded bg-primary text-on-primary text-xs font-semibold"
+              className="lg:hidden px-2.5 sm:px-3 py-1.5 rounded bg-primary text-on-primary text-xs font-semibold shrink-0"
             >
               Sign Out
             </button>
           </div>
         </header>
 
-        <main className="p-4 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+        <main className="p-3 sm:p-4 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
           {feedback && (
             <div
-              className={`p-3.5 rounded-lg border text-sm font-medium ${
+              className={`p-3.5 rounded-lg border text-sm font-medium break-words ${
                 feedback.type === 'ok'
                   ? 'bg-success-container/70 border-success/40 text-on-success-container'
                   : 'bg-error-container border-error/40 text-on-error-container'
@@ -1043,7 +1043,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <button
                 type="button"
                 onClick={onOpenCompleteProfile}
-                className="px-4 py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold whitespace-nowrap shrink-0 hover:bg-primary cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold sm:whitespace-nowrap shrink-0 hover:bg-primary cursor-pointer"
               >
                 Complete Profile
               </button>
@@ -1054,25 +1054,25 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             <div className="space-y-6">
               {activeStudent && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  <div className="lg:col-span-8 p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col justify-between">
+                  <div className="lg:col-span-8 min-w-0 p-4 sm:p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col justify-between">
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs font-semibold text-secondary uppercase tracking-wider">
                           Welcome Back · Gyan Adda Campus
                         </p>
-                        <h2 className="mt-1 font-headline text-2xl font-bold text-on-surface">
+                        <h2 className="mt-1 font-headline text-xl sm:text-2xl font-bold text-on-surface break-words">
                           {activeStudent.fullName}
                         </h2>
-                        <p className="mt-1 text-xs text-on-surface-variant">
+                        <p className="mt-1 text-xs text-on-surface-variant break-words">
                           Student ID <span className="font-mono font-semibold text-primary">{activeStudent.studentCode}</span>
                           <span aria-hidden="true"> · </span>
-                          <span>{activeStudent.email}</span>
+                          <span className="break-all">{activeStudent.email}</span>
                           <span aria-hidden="true"> · </span>
                           <span>{activeStudent.mobile}</span>
                         </p>
                       </div>
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize shrink-0 ${
                           activeStudent.membershipStatus === 'active'
                             ? 'bg-success-container text-on-success-container'
                             : 'bg-warning-container text-on-warning-container'
@@ -1083,28 +1083,28 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     </div>
 
                     <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 pt-5 border-t border-outline-variant">
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs text-on-surface-variant">Membership</p>
-                        <p className="mt-1 text-sm font-bold capitalize text-on-surface">
+                        <p className="mt-1 text-sm font-bold capitalize text-on-surface break-words">
                           {memberships.find((m) => m.status === 'active')?.planName || activeStudent.membershipStatus}
                         </p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs text-on-surface-variant">Expiry Date</p>
                         <p className="mt-1 text-sm font-bold tabular-nums text-on-surface">
                           {memberships.find((m) => m.status === 'active')?.expiryDate || activeStudent.membershipExpiry || '—'}
                         </p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs text-on-surface-variant">Assigned Seat</p>
-                        <p className="mt-1 font-mono text-sm font-bold text-primary">
+                        <p className="mt-1 font-mono text-sm font-bold text-primary break-words">
                           {activeStudent.seatCode ||
                             (bookings.find((b) => b.status === 'pending')
                               ? `${bookings.find((b) => b.status === 'pending')?.seatCode} (Pending)`
                               : 'Unassigned')}
                         </p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs text-on-surface-variant">Study Hours</p>
                         <p className="mt-1 text-sm font-bold tabular-nums text-on-surface">{totalStudyHours} hrs</p>
                       </div>
@@ -1112,7 +1112,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   </div>
 
                   {/* Student QR Pass */}
-                  <div className="lg:col-span-4 p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col items-center justify-center text-center">
+                  <div className="lg:col-span-4 min-w-0 p-4 sm:p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col items-center justify-center text-center">
                     <div className="p-3 bg-white rounded-lg border border-outline-variant">
                       <QRCodeSVG
                         value={JSON.stringify({
@@ -1134,9 +1134,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               )}
 
               {/* Quick KPI & Competitive Exam Strip */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {activeStudent && (
-                  <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex items-center justify-between gap-2">
+                  <div className="p-4 sm:p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="text-xs text-on-surface-variant">Daily Attendance</p>
                       <p className="mt-1 text-sm font-bold tabular-nums text-on-surface">
@@ -1147,7 +1147,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                       <button
                         type="button"
                         onClick={handleCheckOut}
-                        className="px-3 py-1.5 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
+                        className="px-3 py-1.5 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer shrink-0"
                       >
                         Check Out
                       </button>
@@ -1155,7 +1155,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                       <button
                         type="button"
                         onClick={handleCheckIn}
-                        className="px-3 py-1.5 rounded bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container cursor-pointer"
+                        className="px-3 py-1.5 rounded bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container cursor-pointer shrink-0"
                       >
                         Check In
                       </button>
@@ -1283,9 +1283,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           {tab === 'profile' && activeStudent && (
             <form
               onSubmit={handleSaveProfile}
-              className="p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4 max-w-2xl"
+              className="p-4 sm:p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4 max-w-2xl"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-headline text-xl font-bold text-on-surface">Personal Profile</h2>
                 <button
                   type="button"
@@ -1487,13 +1487,13 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     Click any green Available seat to reserve it or request a seat change.
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-1 p-1 bg-surface-container-lowest rounded-lg border border-outline-variant">
+                <div className="flex flex-wrap gap-1 p-1 bg-surface-container-lowest rounded-lg border border-outline-variant max-w-full min-w-0">
                   {['ALL', ...Array.from(new Set(seats.map((s) => s.zone)))].map((z) => (
                     <button
                       key={z}
                       type="button"
                       onClick={() => setZoneFilter(z)}
-                      className={`px-3 py-1.5 text-xs font-semibold rounded whitespace-nowrap cursor-pointer ${
+                      className={`px-3 py-1.5 text-xs font-semibold rounded text-left sm:whitespace-nowrap cursor-pointer ${
                         zoneFilter === z
                           ? 'bg-primary text-on-primary'
                           : 'text-on-surface-variant hover:text-primary'
@@ -1505,7 +1505,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-5 sm:grid-cols-10 gap-2.5">
+              <div className="grid grid-cols-3 min-[400px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-2 sm:gap-2.5">
                 {filteredSeats.map((seat) => {
                   const isMine = seat.assignedStudentUid === firebaseUser?.uid;
                   const cls = isMine
@@ -1524,10 +1524,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                       type="button"
                       disabled={seat.status !== 'available' && !isMine}
                       onClick={() => seat.status === 'available' && handleBookSeat(seat)}
-                      className={`p-2.5 rounded-lg border text-center transition-colors ${cls}`}
+                      className={`min-w-0 overflow-hidden p-2 sm:p-2.5 rounded-lg border text-center transition-colors ${cls}`}
                     >
-                      <div className="font-mono text-xs font-bold tabular-nums">{seat.seatCode}</div>
-                      <div className="text-[10px] mt-0.5 capitalize">{isMine ? 'Yours' : seat.status}</div>
+                      <div className="font-mono text-xs font-bold tabular-nums truncate">{seat.seatCode}</div>
+                      <div className="text-[10px] mt-0.5 capitalize truncate">{isMine ? 'Yours' : seat.status}</div>
                     </button>
                   );
                 })}
@@ -1542,8 +1542,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     <p className="p-5 text-sm text-on-surface-variant">No seat bookings yet.</p>
                   ) : (
                     bookings.map((b) => (
-                      <div key={b.id} className="px-5 py-3 flex items-center justify-between gap-4 text-sm">
-                        <div>
+                      <div key={b.id} className="px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-2 sm:gap-4 text-sm">
+                        <div className="min-w-0">
                           <span className="font-mono font-bold text-primary">{b.seatCode}</span>
                           <span className="mx-2 text-outline">·</span>
                           <span className="capitalize text-on-surface-variant">{b.bookingType} request</span>
@@ -1554,7 +1554,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleCancelBooking(b)}
-                            className="px-3 py-1 rounded border border-error/40 text-error text-xs font-semibold hover:bg-error-container cursor-pointer"
+                            className="px-3 py-1 rounded border border-error/40 text-error text-xs font-semibold hover:bg-error-container cursor-pointer shrink-0"
                           >
                             Cancel Request
                           </button>
@@ -1577,7 +1577,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     {attendance.length} sessions
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     disabled={Boolean(todayOpenRecord)}
@@ -1646,16 +1646,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   {studentFees.map((fee) => (
                     <div
                       key={fee.id}
-                      className="rounded-lg bg-surface-container-lowest border border-outline-variant p-5 shadow-sm space-y-4"
+                      className="rounded-lg bg-surface-container-lowest border border-outline-variant p-4 sm:p-5 shadow-sm space-y-4"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <h3 className="font-headline text-base font-bold text-primary">
+                        <div className="min-w-0">
+                          <h3 className="font-headline text-base font-bold text-primary break-words">
                             Monthly Fee Account · {fee.className}
                           </h3>
-                          <p className="text-xs text-on-surface-variant">
+                          <p className="text-xs text-on-surface-variant break-words">
                             Due Date: <span className="font-mono font-semibold text-on-surface">{fee.dueDate}</span> · Parent WA:{' '}
-                            <span className="font-mono">{fee.parentWhatsapp || 'Not set'}</span>
+                            <span className="font-mono break-all">{fee.parentWhatsapp || 'Not set'}</span>
                           </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -1676,26 +1676,26 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                        <div className="p-3 rounded bg-surface-container-low border border-outline-variant">
+                      <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                        <div className="min-w-0 p-3 rounded bg-surface-container-low border border-outline-variant">
                           <span className="text-on-surface-variant block">Monthly Fee</span>
                           <span className="font-headline text-lg font-bold tabular-nums text-on-surface">
                             ₹{Number(fee.monthlyFee).toLocaleString('en-IN')}
                           </span>
                         </div>
-                        <div className="p-3 rounded bg-surface-container-low border border-outline-variant">
+                        <div className="min-w-0 p-3 rounded bg-surface-container-low border border-outline-variant">
                           <span className="text-on-surface-variant block">Total Payable</span>
                           <span className="font-headline text-lg font-bold tabular-nums text-on-surface">
                             ₹{Number(fee.totalPayable).toLocaleString('en-IN')}
                           </span>
                         </div>
-                        <div className="p-3 rounded bg-surface-container-low border border-outline-variant">
+                        <div className="min-w-0 p-3 rounded bg-surface-container-low border border-outline-variant">
                           <span className="text-on-surface-variant block">Total Paid</span>
                           <span className="font-headline text-lg font-bold tabular-nums text-success">
                             ₹{Number(fee.totalPaid).toLocaleString('en-IN')}
                           </span>
                         </div>
-                        <div className="p-3 rounded bg-surface-container-low border border-outline-variant">
+                        <div className="min-w-0 p-3 rounded bg-surface-container-low border border-outline-variant">
                           <span className="text-on-surface-variant block">Remaining Balance</span>
                           <span
                             className={`font-headline text-lg font-bold tabular-nums ${
@@ -1942,23 +1942,23 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       {/* Razorpay Checkout Modal */}
       {checkoutPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/50 p-4">
-          <div className="w-full max-w-md bg-surface-container-lowest border border-outline-variant rounded-xl p-6 space-y-4 text-on-surface shadow-xl">
-            <div className="flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/50 p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-md bg-surface-container-lowest border border-outline-variant rounded-xl p-5 sm:p-6 space-y-4 text-on-surface shadow-xl my-auto max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-center justify-between gap-2">
               <h3 className="font-headline text-lg font-bold text-primary">
                 Razorpay Membership Checkout
               </h3>
               <button
                 type="button"
                 onClick={() => setCheckoutPlan(null)}
-                className="p-1 text-on-surface-variant hover:text-on-surface"
+                className="p-1 text-on-surface-variant hover:text-on-surface shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-4 rounded-lg bg-surface-container-low border border-outline-variant">
               <p className="text-xs text-on-surface-variant">Selected Plan</p>
-              <p className="font-semibold text-sm text-on-surface">{checkoutPlan.name}</p>
+              <p className="font-semibold text-sm text-on-surface break-words">{checkoutPlan.name}</p>
               <p className="font-headline text-xl font-bold tabular-nums mt-1 text-primary">
                 ₹{Number(checkoutPlan.price).toLocaleString('en-IN')}
               </p>
@@ -1983,7 +1983,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     checked={checkoutMethod === id}
                     onChange={() => setCheckoutMethod(id)}
                   />
-                  <span>{label}</span>
+                  <span className="min-w-0 break-words">{label}</span>
                 </label>
               ))}
             </div>
@@ -2002,43 +2002,43 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       {/* Printable Receipt Modal */}
       {receiptPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/50 p-4">
-          <div className="w-full max-w-lg bg-white text-on-surface border border-outline-variant rounded-xl p-6 space-y-4 shadow-xl">
-            <div className="flex items-start justify-between border-b border-outline-variant pb-4">
-              <div>
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/50 p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-lg bg-white text-on-surface border border-outline-variant rounded-xl p-5 sm:p-6 space-y-4 shadow-xl my-auto max-h-[90dvh] overflow-y-auto">
+            <div className="flex flex-wrap items-start justify-between gap-2 border-b border-outline-variant pb-4">
+              <div className="min-w-0">
                 <h3 className="font-headline text-xl font-bold text-primary">
                   {settings?.libraryName || 'VIDHYA LIBRARY'}
                 </h3>
                 <p className="text-xs text-on-surface-variant">Official Payment Receipt</p>
               </div>
-              <div className="text-right text-xs">
-                <p className="font-mono font-bold text-primary">{receiptPreview.receiptNumber}</p>
+              <div className="text-left sm:text-right text-xs">
+                <p className="font-mono font-bold text-primary break-all">{receiptPreview.receiptNumber}</p>
                 <p className="capitalize font-semibold text-success">{receiptPreview.status}</p>
               </div>
             </div>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-on-surface-variant">Student Name</span>
-                <span className="font-semibold text-on-surface">{receiptPreview.studentName}</span>
+              <div className="flex justify-between gap-2">
+                <span className="text-on-surface-variant shrink-0">Student Name</span>
+                <span className="font-semibold text-on-surface text-right break-words">{receiptPreview.studentName}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-on-surface-variant">Student ID</span>
-                <span className="font-mono text-on-surface">{receiptPreview.studentCode}</span>
+              <div className="flex justify-between gap-2">
+                <span className="text-on-surface-variant shrink-0">Student ID</span>
+                <span className="font-mono text-on-surface text-right">{receiptPreview.studentCode}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-on-surface-variant">Plan</span>
-                <span className="text-on-surface">{receiptPreview.planName}</span>
+              <div className="flex justify-between gap-2">
+                <span className="text-on-surface-variant shrink-0">Plan</span>
+                <span className="text-on-surface text-right break-words">{receiptPreview.planName}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-on-surface-variant">Method</span>
-                <span className="capitalize text-on-surface">{receiptPreview.method.replace(/_/g, ' ')}</span>
+              <div className="flex justify-between gap-2">
+                <span className="text-on-surface-variant shrink-0">Method</span>
+                <span className="capitalize text-on-surface text-right">{receiptPreview.method.replace(/_/g, ' ')}</span>
               </div>
-              <div className="flex justify-between pt-2 border-t border-outline-variant text-base font-bold text-primary">
+              <div className="flex justify-between gap-2 pt-2 border-t border-outline-variant text-base font-bold text-primary">
                 <span>Amount Paid</span>
                 <span className="tabular-nums">₹{receiptPreview.amount}</span>
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-3 no-print">
+            <div className="flex flex-wrap justify-end gap-2 pt-3 no-print">
               <button
                 type="button"
                 onClick={() => window.print()}

@@ -320,7 +320,7 @@ const MainRouter: React.FC = () => {
           role="alert"
           className="sticky top-0 z-50 bg-warning-container text-on-warning-container px-4 py-2 text-xs font-medium flex flex-wrap items-center justify-center gap-2 border-b border-warning/30"
         >
-          <span>
+          <span className="min-w-0 break-words">
             Map quota limit reached for the preview key. For production deployment, link a Cloud billing-enabled Google Maps API key.
           </span>
           <a
@@ -339,7 +339,7 @@ const MainRouter: React.FC = () => {
           role="status"
           className="sticky top-0 z-40 bg-warning-container text-on-warning-container px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-3 border-b border-warning/30"
         >
-          <span>
+          <span className="min-w-0 break-words">
             {connectionStatus.state === 'reconnecting'
               ? `Reconnecting to Cloud Firestore (attempt ${connectionStatus.retryAttempt}/${connectionStatus.maxRetries})... Local cached data remains available.`
               : 'Cloud Firestore offline — showing cached library data. Writes will sync when reconnected.'}
@@ -347,7 +347,7 @@ const MainRouter: React.FC = () => {
           <button
             type="button"
             onClick={() => retryConnection()}
-            className="px-2.5 py-1 rounded bg-primary text-on-primary font-semibold hover:bg-primary-container"
+            className="px-2.5 py-1 rounded bg-primary text-on-primary font-semibold hover:bg-primary-container shrink-0"
           >
             Retry Connection
           </button>
@@ -359,14 +359,14 @@ const MainRouter: React.FC = () => {
           role="alert"
           className="sticky top-0 z-40 bg-error-container text-on-error-container px-4 py-2.5 text-xs flex flex-wrap items-center justify-between gap-3 border-b border-error/30"
         >
-          <span>{firestoreError || bootstrapWarning}</span>
+          <span className="min-w-0 break-words">{firestoreError || bootstrapWarning}</span>
           <button
             type="button"
             onClick={() => {
               setFirestoreError(null);
               clearBootstrapWarning();
             }}
-            className="px-2.5 py-1 rounded bg-error text-on-error font-semibold hover:opacity-90"
+            className="px-2.5 py-1 rounded bg-error text-on-error font-semibold hover:opacity-90 shrink-0"
           >
             Dismiss
           </button>

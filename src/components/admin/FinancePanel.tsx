@@ -552,26 +552,26 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
 
       {/* Summary Strip */}
       {isManagerOrAdmin && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="min-w-0 p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
             <p className="text-xs text-on-surface-variant dark:text-slate-400 font-semibold">Verified Fee Revenue</p>
             <p className="font-display text-2xl font-bold text-success tabular-nums mt-1">
               ₹{financialSummary.verifiedRevenue.toLocaleString('en-IN')}
             </p>
           </div>
-          <div className="p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+          <div className="min-w-0 p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
             <p className="text-xs text-on-surface-variant dark:text-slate-400 font-semibold">Pending Dues (Excluded)</p>
             <p className="font-display text-2xl font-bold text-warning tabular-nums mt-1">
               ₹{financialSummary.pendingRevenue.toLocaleString('en-IN')}
             </p>
           </div>
-          <div className="p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+          <div className="min-w-0 p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
             <p className="text-xs text-on-surface-variant dark:text-slate-400 font-semibold">Operational Expenses</p>
             <p className="font-display text-2xl font-bold text-error tabular-nums mt-1">
               ₹{financialSummary.totalExpenses.toLocaleString('en-IN')}
             </p>
           </div>
-          <div className="p-4 rounded-lg bg-primary text-on-primary border border-primary-container shadow-sm">
+          <div className="min-w-0 p-4 rounded-lg bg-primary text-on-primary border border-primary-container shadow-sm">
             <p className="text-xs text-on-primary-container font-semibold">Net Operating Profit</p>
             <p className="font-display text-2xl font-bold text-on-primary tabular-nums mt-1">
               ₹{financialSummary.netProfit.toLocaleString('en-IN')}
@@ -714,7 +714,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
       {/* TAB: PLANS */}
       {subTab === 'plans' && isAdmin && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap justify-between items-center gap-2">
             <h3 className="text-sm font-semibold text-primary dark:text-white">
               Active &amp; Archived Membership Tiers ({plans.length})
             </h3>
@@ -731,13 +731,13 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
             {plans.map((p) => (
               <div
                 key={p.id}
-                className="p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm flex flex-col justify-between gap-4"
+                className="min-w-0 p-4 sm:p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm flex flex-col justify-between gap-4"
               >
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-display text-lg font-bold text-on-surface dark:text-white">{p.name}</h4>
+                    <h4 className="font-display text-lg font-bold text-on-surface dark:text-white break-words min-w-0">{p.name}</h4>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0 ${
                         p.active
                           ? 'bg-success-container text-on-success-container'
                           : 'bg-surface-variant text-on-surface-variant'
@@ -863,7 +863,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-sm font-semibold text-primary dark:text-white">Income vs Operational Expenses</h3>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() =>
@@ -897,9 +897,9 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
           {showExpenseForm && (
             <form
               onSubmit={handleAddExpense}
-              className="p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-5 gap-3 items-end"
+              className="p-4 sm:p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 items-end"
             >
-              <div className="sm:col-span-2">
+              <div className="sm:col-span-2 xl:col-span-2">
                 <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Expense Title</label>
                 <input
                   type="text"
@@ -947,7 +947,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                   className={inputCls}
                 />
               </div>
-              <div className="sm:col-span-4">
+              <div className="sm:col-span-2 xl:col-span-4">
                 <input
                   type="text"
                   value={expNotes}
@@ -958,7 +958,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
               </div>
               <button
                 type="submit"
-                className="py-2 px-4 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
+                className="sm:col-span-2 xl:col-span-1 py-2 px-4 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
               >
                 Save Expense
               </button>
@@ -966,11 +966,11 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
           )}
 
           {/* Income vs Expense Recharts BarChart */}
-          <div className="p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+          <div className="p-4 sm:p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm min-w-0 overflow-hidden">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant dark:text-slate-400 mb-4">
               Verified Income vs Expense Breakdown (INR)
             </h4>
-            <div className="h-64 w-full">
+            <div className="h-64 w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={incomeVsExpenseChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#C4C6CF" strokeOpacity={0.5} />
@@ -1036,13 +1036,13 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
 
       {/* Offline Payment Modal */}
       {showOfflineModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-6 space-y-4 text-on-surface dark:text-slate-100 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-md bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto my-auto text-on-surface dark:text-slate-100 shadow-2xl">
+            <div className="flex items-center justify-between gap-2 border-b border-outline-variant dark:border-slate-800 pb-3">
               <h3 className="font-display text-lg font-bold text-primary dark:text-white">
                 Record Offline Counter Payment
               </h3>
-              <button type="button" onClick={() => setShowOfflineModal(false)} className="text-on-surface-variant hover:text-primary cursor-pointer">
+              <button type="button" onClick={() => setShowOfflineModal(false)} className="text-on-surface-variant hover:text-primary shrink-0 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1083,7 +1083,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Amount (INR)</label>
                   <input
@@ -1131,13 +1131,13 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
 
       {/* Plan Create/Edit Modal */}
       {showPlanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-6 space-y-4 text-on-surface dark:text-slate-100 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-lg bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto my-auto text-on-surface dark:text-slate-100 shadow-2xl">
+            <div className="flex items-center justify-between gap-2 border-b border-outline-variant dark:border-slate-800 pb-3">
               <h3 className="font-display text-lg font-bold text-primary dark:text-white">
                 {editingPlan ? 'Edit Membership Plan' : 'Create Membership Plan'}
               </h3>
-              <button type="button" onClick={() => setShowPlanModal(false)} className="text-on-surface-variant hover:text-primary cursor-pointer">
+              <button type="button" onClick={() => setShowPlanModal(false)} className="text-on-surface-variant hover:text-primary shrink-0 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1152,7 +1152,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                   className={inputCls}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Duration (Days)</label>
                   <input
@@ -1177,7 +1177,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Study Timings</label>
                   <input
@@ -1230,50 +1230,50 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
 
       {/* Receipt Preview & Print Modal */}
       {receiptPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md bg-surface-container-lowest text-on-surface rounded-xl border border-outline-variant p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-outline-variant pb-3">
-              <div>
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-md bg-surface-container-lowest text-on-surface rounded-xl border border-outline-variant p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto my-auto shadow-2xl">
+            <div className="flex items-center justify-between gap-2 border-b border-outline-variant pb-3">
+              <div className="min-w-0">
                 <h3 className="font-display text-lg font-bold text-primary">
                   Fee Receipt
                 </h3>
-                <p className="font-mono text-xs text-on-surface-variant">{receiptPreview.receiptNumber}</p>
+                <p className="font-mono text-xs text-on-surface-variant break-all">{receiptPreview.receiptNumber}</p>
               </div>
-              <button type="button" onClick={() => setReceiptPreview(null)} className="text-on-surface-variant hover:text-primary cursor-pointer">
+              <button type="button" onClick={() => setReceiptPreview(null)} className="text-on-surface-variant hover:text-primary shrink-0 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
+              <div className="flex flex-wrap justify-between gap-2">
                 <span className="text-on-surface-variant">Student</span>
-                <span className="font-semibold">
+                <span className="font-semibold break-words text-right">
                   {receiptPreview.studentName} ({receiptPreview.studentCode})
                 </span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex flex-wrap justify-between gap-2">
                 <span className="text-on-surface-variant">Plan</span>
-                <span className="font-semibold">{receiptPreview.planName}</span>
+                <span className="font-semibold break-words text-right">{receiptPreview.planName}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex flex-wrap justify-between gap-2">
                 <span className="text-on-surface-variant">Method</span>
                 <span className="uppercase">{receiptPreview.method.replace(/_/g, ' ')}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex flex-wrap justify-between gap-2">
                 <span className="text-on-surface-variant">Status</span>
                 <span className="font-semibold capitalize">{receiptPreview.status}</span>
               </div>
-              <div className="flex justify-between pt-2 border-t border-outline-variant text-sm font-bold text-primary">
+              <div className="flex flex-wrap justify-between gap-2 pt-2 border-t border-outline-variant text-sm font-bold text-primary">
                 <span>Total Amount</span>
                 <span className="font-mono tabular-nums">
                   ₹{Number(receiptPreview.amount).toLocaleString('en-IN')}
                 </span>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-semibold text-primary hover:bg-surface-container-low cursor-pointer"
+                className="flex-1 min-w-[120px] inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-semibold text-primary hover:bg-surface-container-low cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" /> Print
               </button>
@@ -1286,7 +1286,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                     settings?.address || ''
                   )
                 }
-                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container cursor-pointer"
+                className="flex-1 min-w-[140px] inline-flex items-center justify-center gap-1.5 py-2 rounded bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" /> Download Receipt
               </button>

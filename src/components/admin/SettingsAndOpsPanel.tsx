@@ -444,18 +444,18 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
         </div>
 
         {showStaffModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
-            <div className="w-full max-w-lg bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-6 space-y-4 max-h-[90vh] overflow-y-auto text-on-surface dark:text-slate-100 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
+          <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+            <div className="w-full max-w-lg bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto my-auto text-on-surface dark:text-slate-100 shadow-2xl">
+              <div className="flex items-center justify-between gap-2 border-b border-outline-variant dark:border-slate-800 pb-3">
                 <h3 className="font-display text-lg font-bold text-primary dark:text-white">
                   {editingStaff ? 'Update Staff Permissions' : 'Add Staff or Manager'}
                 </h3>
-                <button type="button" onClick={() => setShowStaffModal(false)} className="text-on-surface-variant hover:text-primary cursor-pointer">
+                <button type="button" onClick={() => setShowStaffModal(false)} className="text-on-surface-variant hover:text-primary shrink-0 cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <form onSubmit={handleSaveStaff} className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold mb-1">Full Name</label>
                     <input type="text" required value={stfName} onChange={(e) => setStfName(e.target.value)} className={inputCls} />
@@ -465,7 +465,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
                     <input type="tel" required value={stfMobile} onChange={(e) => setStfMobile(e.target.value)} className={inputCls} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold mb-1">Email</label>
                     <input type="email" required value={stfEmail} onChange={(e) => setStfEmail(e.target.value)} className={inputCls} />
@@ -475,7 +475,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
                     <input type="text" value={stfUid} onChange={(e) => setStfUid(e.target.value)} placeholder="Links live RBAC login" className={`${inputCls} font-mono`} />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-semibold mb-1">Role</label>
                     <select value={stfRole} onChange={(e) => setStfRole(e.target.value as 'staff' | 'manager')} className={inputCls}>
@@ -494,7 +494,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-semibold mb-1.5">Granular Permissions</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {ALL_STAFF_PERMISSIONS.map((perm) => {
                       const checked = stfPerms.includes(perm);
                       return (
@@ -546,20 +546,20 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
           {enquiries.map((e) => (
             <div
               key={e.id}
-              className={`${cardCls} p-5 flex flex-col md:flex-row md:items-center justify-between gap-4`}
+              className={`${cardCls} p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4`}
             >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="font-bold text-sm text-primary dark:text-white">{e.subject}</span>
+              <div className="space-y-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-bold text-sm text-primary dark:text-white break-words">{e.subject}</span>
                   <span className="text-outline">·</span>
                   <span className="capitalize font-semibold text-secondary dark:text-blue-400">{e.status}</span>
                 </div>
-                <p className="text-xs text-on-surface-variant dark:text-slate-400">
+                <p className="text-xs text-on-surface-variant dark:text-slate-400 break-all">
                   {e.name} · {e.phone} · {e.email}
                 </p>
-                <p className="text-sm text-on-surface dark:text-slate-200 mt-1">{e.message}</p>
+                <p className="text-sm text-on-surface dark:text-slate-200 mt-1 break-words">{e.message}</p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
                 {e.status !== 'contacted' && (
                   <button
                     type="button"
@@ -614,7 +614,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
         {isManagerOrAdmin && (
           <form
             onSubmit={handleAddGallery}
-            className={`${cardCls} p-5 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end`}
+            className={`${cardCls} p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 items-end`}
           >
             <div>
               <label className="block text-xs font-semibold mb-1">Photo Title</label>
@@ -631,21 +631,21 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
             <button type="submit" className="py-2 px-4 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer">
               Add Photo
             </button>
-            <div className="sm:col-span-4">
+            <div className="sm:col-span-2 xl:col-span-4">
               <input type="text" value={galCaption} onChange={(e) => setGalCaption(e.target.value)} placeholder="Short architectural / desk caption" className={inputCls} />
             </div>
           </form>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {gallery.map((g) => (
-            <div key={g.id} className={`${cardCls} overflow-hidden`}>
+            <div key={g.id} className={`${cardCls} overflow-hidden min-w-0`}>
               <img src={g.imageUrl} alt={g.title} className="w-full aspect-4/3 object-cover" />
               <div className="p-4 flex items-start justify-between gap-2">
-                <div>
+                <div className="min-w-0">
                   <p className="text-[11px] font-semibold uppercase text-secondary dark:text-blue-400">{g.category}</p>
-                  <p className="font-semibold text-sm text-on-surface dark:text-white">{g.title}</p>
-                  <p className="text-xs text-on-surface-variant dark:text-slate-400 mt-0.5">{g.caption}</p>
+                  <p className="font-semibold text-sm text-on-surface dark:text-white break-words">{g.title}</p>
+                  <p className="text-xs text-on-surface-variant dark:text-slate-400 mt-0.5 break-words">{g.caption}</p>
                 </div>
                 {isAdmin && (
                   <button
@@ -716,15 +716,15 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
 
         <div className="space-y-3">
           {announcements.map((a) => (
-            <div key={a.id} className={`${cardCls} p-4 flex items-start justify-between gap-4`}>
-              <div>
+            <div key={a.id} className={`${cardCls} p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4`}>
+              <div className="min-w-0 break-words">
                 <p className="text-xs font-semibold uppercase text-secondary dark:text-blue-400">
                   {a.priority} · {a.published ? 'Published' : 'Hidden'}
                 </p>
                 <h4 className="font-semibold text-sm mt-0.5 text-on-surface dark:text-white">{a.title}</h4>
                 <p className="text-xs text-on-surface-variant dark:text-slate-300 mt-1">{a.body}</p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 shrink-0">
                 {isManagerOrAdmin && (
                   <button
                     type="button"
@@ -882,7 +882,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
         )}
       </div>
 
-      <form onSubmit={handleSaveSettings} className={`${cardCls} p-6 space-y-5`}>
+      <form onSubmit={handleSaveSettings} className={`${cardCls} p-4 sm:p-6 space-y-5`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold mb-1">Library Name</label>
@@ -922,9 +922,9 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
           </div>
         </div>
 
-        <label className="flex items-center gap-2.5 text-sm font-medium cursor-pointer">
-          <input type="checkbox" checked={is24Hour} onChange={(e) => setIs24Hour(e.target.checked)} />
-          Enable 24-Hour Study Hall Access Badge &amp; Policy on Public Website
+        <label className="flex items-start sm:items-center gap-2.5 text-sm font-medium cursor-pointer">
+          <input type="checkbox" className="mt-1 sm:mt-0 shrink-0" checked={is24Hour} onChange={(e) => setIs24Hour(e.target.checked)} />
+          <span>Enable 24-Hour Study Hall Access Badge &amp; Policy on Public Website</span>
         </label>
 
         {/* Editable Facilities */}
@@ -936,26 +936,26 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
             {facilities.map((fac, idx) => (
               <div
                 key={`${fac}-${idx}`}
-                className="flex items-center justify-between px-3 py-2 rounded bg-surface-container-low dark:bg-slate-800 border border-outline-variant dark:border-slate-700 text-xs"
+                className="flex items-center justify-between gap-2 px-3 py-2 rounded bg-surface-container-low dark:bg-slate-800 border border-outline-variant dark:border-slate-700 text-xs min-w-0"
               >
-                <span>{fac}</span>
+                <span className="min-w-0 break-words">{fac}</span>
                 <button
                   type="button"
                   onClick={() => setFacilities((prev) => prev.filter((_, i) => i !== idx))}
-                  className="text-error ml-2 cursor-pointer"
+                  className="text-error shrink-0 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             ))}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={newFacility}
               onChange={(e) => setNewFacility(e.target.value)}
               placeholder="Add new facility (e.g. Personal Storage Lockers)"
-              className={`flex-1 ${inputCls}`}
+              className={`flex-1 min-w-0 ${inputCls}`}
             />
             <button
               type="button"
@@ -964,7 +964,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
                 setFacilities((prev) => [...prev, newFacility.trim()]);
                 setNewFacility('');
               }}
-              className="px-4 py-2 rounded border border-outline-variant dark:border-slate-700 bg-surface-container-low dark:bg-slate-800 text-primary dark:text-white text-xs font-semibold hover:bg-surface-container cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2 rounded border border-outline-variant dark:border-slate-700 bg-surface-container-low dark:bg-slate-800 text-primary dark:text-white text-xs font-semibold hover:bg-surface-container cursor-pointer shrink-0"
             >
               Add Facility
             </button>
@@ -984,7 +984,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
 
         <button
           type="submit"
-          className="px-6 py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
+          className="w-full sm:w-auto px-6 py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
         >
           Save Library Configuration
         </button>

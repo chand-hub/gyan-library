@@ -64,11 +64,11 @@ export const CurrentAffairsModule: React.FC<CurrentAffairsModuleProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-wider text-secondary dark:text-blue-400">
             Daily Competitive Briefings
           </p>
-          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white break-words">
             Daily Current Affairs &amp; Bihar Special
           </h2>
           <p className="text-xs text-on-surface-variant dark:text-slate-300 mt-0.5">
@@ -77,7 +77,7 @@ export const CurrentAffairsModule: React.FC<CurrentAffairsModuleProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <div className="flex p-1 rounded-lg bg-surface-container-low dark:bg-slate-800 border border-outline-variant dark:border-slate-700">
+          <div className="flex flex-wrap p-1 rounded-lg bg-surface-container-low dark:bg-slate-800 border border-outline-variant dark:border-slate-700">
             {[
               ['bilingual', 'EN + हिन्दी'],
               ['en', 'English'],
@@ -152,8 +152,8 @@ export const CurrentAffairsModule: React.FC<CurrentAffairsModuleProps> = ({
           ))}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-outline-variant/60 dark:border-slate-800">
-          <div className="relative">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-outline-variant/60 dark:border-slate-800">
+          <div className="relative min-w-0">
             <Search className="w-4 h-4 text-outline dark:text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
@@ -163,7 +163,7 @@ export const CurrentAffairsModule: React.FC<CurrentAffairsModuleProps> = ({
               className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-container-lowest dark:bg-slate-950 border border-outline-variant dark:border-slate-700 text-xs text-on-surface dark:text-white placeholder-outline dark:placeholder-slate-400"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <select
               value={monthFilter}
               onChange={(e) => {
@@ -180,13 +180,13 @@ export const CurrentAffairsModule: React.FC<CurrentAffairsModuleProps> = ({
               ))}
             </select>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <Calendar className="w-4 h-4 text-secondary dark:text-blue-400 shrink-0" />
             <input
               type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-surface-container-lowest dark:bg-slate-950 border border-outline-variant dark:border-slate-700 text-xs text-on-surface dark:text-white"
+              className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-surface-container-lowest dark:bg-slate-950 border border-outline-variant dark:border-slate-700 text-xs text-on-surface dark:text-white"
             />
             {dateFilter && (
               <button
@@ -211,10 +211,10 @@ export const CurrentAffairsModule: React.FC<CurrentAffairsModuleProps> = ({
           {filteredItems.map((item) => (
             <article
               key={item.id}
-              className="p-5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 flex flex-col justify-between space-y-3 shadow-sm"
+              className="min-w-0 p-4 sm:p-5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 flex flex-col justify-between space-y-3 shadow-sm"
             >
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between text-[11px]">
+              <div className="space-y-2.5 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
                   <span className="font-bold text-secondary dark:text-blue-400 uppercase tracking-wide">
                     {item.category}
                   </span>
@@ -224,32 +224,32 @@ export const CurrentAffairsModule: React.FC<CurrentAffairsModuleProps> = ({
                 </div>
 
                 {(lang === 'en' || lang === 'bilingual') && (
-                  <div>
-                    <h3 className="font-display text-base font-bold text-primary dark:text-white leading-snug">
+                  <div className="min-w-0">
+                    <h3 className="font-display text-base font-bold text-primary dark:text-white leading-snug break-words">
                       {item.titleEn}
                     </h3>
-                    <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-300 leading-relaxed">
+                    <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-300 leading-relaxed break-words">
                       {item.summaryEn}
                     </p>
                   </div>
                 )}
 
                 {(lang === 'hi' || lang === 'bilingual') && (
-                  <div className={lang === 'bilingual' ? 'pt-2 border-t border-outline-variant/60 dark:border-slate-800' : ''}>
-                    <h4 className="text-sm font-bold text-on-surface dark:text-white leading-snug">
+                  <div className={`min-w-0 ${lang === 'bilingual' ? 'pt-2 border-t border-outline-variant/60 dark:border-slate-800' : ''}`}>
+                    <h4 className="text-sm font-bold text-on-surface dark:text-white leading-snug break-words">
                       {item.titleHi}
                     </h4>
-                    <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-300 leading-relaxed">
+                    <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-300 leading-relaxed break-words">
                       {item.summaryHi}
                     </p>
                   </div>
                 )}
               </div>
 
-              <div className="pt-3 border-t border-outline-variant/60 dark:border-slate-800 flex items-center justify-between gap-2 text-[11px]">
-                <span className="text-on-surface-variant dark:text-slate-400 inline-flex items-center gap-1 truncate">
+              <div className="pt-3 border-t border-outline-variant/60 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                <span className="min-w-0 text-on-surface-variant dark:text-slate-400 inline-flex items-center gap-1 truncate">
                   <Globe className="w-3.5 h-3.5 text-secondary dark:text-blue-400 shrink-0" />
-                  {item.sourceTitle}
+                  <span className="truncate">{item.sourceTitle}</span>
                 </span>
                 <a
                   href={item.sourceUrl}

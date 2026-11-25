@@ -262,8 +262,8 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
     <div className="min-h-screen flex flex-col bg-surface text-on-surface dark:bg-slate-950 dark:text-slate-100">
       {/* Top Public Navigation */}
       <header className="sticky top-0 z-40 bg-surface-container-lowest/95 dark:bg-slate-900/95 backdrop-blur-sm border-b border-outline-variant dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3.5 flex items-center justify-between gap-4">
-          <a href="#top" className="whitespace-nowrap shrink-0">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-3.5 flex items-center justify-between gap-2 sm:gap-4">
+          <a href="#top" className="whitespace-nowrap shrink-0 min-w-0">
             <BrandLogo variant={darkMode ? 'light' : 'dark'} />
           </a>
 
@@ -288,12 +288,12 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
             </a>
           </nav>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
               onClick={onToggleDarkMode}
               aria-label="Toggle color theme"
-              className="w-9 h-9 rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-800 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container-low flex items-center justify-center transition-colors"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-800 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container-low flex items-center justify-center transition-colors shrink-0"
             >
               {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
@@ -301,7 +301,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenAuth('login')}
-                className="hidden sm:inline-flex items-center justify-center px-4 py-2 rounded bg-surface-container-lowest dark:bg-slate-800 text-primary dark:text-white border border-outline-variant dark:border-slate-700 hover:bg-surface-container-low text-sm font-semibold transition-colors whitespace-nowrap"
+                className="hidden sm:inline-flex items-center justify-center px-3 sm:px-4 py-2 rounded bg-surface-container-lowest dark:bg-slate-800 text-primary dark:text-white border border-outline-variant dark:border-slate-700 hover:bg-surface-container-low text-sm font-semibold transition-colors whitespace-nowrap"
               >
                 Student Login
               </button>
@@ -309,7 +309,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
             <button
               type="button"
               onClick={isSignedIn ? () => onOpenPortal() : () => onOpenAuth('register')}
-              className="inline-flex items-center justify-center px-4 py-2 rounded bg-primary text-on-primary hover:bg-primary-container text-sm font-semibold transition-colors whitespace-nowrap shrink-0"
+              className="inline-flex items-center justify-center px-2.5 sm:px-4 py-1.5 sm:py-2 rounded bg-primary text-on-primary hover:bg-primary-container text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap shrink-0"
             >
               {isSignedIn ? 'Open Portal' : 'Join Now'}
             </button>
@@ -317,7 +317,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               type="button"
               onClick={() => setMobileMenuOpen((v) => !v)}
               aria-label="Toggle navigation menu"
-              className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded border border-outline-variant dark:border-slate-700 text-on-surface dark:text-slate-200 hover:bg-surface-container-low"
+              className="lg:hidden inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded border border-outline-variant dark:border-slate-700 text-on-surface dark:text-slate-200 hover:bg-surface-container-low shrink-0"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -325,7 +325,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
         </div>
 
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-outline-variant dark:border-slate-800 bg-surface-container-lowest dark:bg-slate-900 px-4 py-4 space-y-2">
+          <div className="lg:hidden border-t border-outline-variant dark:border-slate-800 bg-surface-container-lowest dark:bg-slate-900 px-4 py-4 space-y-2 max-h-[calc(100dvh-64px)] overflow-y-auto">
             {[
               ['Study Halls & About', '#about'],
               ['Exams & AI Hub', '#exams'],
@@ -344,7 +344,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 {label}
               </a>
             ))}
-            <div className="pt-2 flex gap-2 border-t border-outline-variant dark:border-slate-800">
+            <div className="pt-2 flex flex-wrap gap-2 border-t border-outline-variant dark:border-slate-800">
               {!isSignedIn && (
                 <button
                   type="button"
@@ -352,7 +352,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     setMobileMenuOpen(false);
                     onOpenAuth('login');
                   }}
-                  className="flex-1 py-2 rounded border border-outline-variant dark:border-slate-700 text-sm font-semibold text-primary dark:text-white"
+                  className="flex-1 min-w-[120px] py-2 rounded border border-outline-variant dark:border-slate-700 text-sm font-semibold text-primary dark:text-white"
                 >
                   Student Login
                 </button>
@@ -364,7 +364,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                   if (isSignedIn) onOpenPortal();
                   else onOpenAuth('register');
                 }}
-                className="flex-1 py-2 rounded bg-primary text-on-primary text-sm font-semibold"
+                className="flex-1 min-w-[120px] py-2 rounded bg-primary text-on-primary text-sm font-semibold"
               >
                 {isSignedIn ? 'Open Portal' : 'Register'}
               </button>
@@ -379,13 +379,13 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
           id="top"
           className="bg-surface-container-low dark:bg-slate-900/60 border-b border-outline-variant dark:border-slate-800"
         >
-          <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10 lg:py-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-            <div className="lg:col-span-6 flex flex-col gap-6">
+          <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8 sm:py-10 lg:py-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+            <div className="lg:col-span-6 min-w-0 flex flex-col gap-6">
               <div className="flex flex-col gap-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-secondary dark:text-blue-400">
+                <p className="text-xs font-semibold uppercase tracking-wider text-secondary dark:text-blue-400 break-words">
                   {effectiveSettings.libraryName} · {effectiveSettings.ratingText || '4.9/5 (116 Google Reviews)'}
                 </p>
-                <h1 className="font-display text-3xl sm:text-4xl lg:text-[40px] lg:leading-[48px] font-extrabold tracking-tight text-primary dark:text-white [text-wrap:balance]">
+                <h1 className="font-display text-2xl sm:text-4xl lg:text-[40px] lg:leading-[48px] font-extrabold tracking-tight text-primary dark:text-white [text-wrap:balance]">
                   A quiet, structured space built for focused study
                 </h1>
                 <p className="text-[15px] leading-relaxed text-on-surface-variant dark:text-slate-300 max-w-prose">
@@ -399,14 +399,14 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 <button
                   type="button"
                   onClick={isSignedIn ? () => onOpenPortal('exams') : () => onOpenAuth('register')}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded bg-secondary text-on-secondary hover:bg-primary text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 rounded bg-secondary text-on-secondary hover:bg-primary text-sm font-semibold transition-colors cursor-pointer sm:whitespace-nowrap"
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-4 h-4 shrink-0" />
                   <span>{isSignedIn ? 'Launch AI Exam Hub' : 'Apply for Membership'}</span>
                 </button>
                 <a
                   href="#plans"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded bg-surface-container-lowest dark:bg-slate-800 text-primary dark:text-white border border-outline-variant dark:border-slate-700 hover:bg-surface-container text-sm font-semibold transition-colors whitespace-nowrap"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 rounded bg-surface-container-lowest dark:bg-slate-800 text-primary dark:text-white border border-outline-variant dark:border-slate-700 hover:bg-surface-container text-sm font-semibold transition-colors sm:whitespace-nowrap text-center"
                 >
                   Explore Membership Plans
                 </a>
@@ -414,10 +414,10 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
 
               {announcements.filter((a) => a.published).length > 0 && (
                 <div className="p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-800 border border-outline-variant dark:border-slate-700 shadow-sm">
-                  <p className="text-xs font-semibold text-secondary dark:text-blue-400 mb-1">
+                  <p className="text-xs font-semibold text-secondary dark:text-blue-400 mb-1 break-words">
                     Notice Board · {announcements.filter((a) => a.published)[0].title}
                   </p>
-                  <p className="text-xs text-on-surface-variant dark:text-slate-300 leading-relaxed">
+                  <p className="text-xs text-on-surface-variant dark:text-slate-300 leading-relaxed break-words">
                     {announcements.filter((a) => a.published)[0].body}
                   </p>
                 </div>
@@ -451,15 +451,15 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               </div>
             </div>
 
-            <div className="lg:col-span-6 flex flex-col gap-4">
+            <div className="lg:col-span-6 min-w-0 flex flex-col gap-4">
               <div className="relative rounded-xl overflow-hidden border border-outline-variant dark:border-slate-700 shadow-sm bg-surface-container-lowest">
                 <img
                   src={DEMO_IMAGES.hero}
                   alt="Gyan Adda Self-Study Center Darbhanga quiet reading hall with partitioned desks"
-                  className="w-full h-72 sm:h-96 object-cover"
+                  className="w-full h-56 sm:h-80 lg:h-96 object-cover"
                 />
               </div>
-              <div className="bg-surface-container-lowest dark:bg-slate-800 rounded-lg border border-outline-variant dark:border-slate-700 px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+              <div className="bg-surface-container-lowest dark:bg-slate-800 rounded-lg border border-outline-variant dark:border-slate-700 px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3 shadow-sm">
                 <div className="flex items-center gap-2">
                   <span
                     role="status"
@@ -472,7 +472,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                       : 'Open 24 Hours · 7 Days a Week'}
                   </span>
                 </div>
-                <span className="font-mono text-xs text-on-surface-variant dark:text-slate-400 tabular-nums">
+                <span className="font-mono text-xs text-on-surface-variant dark:text-slate-400 tabular-nums break-words">
                   {effectiveSettings.openingHours} · Mirzapur Chowk, Darbhanga
                 </span>
               </div>
@@ -482,17 +482,17 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
 
         {/* Competitive Exams Quick Search, AI Hub Actions & Track Cards */}
         <section id="exams" className="max-w-7xl mx-auto px-4 lg:px-8 py-10 space-y-6">
-          <div className="bg-surface-container-lowest dark:bg-slate-900 rounded-lg border border-outline-variant dark:border-slate-800 p-6 shadow-sm space-y-6">
+          <div className="bg-surface-container-lowest dark:bg-slate-900 rounded-lg border border-outline-variant dark:border-slate-800 p-4 sm:p-6 shadow-sm space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h2 className="font-display text-[22px] font-bold text-on-surface dark:text-white">
+              <div className="min-w-0">
+                <h2 className="font-display text-xl sm:text-[22px] font-bold text-on-surface dark:text-white">
                   Search Competitive Exams &amp; Learning Modules
                 </h2>
                 <p className="text-sm text-on-surface-variant dark:text-slate-400">
                   Explore UPSC, BPSC, NEET, JEE, SSC, Bihar Police tests, Daily Current Affairs, and Digital GK Books.
                 </p>
               </div>
-              <div className="relative w-full md:w-96">
+              <div className="relative w-full md:w-96 shrink-0">
                 <Search className="w-4 h-4 text-outline absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="search"
@@ -505,7 +505,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-              <div className="lg:col-span-5">
+              <div className="lg:col-span-5 min-w-0">
                 <div className="aspect-[16/10] rounded-lg overflow-hidden border border-outline-variant dark:border-slate-700 bg-surface-container-low">
                   <img
                     src={DEMO_IMAGES.silentZone}
@@ -515,7 +515,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 </div>
               </div>
 
-              <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="lg:col-span-7 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={isSignedIn ? () => onOpenPortal('exams') : () => onOpenAuth('login')}
@@ -580,14 +580,14 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
             )}
 
             <div className="pt-2 space-y-4">
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
                 <h3 className="font-display text-xl font-bold text-on-surface dark:text-white">
                   Popular Competitive Tracks
                 </h3>
                 <button
                   type="button"
                   onClick={isSignedIn ? () => onOpenPortal('exams') : () => onOpenAuth('login')}
-                  className="text-xs sm:text-sm font-semibold text-secondary hover:text-primary dark:text-blue-400"
+                  className="text-xs sm:text-sm font-semibold text-secondary hover:text-primary dark:text-blue-400 shrink-0"
                 >
                   Explore All 15+ Exams →
                 </button>
@@ -845,13 +845,13 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1 p-1 bg-surface-container-lowest dark:bg-slate-900 rounded border border-outline-variant dark:border-slate-800">
+              <div className="flex flex-wrap gap-1 p-1 bg-surface-container-lowest dark:bg-slate-900 rounded border border-outline-variant dark:border-slate-800 max-w-full min-w-0">
                 {zones.map((z) => (
                   <button
                     key={z}
                     type="button"
                     onClick={() => setSelectedZone(z)}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded transition-colors whitespace-nowrap cursor-pointer ${
+                    className={`px-3 py-1.5 text-xs font-semibold rounded transition-colors text-left sm:whitespace-nowrap cursor-pointer ${
                       selectedZone === z
                         ? 'bg-primary text-on-primary'
                         : 'text-on-surface-variant dark:text-slate-300 hover:bg-surface-container-low'
@@ -868,7 +868,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 Live seat layout initializes upon admin setup.
               </div>
             ) : (
-              <div className="grid grid-cols-5 sm:grid-cols-10 gap-2.5">
+              <div className="grid grid-cols-3 min-[400px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-2 sm:gap-2.5">
                 {filteredSeats.map((seat) => {
                   const styleMap: Record<string, string> = {
                     available: 'bg-success-container border-success text-on-success-container hover:opacity-90 cursor-pointer',
@@ -887,10 +887,10 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                         }
                       }}
                       title={`${seat.seatCode} · ${seat.zone} · ${seat.status.toUpperCase()}`}
-                      className={`p-2.5 rounded border text-center transition-all ${styleMap[seat.status]}`}
+                      className={`min-w-0 overflow-hidden p-2 sm:p-2.5 rounded border text-center transition-all ${styleMap[seat.status]}`}
                     >
-                      <div className="font-mono text-xs font-bold tabular-nums">{seat.seatCode}</div>
-                      <div className="text-[10px] mt-0.5 capitalize font-medium">{seat.status}</div>
+                      <div className="font-mono text-xs font-bold tabular-nums truncate">{seat.seatCode}</div>
+                      <div className="text-[10px] mt-0.5 capitalize font-medium truncate">{seat.status}</div>
                     </button>
                   );
                 })}
@@ -911,13 +911,13 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               </h2>
             </div>
 
-            <div className="flex flex-wrap gap-1 p-1 bg-surface-container-lowest dark:bg-slate-900 rounded border border-outline-variant dark:border-slate-800">
+            <div className="flex flex-wrap gap-1 p-1 bg-surface-container-lowest dark:bg-slate-900 rounded border border-outline-variant dark:border-slate-800 max-w-full min-w-0">
               {galleryCategories.map((cat) => (
                 <button
                   key={cat}
                   type="button"
                   onClick={() => setGalleryCategory(cat)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded transition-colors text-left sm:whitespace-nowrap cursor-pointer ${
                     galleryCategory === cat
                       ? 'bg-primary text-on-primary'
                       : 'text-on-surface-variant dark:text-slate-300 hover:bg-surface-container-low'
@@ -1021,8 +1021,8 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
 
         {/* Contact Banner + Map & Enquiry Form */}
         <section id="contact" className="max-w-7xl mx-auto px-4 lg:px-8 py-12 space-y-8">
-          <div className="p-6 sm:p-8 rounded-lg bg-primary text-on-primary flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-            <div>
+          <div className="p-5 sm:p-8 rounded-lg bg-primary text-on-primary flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+            <div className="min-w-0">
               <h2 className="font-display text-2xl sm:text-3xl font-bold text-on-primary">
                 Want To Know More? Contact Us
               </h2>
@@ -1041,13 +1041,13 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-6 space-y-4">
+            <div className="lg:col-span-6 min-w-0 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div className="p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+                <div className="min-w-0 p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
                   <div className="flex items-center gap-2 text-xs font-semibold text-secondary dark:text-blue-400">
-                    <Phone className="w-3.5 h-3.5" /> Phone &amp; WhatsApp
+                    <Phone className="w-3.5 h-3.5 shrink-0" /> Phone &amp; WhatsApp
                   </div>
-                  <p className="mt-1 font-semibold text-on-surface dark:text-white tabular-nums">
+                  <p className="mt-1 font-semibold text-on-surface dark:text-white tabular-nums break-words">
                     {effectiveSettings.phone}
                   </p>
                   <a
@@ -1059,22 +1059,22 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     Chat on WhatsApp →
                   </a>
                 </div>
-                <div className="p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+                <div className="min-w-0 p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
                   <div className="flex items-center gap-2 text-xs font-semibold text-secondary dark:text-blue-400">
-                    <Mail className="w-3.5 h-3.5" /> Desk Email &amp; Hours
+                    <Mail className="w-3.5 h-3.5 shrink-0" /> Desk Email &amp; Hours
                   </div>
                   <p className="mt-1 font-semibold text-on-surface dark:text-white break-all">
                     {effectiveSettings.email}
                   </p>
-                  <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
+                  <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400 break-words">
                     {effectiveSettings.openingHours}
                   </p>
                 </div>
-                <div className="sm:col-span-2 p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+                <div className="sm:col-span-2 min-w-0 p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
                   <div className="flex items-center gap-2 text-xs font-semibold text-secondary dark:text-blue-400">
-                    <MapPin className="w-3.5 h-3.5" /> Campus Address
+                    <MapPin className="w-3.5 h-3.5 shrink-0" /> Campus Address
                   </div>
-                  <p className="mt-1 text-sm text-on-surface dark:text-slate-200">{effectiveSettings.address}</p>
+                  <p className="mt-1 text-sm text-on-surface dark:text-slate-200 break-words">{effectiveSettings.address}</p>
                 </div>
               </div>
 
@@ -1090,10 +1090,10 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               />
             </div>
 
-            <div className="lg:col-span-6">
+            <div className="lg:col-span-6 min-w-0">
               <form
                 onSubmit={handleEnquirySubmit}
-                className="p-6 sm:p-8 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm space-y-4"
+                className="p-5 sm:p-8 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm space-y-4"
               >
                 <div>
                   <h3 className="font-display text-xl font-bold text-on-surface dark:text-white">
@@ -1248,7 +1248,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
             </div>
           </div>
 
-          <div className="pt-6 border-t border-primary-container flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-on-primary-container">
+          <div className="pt-6 border-t border-primary-container flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 text-xs text-on-primary-container text-center sm:text-left">
             <span>{effectiveSettings.openingHours}</span>
             <span>© {new Date().getFullYear()} {effectiveSettings.libraryName} · Darbhanga, Bihar</span>
           </div>

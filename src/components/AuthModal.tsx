@@ -142,8 +142,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     'w-full pl-9 pr-3 py-2 text-sm rounded border border-outline-variant bg-surface-container-lowest text-on-surface placeholder:text-outline focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/70 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-surface-container-lowest border border-outline-variant rounded-xl shadow-2xl overflow-hidden my-6 grid grid-cols-1 lg:grid-cols-12">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/70 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-surface-container-lowest border border-outline-variant rounded-xl shadow-2xl overflow-hidden my-2 sm:my-6 grid grid-cols-1 lg:grid-cols-12">
         {/* Left Navy Institutional Panel */}
         <aside className="hidden lg:flex lg:col-span-5 bg-primary text-on-primary p-8 flex-col justify-between gap-8">
           <div className="space-y-6">
@@ -177,9 +177,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </aside>
 
         {/* Right Form Panel */}
-        <div className="lg:col-span-7 bg-surface-container-lowest text-on-surface flex flex-col">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant bg-surface-container-low">
-            <div className="lg:hidden">
+        <div className="lg:col-span-7 bg-surface-container-lowest text-on-surface flex flex-col min-w-0">
+          <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-outline-variant bg-surface-container-low">
+            <div className="lg:hidden min-w-0">
               <BrandLogo variant="dark" />
             </div>
             <span className="hidden lg:inline-block font-display text-base font-bold text-primary">
@@ -195,13 +195,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Close authentication modal"
-              className="p-2 rounded text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors cursor-pointer"
+              className="p-2 rounded text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors cursor-pointer shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="p-6 max-h-[82vh] overflow-y-auto">
+          <div className="p-4 sm:p-6 max-h-[82dvh] overflow-y-auto">
             {tab !== 'complete_profile' && (
               <div className="grid grid-cols-2 gap-1 p-1 bg-surface-container-low border border-outline-variant rounded mb-5">
                 <button
@@ -211,7 +211,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     clearAuthError();
                     setLocalMsg(null);
                   }}
-                  className={`py-2 px-3 text-sm font-semibold rounded transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`py-2 px-2 sm:px-3 text-xs sm:text-sm font-semibold rounded transition-colors text-center leading-tight cursor-pointer ${
                     tab === 'login'
                       ? 'bg-surface-container-lowest text-primary shadow-sm'
                       : 'text-on-surface-variant hover:text-primary'
@@ -226,7 +226,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     clearAuthError();
                     setLocalMsg(null);
                   }}
-                  className={`py-2 px-3 text-sm font-semibold rounded transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`py-2 px-2 sm:px-3 text-xs sm:text-sm font-semibold rounded transition-colors text-center leading-tight cursor-pointer ${
                     tab === 'register'
                       ? 'bg-surface-container-lowest text-primary shadow-sm'
                       : 'text-on-surface-variant hover:text-primary'
@@ -240,12 +240,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {authError && (
               <div className="mb-4 p-3 rounded border border-error bg-error-container text-on-error-container text-xs flex items-start gap-2">
                 <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{authError}</span>
+                <span className="min-w-0 break-words">{authError}</span>
               </div>
             )}
 
             {localMsg && (
-              <div className="mb-4 p-3 rounded border border-secondary/40 bg-secondary-container text-on-secondary-container text-xs">
+              <div className="mb-4 p-3 rounded border border-secondary/40 bg-secondary-container text-on-secondary-container text-xs break-words">
                 {localMsg}
               </div>
             )}
@@ -519,18 +519,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   placeholder="student@example.com"
                   className={inputCls}
                 />
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   <button
                     type="button"
                     onClick={() => setTab('login')}
-                    className="flex-1 py-2 px-4 rounded border border-outline-variant text-sm font-semibold text-on-surface-variant hover:bg-surface-container-low cursor-pointer"
+                    className="flex-1 min-w-[120px] py-2 px-4 rounded border border-outline-variant text-sm font-semibold text-on-surface-variant hover:bg-surface-container-low cursor-pointer"
                   >
                     Back to Login
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 py-2 px-4 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
+                    className="flex-1 min-w-[140px] py-2 px-4 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
                   >
                     Send Reset Link
                   </button>

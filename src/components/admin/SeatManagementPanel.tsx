@@ -246,14 +246,14 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap gap-1 p-1 bg-surface-container-low dark:bg-slate-900 rounded border border-outline-variant dark:border-slate-800">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <div className="flex flex-wrap gap-1 p-1 bg-surface-container-low dark:bg-slate-900 rounded border border-outline-variant dark:border-slate-800 max-w-full min-w-0">
             {zones.map((z) => (
               <button
                 key={z}
                 type="button"
                 onClick={() => setZoneFilter(z)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded whitespace-nowrap cursor-pointer transition-colors ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded text-left sm:whitespace-nowrap cursor-pointer transition-colors ${
                   zoneFilter === z
                     ? 'bg-primary text-on-primary'
                     : 'text-on-surface-variant dark:text-slate-300 hover:bg-surface-container'
@@ -276,7 +276,7 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
       {showGenerator && (
         <form
           onSubmit={handleGenerateRow}
-          className="p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"
+          className="p-4 sm:p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 items-end"
         >
           <div>
             <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Zone Name</label>
@@ -321,8 +321,8 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
       )}
 
       {/* Interactive Seat Grid */}
-      <div className="p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
-        <div className="grid grid-cols-4 sm:grid-cols-8 lg:grid-cols-10 gap-2.5">
+      <div className="p-4 sm:p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+        <div className="grid grid-cols-3 min-[400px]:grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2 sm:gap-2.5">
           {filteredSeats.map((seat) => {
             const occupant = seat.assignedStudentDocId ? studentById[seat.assignedStudentDocId] : null;
             const colors: Record<SeatStatus, string> = {
@@ -339,7 +339,7 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
                   setSelectedSeat(seat);
                   setAssignStudentId(seat.assignedStudentDocId || '');
                 }}
-                className={`p-2.5 rounded border text-left transition-opacity hover:opacity-85 cursor-pointer ${colors[seat.status]}`}
+                className={`min-w-0 overflow-hidden p-2 sm:p-2.5 rounded border text-left transition-opacity hover:opacity-85 cursor-pointer ${colors[seat.status]}`}
               >
                 <div className="font-mono text-xs font-bold tabular-nums">{seat.seatCode}</div>
                 <div className="text-[10px] truncate mt-0.5 font-medium">
@@ -354,15 +354,15 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
       {/* Pending Seat Booking Requests */}
       {pendingBookings.length > 0 && (
         <div className="rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="px-5 py-3.5 bg-surface-container-low dark:bg-slate-800/80 border-b border-outline-variant dark:border-slate-700">
+          <div className="px-4 sm:px-5 py-3.5 bg-surface-container-low dark:bg-slate-800/80 border-b border-outline-variant dark:border-slate-700">
             <h3 className="text-sm font-semibold text-primary dark:text-white">
               Pending Student Seat Requests ({pendingBookings.length})
             </h3>
           </div>
           <div className="divide-y divide-outline-variant/60 dark:divide-slate-800">
             {pendingBookings.map((b) => (
-              <div key={b.id} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
-                <div>
+              <div key={b.id} className="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+                <div className="min-w-0 break-words">
                   <span className="font-mono font-bold text-secondary dark:text-blue-400">{b.seatCode}</span>
                   <span className="mx-2 text-outline">·</span>
                   <span className="font-semibold text-on-surface dark:text-white">{b.studentName}</span>
@@ -370,7 +370,7 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
                   <span className="font-mono text-xs text-on-surface-variant dark:text-slate-400">{b.studentCode}</span>
                   {b.notes && <p className="text-xs text-on-surface-variant dark:text-slate-400 mt-0.5">{b.notes}</p>}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => handleBookingDecision(b, 'approved')}
@@ -394,8 +394,8 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
 
       {/* Selected Seat Action Modal */}
       {selectedSeat && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 rounded-xl p-6 space-y-4 text-on-surface dark:text-slate-100 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-md bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 rounded-xl p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto my-auto text-on-surface dark:text-slate-100 shadow-2xl">
             <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
               <div>
                 <h3 className="font-display text-lg font-bold text-primary dark:text-white">
@@ -448,7 +448,7 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-outline-variant dark:border-slate-800">
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 pt-2 border-t border-outline-variant dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => handleReleaseSeat(selectedSeat)}

@@ -127,11 +127,11 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-wider text-secondary dark:text-blue-400">
             Digital Library Archive
           </p>
-          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white break-words">
             Digital GK Books &amp; Chapter Notes
           </h2>
           <p className="text-xs text-on-surface-variant dark:text-slate-300">
@@ -139,7 +139,7 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
           </p>
         </div>
 
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full sm:w-64 min-w-0">
           <Search className="w-4 h-4 text-outline dark:text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
@@ -181,12 +181,12 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
       {/* Reader Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Chapter List */}
-        <aside className="lg:col-span-4 space-y-4">
+        <aside className="lg:col-span-4 space-y-4 min-w-0">
           <div className="p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-3 shadow-sm">
-            <h3 className="font-display text-base font-bold text-primary dark:text-white">
+            <h3 className="font-display text-base font-bold text-primary dark:text-white break-words">
               {activeBook.title}
             </h3>
-            <p className="text-xs text-on-surface-variant dark:text-slate-300">
+            <p className="text-xs text-on-surface-variant dark:text-slate-300 break-words">
               {activeBook.description}
             </p>
             {activeBook.pdfDownloadAllowed && (
@@ -211,7 +211,7 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
                 key={ch.id}
                 type="button"
                 onClick={() => setSelectedChapterIdx(idx)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-colors break-words ${
                   activeChapter?.id === ch.id
                     ? 'bg-secondary-container/70 dark:bg-blue-950/60 text-primary dark:text-white font-bold border border-secondary/30'
                     : 'text-on-surface-variant dark:text-slate-300 hover:bg-surface-container-low dark:hover:bg-slate-800'
@@ -244,20 +244,20 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
         </aside>
 
         {/* Chapter Reading Pane */}
-        <div className="lg:col-span-8">
+        <div className="lg:col-span-8 min-w-0">
           {activeChapter ? (
-            <div className="p-6 sm:p-7 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-5 shadow-sm">
+            <div className="p-4 sm:p-6 lg:p-7 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-outline-variant/60 dark:border-slate-800">
-                <div>
-                  <p className="text-xs text-secondary dark:text-blue-400 font-semibold">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-secondary dark:text-blue-400 font-semibold break-words">
                     {activeBook.subject} · Linked Topic: {activeChapter.linkedTopic}
                   </p>
-                  <h3 className="font-display text-xl sm:text-2xl font-bold text-primary dark:text-white mt-1">
+                  <h3 className="font-display text-xl sm:text-2xl font-bold text-primary dark:text-white mt-1 break-words">
                     {activeChapter.title}
                   </h3>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {userUid && (
                     <button
                       type="button"
@@ -299,26 +299,26 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-surface-container-low dark:bg-slate-800 border border-outline-variant/60 dark:border-slate-700 text-sm font-medium text-on-surface-variant dark:text-slate-200">
+              <div className="p-4 rounded-xl bg-surface-container-low dark:bg-slate-800 border border-outline-variant/60 dark:border-slate-700 text-sm font-medium text-on-surface-variant dark:text-slate-200 break-words">
                 {activeChapter.summary}
               </div>
 
-              <div className="text-sm sm:text-base leading-relaxed text-on-surface dark:text-slate-100 whitespace-pre-line">
+              <div className="text-sm sm:text-base leading-relaxed text-on-surface dark:text-slate-100 whitespace-pre-line break-words">
                 {activeChapter.contentText}
               </div>
 
               {activeChapter.keyFacts && activeChapter.keyFacts.length > 0 && (
-                <div className="p-5 rounded-xl bg-secondary-container/40 dark:bg-slate-800/80 border border-secondary/30 dark:border-slate-700 space-y-2.5">
+                <div className="p-4 sm:p-5 rounded-xl bg-secondary-container/40 dark:bg-slate-800/80 border border-secondary/30 dark:border-slate-700 space-y-2.5">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-primary dark:text-blue-300">
                     High-Yield Exam Takeaways
                   </h4>
                   <ul className="space-y-2 text-xs sm:text-sm text-on-surface dark:text-slate-100">
                     {activeChapter.keyFacts.map((fact, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <span className="font-mono text-secondary dark:text-blue-400 font-bold">
+                      <li key={idx} className="flex items-start gap-2 min-w-0">
+                        <span className="font-mono text-secondary dark:text-blue-400 font-bold shrink-0">
                           0{idx + 1}.
                         </span>
-                        <span>{fact}</span>
+                        <span className="break-words min-w-0">{fact}</span>
                       </li>
                     ))}
                   </ul>

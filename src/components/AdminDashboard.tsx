@@ -588,7 +588,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Persistent Navy Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-primary text-on-primary flex flex-col justify-between transform transition-transform duration-200 lg:translate-x-0 lg:static shrink-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 max-w-[85vw] sm:w-64 bg-primary text-on-primary flex flex-col justify-between transform transition-transform duration-200 lg:translate-x-0 lg:static shrink-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -668,18 +668,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Main Workspace Column */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant px-4 lg:px-8 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
+        <header className="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant px-3 sm:px-4 lg:px-8 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open navigation menu"
-              className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low shrink-0"
+              className="lg:hidden inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low shrink-0"
             >
               <Menu className="w-5 h-5" />
             </button>
             <div className="min-w-0">
-              <p className="font-headline text-base font-bold text-primary truncate">
+              <p className="font-headline text-sm sm:text-base font-bold text-primary truncate">
                 VIDHYA LIBRARY · Gyan Adda
               </p>
               <p className="font-body text-xs text-on-surface-variant capitalize truncate">
@@ -688,7 +688,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2.5 shrink-0 max-w-full">
             <button
               type="button"
               onClick={() => retryConnection().catch(() => {})}
@@ -730,7 +730,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   setPreviewRole(val === 'admin' ? null : val);
                   setTab('overview');
                 }}
-                className="px-2.5 py-1.5 text-xs font-semibold rounded border border-outline-variant bg-surface text-on-surface"
+                className="px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-semibold rounded border border-outline-variant bg-surface text-on-surface max-w-[125px] sm:max-w-none"
               >
                 <option value="admin">View As: Admin</option>
                 <option value="manager">View As: Manager</option>
@@ -742,7 +742,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <button
               type="button"
               onClick={onGoPublic}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-outline-variant bg-surface-container-lowest text-xs font-semibold text-primary hover:bg-surface-container-low cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded border border-outline-variant bg-surface-container-lowest text-xs font-semibold text-primary hover:bg-surface-container-low cursor-pointer shrink-0"
             >
               <Home className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Public Site</span>
@@ -752,7 +752,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               type="button"
               onClick={onToggleDarkMode}
               aria-label="Toggle color theme"
-              className="p-2 rounded border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-primary hover:bg-surface-container-low cursor-pointer"
+              className="p-2 rounded border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-primary hover:bg-surface-container-low cursor-pointer shrink-0"
             >
               {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
@@ -760,7 +760,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <button
               type="button"
               onClick={signOut}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container cursor-pointer shrink-0"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Logout</span>
@@ -769,20 +769,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </header>
 
         {/* Main Workspace */}
-        <main className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+        <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
           {notifyBanner && (
             <div
-              className={`p-3.5 rounded-lg border text-xs font-medium flex items-center justify-between ${
+              className={`p-3.5 rounded-lg border text-xs font-medium flex flex-wrap items-center justify-between gap-2 ${
                 notifyBanner.type === 'ok'
                   ? 'bg-success-container/70 border-success/40 text-on-success-container'
                   : 'bg-error-container border-error/40 text-on-error-container'
               }`}
             >
-              <span>{notifyBanner.msg}</span>
+              <span className="min-w-0 break-words">{notifyBanner.msg}</span>
               <button
                 type="button"
                 onClick={() => setNotifyBanner(null)}
-                className="underline ml-3 font-semibold cursor-pointer"
+                className="underline font-semibold cursor-pointer shrink-0"
               >
                 Dismiss
               </button>
@@ -840,7 +840,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               {/* KPI Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
                 {[
                   { label: 'Total Students', val: kpis.totalStudents, accent: 'text-primary' },
                   { label: 'Active Members', val: kpis.activeMembers, accent: 'text-success' },
@@ -868,10 +868,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 ].map((card) => (
                   <div
                     key={card.label}
-                    className="p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm"
+                    className="min-w-0 p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm"
                   >
-                    <p className="font-label text-xs font-medium text-on-surface-variant">{card.label}</p>
-                    <p className={`font-headline text-2xl font-bold tabular-nums mt-1 ${card.accent}`}>
+                    <p className="font-label text-xs font-medium text-on-surface-variant truncate">{card.label}</p>
+                    <p className={`font-headline text-xl sm:text-2xl font-bold tabular-nums mt-1 break-words ${card.accent}`}>
                       {card.val}
                     </p>
                   </div>
@@ -879,12 +879,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               {/* Charts Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                <div className="min-w-0 overflow-hidden p-4 sm:p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-3">
                     Daily Check-In Trend
                   </h3>
-                  <div className="h-56 w-full">
+                  <div className="h-56 w-full min-w-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={attendanceChartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#C4C6CF" strokeOpacity={0.5} />
@@ -911,11 +911,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm">
+                <div className="min-w-0 overflow-hidden p-4 sm:p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-3">
                     Seat Occupancy Breakdown
                   </h3>
-                  <div className="h-56 w-full">
+                  <div className="h-56 w-full min-w-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={seatOccupancyData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#C4C6CF" strokeOpacity={0.5} />
@@ -936,11 +936,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm">
+                <div className="min-w-0 overflow-hidden md:col-span-2 xl:col-span-1 p-4 sm:p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-3">
                     Membership Plan Distribution
                   </h3>
-                  <div className="h-56 w-full">
+                  <div className="h-56 w-full min-w-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -1007,25 +1007,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                 {/* Firestore Connection Card */}
-                <div className="bg-surface-container-lowest rounded-lg border border-outline-variant p-5 space-y-4 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-md bg-surface-container-low text-secondary flex items-center justify-center">
+                <div className="min-w-0 bg-surface-container-lowest rounded-lg border border-outline-variant p-4 sm:p-5 space-y-4 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-10 h-10 rounded-md bg-surface-container-low text-secondary flex items-center justify-center shrink-0">
                         <Database className="w-5 h-5" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <h2 className="font-headline text-base font-bold text-on-surface">
                           Cloud Firestore Connection
                         </h2>
-                        <p className="text-xs text-on-surface-variant font-mono">
+                        <p className="text-xs text-on-surface-variant font-mono break-all">
                           Project: {connectionStatus.projectId}
                         </p>
                       </div>
                     </div>
                     <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize shrink-0 ${
                         connectionStatus.state === 'connected'
                           ? 'bg-success-container text-on-success-container'
                           : connectionStatus.state === 'offline'
@@ -1037,16 +1037,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-xs bg-surface-container-low p-3.5 rounded-lg border border-outline-variant">
-                    <div>
+                  <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3 text-xs bg-surface-container-low p-3.5 rounded-lg border border-outline-variant">
+                    <div className="min-w-0">
                       <span className="text-on-surface-variant block">Database ID</span>
                       <span className="font-mono font-semibold text-on-surface break-all">
                         {connectionStatus.databaseId}
                       </span>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <span className="text-on-surface-variant block">Last Connected</span>
-                      <span className="font-mono text-on-surface">
+                      <span className="font-mono text-on-surface break-all">
                         {connectionStatus.lastConnectedAt
                           ? connectionStatus.lastConnectedAt.slice(0, 19).replace('T', ' ')
                           : 'Pending'}
@@ -1058,7 +1058,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         {connectionStatus.retryAttempt} / {connectionStatus.maxRetries}
                       </span>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <span className="text-on-surface-variant block">Last Error</span>
                       <span className="text-on-surface truncate block">
                         {connectionStatus.lastError || 'None'}
@@ -1076,13 +1076,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 {/* Gemini AI Circuit Breaker Card */}
-                <div className="bg-surface-container-lowest rounded-lg border border-outline-variant p-5 space-y-4 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-md bg-surface-container-low text-secondary flex items-center justify-center">
+                <div className="min-w-0 bg-surface-container-lowest rounded-lg border border-outline-variant p-4 sm:p-5 space-y-4 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-10 h-10 rounded-md bg-surface-container-low text-secondary flex items-center justify-center shrink-0">
                         <Cpu className="w-5 h-5" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <h2 className="font-headline text-base font-bold text-on-surface">
                           Gemini API Resilience & Quota
                         </h2>
@@ -1092,7 +1092,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </div>
                     </div>
                     <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase ${
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase shrink-0 ${
                         sysStatus?.ai.circuitState === 'closed'
                           ? 'bg-success-container text-on-success-container'
                           : sysStatus?.ai.circuitState === 'open'
@@ -1104,7 +1104,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-surface-container-low p-3.5 rounded-lg border border-outline-variant">
+                  <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-surface-container-low p-3.5 rounded-lg border border-outline-variant">
                     <div>
                       <span className="text-on-surface-variant block">Cooldown</span>
                       <span className="font-mono font-bold text-on-surface">
@@ -1128,7 +1128,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
 
                   {sysStatus?.ai.lastErrorMessage && (
-                    <p className="text-xs text-error bg-error-container/50 p-2.5 rounded border border-error/30">
+                    <p className="text-xs text-error bg-error-container/50 p-2.5 rounded border border-error/30 break-words">
                       Last AI Error: {sysStatus.ai.lastErrorMessage}
                     </p>
                   )}
@@ -1145,7 +1145,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 {/* PDF Batch Pipeline Card */}
-                <div className="bg-surface-container-lowest rounded-lg border border-outline-variant p-5 space-y-4 shadow-sm">
+                <div className="min-w-0 bg-surface-container-lowest rounded-lg border border-outline-variant p-4 sm:p-5 space-y-4 shadow-sm">
                   <h2 className="font-headline text-base font-bold text-on-surface">
                     PDF Question Extraction Pipeline
                   </h2>
@@ -1164,7 +1164,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-on-surface-variant font-mono">
+                  <p className="text-xs text-on-surface-variant font-mono break-all">
                     Last Successful Extraction:{' '}
                     {sysStatus?.pdfJobs.lastSuccessfulExtractionAt
                       ? sysStatus.pdfJobs.lastSuccessfulExtractionAt.slice(0, 19).replace('T', ' ')
@@ -1173,11 +1173,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 {/* Current Affairs Scheduler Card */}
-                <div className="bg-surface-container-lowest rounded-lg border border-outline-variant p-5 space-y-4 shadow-sm">
+                <div className="min-w-0 bg-surface-container-lowest rounded-lg border border-outline-variant p-4 sm:p-5 space-y-4 shadow-sm">
                   <h2 className="font-headline text-base font-bold text-on-surface">
                     Daily Current Affairs Scheduler
                   </h2>
-                  <div className="grid grid-cols-2 gap-3 text-xs bg-surface-container-low p-3.5 rounded-lg border border-outline-variant">
+                  <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3 text-xs bg-surface-container-low p-3.5 rounded-lg border border-outline-variant">
                     <div>
                       <span className="text-on-surface-variant block">Status</span>
                       <span className="font-semibold text-on-surface">
@@ -1190,15 +1190,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         {sysStatus?.currentAffairs.autoPublishEnabled ? 'Enabled' : 'Manual Review'}
                       </span>
                     </div>
-                    <div className="col-span-2">
+                    <div className="min-[360px]:col-span-2 min-w-0">
                       <span className="text-on-surface-variant block">Last Run</span>
-                      <span className="font-mono text-on-surface">
+                      <span className="font-mono text-on-surface break-all">
                         {sysStatus?.currentAffairs.lastRunAt || 'Not run in current server uptime'}
                       </span>
                     </div>
                   </div>
                   {sysStatus?.currentAffairs.lastError && (
-                    <p className="text-xs text-error">{sysStatus.currentAffairs.lastError}</p>
+                    <p className="text-xs text-error break-words">{sysStatus.currentAffairs.lastError}</p>
                   )}
                 </div>
               </div>

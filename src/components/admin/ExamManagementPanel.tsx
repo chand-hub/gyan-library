@@ -936,25 +936,25 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
           </h2>
         </div>
 
-        <div className="flex flex-wrap gap-2 shrink-0">
+        <div className="flex flex-wrap gap-2 min-w-0">
           <button
             type="button"
             disabled={backfilling}
             onClick={handleBackfillPublished}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary text-xs font-semibold hover:bg-surface-container-low"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary text-xs font-semibold hover:bg-surface-container-low"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${backfilling ? 'animate-spin' : ''}`} />
-            {backfilling ? 'Syncing Flags...' : 'Sync Published Flags'}
+            <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${backfilling ? 'animate-spin' : ''}`} />
+            <span>{backfilling ? 'Syncing Flags...' : 'Sync Published Flags'}</span>
           </button>
 
           <button
             type="button"
             disabled={seeding}
             onClick={handleSeedExamSystem}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary transition-colors"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary transition-colors text-center"
           >
-            <Database className="w-4 h-4" />
-            {seeding ? 'Syncing Platform Data...' : 'Initialize / Sync 15 Exams & 11 GK Books'}
+            <Database className="w-4 h-4 shrink-0" />
+            <span>{seeding ? 'Syncing Platform Data...' : 'Initialize / Sync 15 Exams & 11 GK Books'}</span>
           </button>
         </div>
       </div>
@@ -1022,12 +1022,12 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
           {questionTool === 'add' && (
             <form
               onSubmit={handleCreateQuestion}
-              className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4"
+              className="p-4 sm:p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4"
             >
               <h3 className="text-sm font-bold text-on-surface flex items-center gap-2">
                 <Plus className="w-4 h-4 text-secondary" /> Add Verified Question
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
                 <select
                   value={qExam}
                   onChange={(e) => setQExam(e.target.value)}
@@ -1091,7 +1091,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                 <input required value={optA} onChange={(e) => setOptA(e.target.value)} placeholder="Option A" className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface" />
                 <input required value={optB} onChange={(e) => setOptB(e.target.value)} placeholder="Option B" className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface" />
                 <input required value={optC} onChange={(e) => setOptC(e.target.value)} placeholder="Option C" className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface" />
@@ -1127,16 +1127,16 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
           )}
 
           {questionTool === 'bulk' && (
-            <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4">
+            <div className="p-4 sm:p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-bold text-on-surface flex items-center gap-2">
-                  <FileSpreadsheet className="w-4 h-4 text-secondary" /> Bulk JSON / CSV Question Importer
+                  <FileSpreadsheet className="w-4 h-4 text-secondary shrink-0" /> Bulk JSON / CSV Question Importer
                 </h3>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto max-w-full">
                   <select
                     value={bulkExam}
                     onChange={(e) => setBulkExam(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
+                    className="w-full sm:w-auto max-w-full min-w-0 px-2.5 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                   >
                     {exams.map((ex) => (
                       <option key={ex.id} value={ex.name}>
@@ -1147,14 +1147,14 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                   <select
                     value={bulkFormat}
                     onChange={(e) => setBulkFormat(e.target.value as 'json' | 'csv')}
-                    className="px-2.5 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
+                    className="w-full sm:w-auto px-2.5 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                   >
                     <option value="json">JSON Array</option>
                     <option value="csv">CSV Rows</option>
                   </select>
                 </div>
               </div>
-              <p className="text-xs text-on-surface-variant">
+              <p className="text-xs text-on-surface-variant break-words">
                 {bulkFormat === 'json'
                   ? 'Paste a JSON array of objects with { questionText, options: [A,B,C,D], correctIndex (0-3), explanation, subject, chapter, topic, difficulty, examYear }.'
                   : 'CSV Columns: questionText,optionA,optionB,optionC,optionD,correctIndex(0-3),explanation,examName,subject,chapter,topic,difficulty,examYear'}
@@ -1175,7 +1175,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                   type="button"
                   disabled={bulkImporting || !bulkPayload.trim()}
                   onClick={handleBulkImport}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary disabled:opacity-50"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary disabled:opacity-50"
                 >
                   {bulkImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                   {bulkImporting ? 'Sealing & Importing...' : 'Seal & Publish Bulk Batch'}
@@ -1185,13 +1185,13 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
           )}
 
           {questionTool === 'ai_batch' && (
-            <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="p-4 sm:p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-bold text-on-surface flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-secondary" /> Admin Batch AI Question Generator (Up to 100 Questions)
+                  <Sparkles className="w-4 h-4 text-secondary shrink-0" /> Admin Batch AI Question Generator (Up to 100 Questions)
                 </h3>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
                 <select
                   value={aiExam}
                   onChange={(e) => setAiExam(e.target.value)}
@@ -1298,13 +1298,13 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
           )}
 
           {/* Question List */}
-          <div className="rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm p-5 space-y-4">
+          <div className="rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm p-4 sm:p-5 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto min-w-0 max-w-full">
                 <select
                   value={examFilter}
                   onChange={(e) => setExamFilter(e.target.value)}
-                  className="px-3 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
+                  className="w-full sm:w-auto min-w-0 max-w-full px-3 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 >
                   <option value="ALL">All Exams</option>
                   {exams.map((ex) => (
@@ -1316,7 +1316,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as any)}
-                  className="px-3 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
+                  className="w-full sm:w-auto min-w-0 max-w-full px-3 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 >
                   <option value="ALL">All Statuses</option>
                   <option value="verified">Verified</option>
@@ -1326,7 +1326,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 <select
                   value={publishFilter}
                   onChange={(e) => setPublishFilter(e.target.value as any)}
-                  className="px-3 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
+                  className="w-full sm:w-auto min-w-0 max-w-full px-3 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 >
                   <option value="ALL">All Visibility</option>
                   <option value="published">Published Only</option>
@@ -1337,7 +1337,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                   placeholder="Search question, subject, chapter..."
-                  className="px-3 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
+                  className="w-full sm:w-56 min-w-0 px-3 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 />
               </div>
               <button
@@ -1440,9 +1440,10 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
       {subTab === 'coverage' && (
         <div className="space-y-4">
           <div className="rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-outline-variant flex items-center justify-between">
+            <div className="px-4 sm:px-5 py-4 border-b border-outline-variant flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-bold text-on-surface flex items-center gap-2">
-                <Layers className="w-4 h-4 text-secondary" /> Question Bank Coverage &amp; Student Attempt Usage Matrix
+                <Layers className="w-4 h-4 text-secondary shrink-0" />
+                <span>Question Bank Coverage &amp; Student Attempt Usage Matrix</span>
               </h3>
               <span className="text-xs text-on-surface-variant tabular-nums">
                 {questions.length} Total Questions · {attempts.length} Total Attempts
@@ -1489,7 +1490,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
         <div className="space-y-6">
           <form
             onSubmit={handleCreateExam}
-            className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm grid grid-cols-1 sm:grid-cols-6 gap-3 items-end"
+            className="p-4 sm:p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3 items-end"
           >
             <div className="sm:col-span-2">
               <label className="block text-[11px] font-semibold text-on-surface-variant mb-1">Exam Name</label>
@@ -1546,11 +1547,11 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
             </button>
           </form>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {exams.map((ex) => (
               <div
                 key={ex.id}
-                className="p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col justify-between gap-2"
+                className="min-w-0 p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col justify-between gap-2"
               >
                 <div>
                   <p className="text-[11px] font-semibold text-secondary">{ex.categoryGroup} · {ex.code}</p>
@@ -1586,7 +1587,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
         <div className="space-y-6">
           <form
             onSubmit={handleCreateMockTest}
-            className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm grid grid-cols-1 sm:grid-cols-5 gap-3 items-end"
+            className="p-4 sm:p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 items-end"
           >
             <div className="sm:col-span-2">
               <label className="block text-[11px] font-semibold text-on-surface-variant mb-1">Mock Test Title</label>
@@ -1631,9 +1632,9 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
             </button>
           </form>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {mockTests.map((mt) => (
-              <div key={mt.id} className="p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-2">
+              <div key={mt.id} className="min-w-0 p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-2">
                 <p className="text-[11px] font-semibold text-secondary">{mt.examName} · {mt.questionIds.length} Questions</p>
                 <h4 className="font-headline text-base font-bold text-on-surface">{mt.title}</h4>
                 <div className="flex justify-between pt-2 border-t border-outline-variant">
@@ -1672,12 +1673,12 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 Collects grounded National, International, Economy, Science &amp; Bihar Current Affairs with bilingual summaries &amp; MCQs.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 max-w-full">
               <input
                 type="date"
                 value={caDate}
                 onChange={(e) => setCaDate(e.target.value)}
-                className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
+                className="min-w-0 px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               />
               <button
                 type="button"
@@ -1748,9 +1749,9 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
 
       {/* Sub-tab: GK Books PDF Permissions */}
       {subTab === 'books' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {gkBooks.map((book) => (
-            <div key={book.id} className="p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-2">
+            <div key={book.id} className="min-w-0 p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-2">
               <p className="text-xs font-semibold text-secondary">{book.subject}</p>
               <h4 className="font-headline text-base font-bold text-on-surface">{book.title}</h4>
               <p className="text-xs text-on-surface-variant">{book.chapters.length} Chapters</p>
@@ -1815,10 +1816,10 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
 
       {/* Edit Question Modal */}
       {editingQ && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/40 backdrop-blur-xs p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/40 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
           <form
             onSubmit={handleSaveEditedQuestion}
-            className="w-full max-w-2xl rounded-xl bg-surface-container-lowest border border-outline-variant shadow-xl p-6 space-y-4 text-on-surface"
+            className="w-full max-w-2xl rounded-xl bg-surface-container-lowest border border-outline-variant shadow-xl p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto my-auto text-on-surface"
           >
             <div className="flex items-center justify-between border-b border-outline-variant pb-3">
               <h3 className="font-headline text-lg font-bold text-primary">
@@ -1927,7 +1928,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
               />
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-outline-variant">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-outline-variant">
               <label className="inline-flex items-center gap-2 text-xs cursor-pointer">
                 <input
                   type="checkbox"
@@ -1937,7 +1938,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 <span>Published &amp; Visible to Students</span>
               </label>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setEditingQ(null)}

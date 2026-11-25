@@ -391,25 +391,25 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
       className="min-h-screen bg-surface dark:bg-slate-950 text-on-surface dark:text-slate-100 flex flex-col"
     >
       {/* CBT Top Bar */}
-      <header className="bg-primary text-on-primary border-b border-primary-container px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-        <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-wider text-on-primary-container font-semibold">
+      <header className="bg-primary text-on-primary border-b border-primary-container px-3 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 shadow-sm">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] uppercase tracking-wider text-on-primary-container font-semibold truncate">
             {config.examName} · {config.mode === 'exam' ? 'Timed Examination Mode' : 'Practice Mode'}
           </p>
-          <h2 className="font-display text-base sm:text-lg font-bold text-white truncate">
+          <h2 className="font-display text-sm sm:text-lg font-bold text-white truncate">
             {config.title}
           </h2>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
           <div
-            className={`px-3 py-1.5 rounded-lg border text-sm font-mono font-bold tabular-nums flex items-center gap-2 ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs sm:text-sm font-mono font-bold tabular-nums flex items-center gap-1.5 sm:gap-2 ${
               config.isTimed && remainingSeconds < 120
                 ? 'bg-error-container border-error text-on-error-container'
                 : 'bg-primary-container border-white/20 text-white'
             }`}
           >
-            <Clock className="w-4 h-4" />
+            <Clock className="w-4 h-4 shrink-0" />
             {config.isTimed ? formatTimer(remainingSeconds) : formatTimer(elapsedSeconds)}
           </div>
 
@@ -426,7 +426,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
             type="button"
             onClick={() => setShowConfirmModal(true)}
             disabled={submitting}
-            className="px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs sm:text-sm font-bold hover:bg-white hover:text-primary transition-colors shadow-xs"
+            className="px-3 sm:px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs sm:text-sm font-bold hover:bg-white hover:text-primary transition-colors shadow-xs"
           >
             {submitting ? 'Scoring...' : 'Submit Test'}
           </button>
@@ -434,7 +434,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
           <button
             type="button"
             onClick={onExit}
-            className="px-3 py-2 rounded-lg border border-white/25 text-xs font-medium text-on-primary-container hover:bg-primary-container hover:text-white transition-colors"
+            className="px-2.5 sm:px-3 py-2 rounded-lg border border-white/25 text-xs font-medium text-on-primary-container hover:bg-primary-container hover:text-white transition-colors"
           >
             Exit
           </button>
@@ -442,9 +442,9 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
       </header>
 
       {/* Visual Test Progress Bar */}
-      <div className="bg-surface-container-low dark:bg-slate-900 border-b border-outline-variant dark:border-slate-800 px-4 sm:px-6 py-2">
-        <div className="max-w-7xl mx-auto flex items-center gap-3">
-          <div className="flex-1 h-2 rounded-full bg-surface-variant dark:bg-slate-800 overflow-hidden">
+      <div className="bg-surface-container-low dark:bg-slate-900 border-b border-outline-variant dark:border-slate-800 px-3 sm:px-6 py-2">
+        <div className="max-w-7xl mx-auto flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3">
+          <div className="flex-1 min-w-[120px] h-2 rounded-full bg-surface-variant dark:bg-slate-800 overflow-hidden">
             <div
               className="h-full bg-secondary transition-all duration-300"
               style={{
@@ -467,19 +467,19 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
       </div>
 
       {/* Main CBT Grid */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         {/* Left: Active Question */}
-        <div className="lg:col-span-8 flex flex-col justify-between bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 rounded-xl p-5 sm:p-7 space-y-6 shadow-sm">
-          <div className="space-y-5">
+        <div className="lg:col-span-8 min-w-0 flex flex-col justify-between bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 rounded-xl p-4 sm:p-7 space-y-6 shadow-sm">
+          <div className="space-y-5 min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-outline-variant/60 dark:border-slate-800">
-              <div className="text-xs text-on-surface-variant dark:text-slate-300 flex flex-wrap items-center gap-1.5">
+              <div className="text-xs text-on-surface-variant dark:text-slate-300 flex flex-wrap items-center gap-1.5 min-w-0">
                 <span className="font-bold text-primary dark:text-white font-mono tabular-nums">
                   Question {currentIdx + 1} of {config.questions.length}
                 </span>
                 <span aria-hidden="true"> · </span>
-                <span>{currentQuestion.subject}</span>
+                <span className="break-words">{currentQuestion.subject}</span>
                 <span aria-hidden="true"> · </span>
-                <span>{currentQuestion.chapter}</span>
+                <span className="break-words">{currentQuestion.chapter}</span>
                 <span
                   className={`ml-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border ${
                     currentQuestion.difficulty === 'hard'
@@ -500,16 +500,16 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
             {errorMsg && (
               <div className="p-3 rounded-lg bg-error-container dark:bg-rose-950/60 border border-error/40 text-on-error-container dark:text-rose-200 text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
-                <span>{errorMsg}</span>
+                <span className="break-words min-w-0">{errorMsg}</span>
               </div>
             )}
 
-            <div className="space-y-3">
-              <p className="text-base sm:text-lg leading-relaxed text-on-surface dark:text-white font-medium whitespace-pre-line">
+            <div className="space-y-3 min-w-0">
+              <p className="text-base sm:text-lg leading-relaxed text-on-surface dark:text-white font-medium whitespace-pre-line break-words">
                 {currentQuestion.questionText}
               </p>
               {currentQuestion.hasDiagramOrTable && currentQuestion.diagramDescription && (
-                <div className="p-3.5 rounded-lg bg-surface-container-low dark:bg-slate-800 border border-outline-variant dark:border-slate-700 text-xs text-on-surface-variant dark:text-slate-300">
+                <div className="p-3.5 rounded-lg bg-surface-container-low dark:bg-slate-800 border border-outline-variant dark:border-slate-700 text-xs text-on-surface-variant dark:text-slate-300 break-words">
                   <span className="font-semibold text-primary dark:text-blue-300">Diagram / Table Note: </span>
                   {currentQuestion.diagramDescription}
                 </div>
@@ -542,7 +542,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
                     key={idx}
                     type="button"
                     onClick={() => handleSelectOption(idx)}
-                    className={`w-full text-left p-4 rounded-xl border transition-all flex items-start gap-3.5 ${optionStyle}`}
+                    className={`w-full text-left p-3 sm:p-4 rounded-xl border transition-all flex items-start gap-3 sm:gap-3.5 ${optionStyle}`}
                   >
                     <span
                       className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold shrink-0 ${
@@ -553,7 +553,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
                     >
                       {letter}
                     </span>
-                    <span className="text-sm sm:text-base leading-snug pt-0.5">{opt}</span>
+                    <span className="text-sm sm:text-base leading-snug pt-0.5 break-words min-w-0 flex-1">{opt}</span>
                   </button>
                 );
               })}
@@ -571,19 +571,19 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
                 <div className="flex items-center gap-2 font-semibold">
                   {practiceResult.isCorrect ? (
                     <>
-                      <CheckCircle2 className="w-4 h-4 text-success dark:text-emerald-400" />
+                      <CheckCircle2 className="w-4 h-4 text-success dark:text-emerald-400 shrink-0" />
                       <span>Correct Answer!</span>
                     </>
                   ) : (
                     <>
-                      <XCircle className="w-4 h-4 text-error dark:text-rose-400" />
+                      <XCircle className="w-4 h-4 text-error dark:text-rose-400 shrink-0" />
                       <span>
                         Incorrect · Correct Option: {['A', 'B', 'C', 'D'][practiceResult.correctIndex]}
                       </span>
                     </>
                   )}
                 </div>
-                <p className="text-xs opacity-90 leading-relaxed">{practiceResult.explanation}</p>
+                <p className="text-xs opacity-90 leading-relaxed break-words">{practiceResult.explanation}</p>
               </div>
             )}
           </div>
@@ -625,7 +625,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 disabled={currentIdx === 0}
@@ -663,9 +663,9 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
         </div>
 
         {/* Right: Question Palette & Legend */}
-        <aside className="lg:col-span-4 space-y-4">
-          <div className="bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-sm">
-            <div className="flex items-center justify-between">
+        <aside className="lg:col-span-4 space-y-4 min-w-0">
+          <div className="bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 rounded-xl p-4 sm:p-5 space-y-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-bold text-primary dark:text-white flex items-center gap-2">
                 <Bookmark className="w-4 h-4 text-secondary dark:text-blue-400" /> Question Palette
               </h3>
@@ -674,7 +674,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-5 gap-2 max-h-60 lg:max-h-96 overflow-y-auto pr-1 p-0.5">
+            <div className="grid grid-cols-4 min-[380px]:grid-cols-5 sm:grid-cols-8 lg:grid-cols-5 gap-2 max-h-60 lg:max-h-96 overflow-y-auto pr-1 p-0.5">
               {config.questions.map((q, idx) => {
                 const isAnswered = typeof responses[q.id] === 'number';
                 const isReview = markedForReview.includes(q.id);
@@ -742,9 +742,9 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 p-6 space-y-4 shadow-xl">
-            <h3 className="font-display text-lg font-bold text-primary dark:text-white">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-md rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 p-4 sm:p-6 space-y-4 shadow-xl max-h-[90dvh] overflow-y-auto my-auto">
+            <h3 className="font-display text-lg font-bold text-primary dark:text-white break-words">
               Submit {config.title}?
             </h3>
             <div className="grid grid-cols-3 gap-2 text-center bg-surface-container-low dark:bg-slate-800 rounded-lg p-3 text-xs border border-outline-variant/60 dark:border-slate-700">
@@ -770,7 +770,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
             <p className="text-xs text-on-surface-variant dark:text-slate-300">
               Once submitted, your score sheet, negative marking breakdown, weak topic analytics, and full solution key will be generated.
             </p>
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex flex-wrap justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setShowConfirmModal(false)}

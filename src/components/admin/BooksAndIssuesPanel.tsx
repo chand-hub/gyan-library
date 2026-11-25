@@ -188,8 +188,8 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
             Manage {books.length} titles, track available copies, issue volumes, and calculate overdue fines.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex p-1 bg-surface-container-low dark:bg-slate-900 rounded border border-outline-variant dark:border-slate-800">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap p-1 bg-surface-container-low dark:bg-slate-900 rounded border border-outline-variant dark:border-slate-800">
             <button
               type="button"
               onClick={() => setSubTab('catalog')}
@@ -222,7 +222,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
       {showAddBook && (
         <form
           onSubmit={handleAddBook}
-          className="p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-4 gap-3"
+          className="p-4 sm:p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3"
         >
           <input
             type="text"
@@ -272,7 +272,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
             onChange={(e) => setShelfNumber(e.target.value)}
             className={inputCls}
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap sm:flex-nowrap gap-2">
             <input
               type="number"
               min={1}
@@ -280,7 +280,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
               placeholder="Copies"
               value={totalCopies}
               onChange={(e) => setTotalCopies(Number(e.target.value))}
-              className="w-20 px-2 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white"
+              className="flex-1 min-w-[70px] sm:w-20 sm:flex-none px-2 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white"
             />
             <input
               type="number"
@@ -289,11 +289,11 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
               required
               value={pubYear}
               onChange={(e) => setPubYear(Number(e.target.value))}
-              className="w-24 px-2 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white"
+              className="flex-1 min-w-[80px] sm:w-24 sm:flex-none px-2 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white"
             />
             <button
               type="submit"
-              className="flex-1 px-3 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
+              className="w-full sm:w-auto flex-1 px-3 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
             >
               Save
             </button>
@@ -419,10 +419,10 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
       )}
 
       {issueBook && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-primary/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
           <form
             onSubmit={handleDirectIssue}
-            className="w-full max-w-md bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 rounded-xl p-6 space-y-4 text-on-surface dark:text-slate-100 shadow-2xl"
+            className="w-full max-w-md bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 rounded-xl p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto my-auto text-on-surface dark:text-slate-100 shadow-2xl"
           >
             <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
               <h3 className="font-display text-lg font-bold text-primary dark:text-white">Issue Book</h3>

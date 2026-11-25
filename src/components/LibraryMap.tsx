@@ -74,14 +74,14 @@ export const LibraryMap: React.FC<LibraryMapProps> = ({
 
   if (!apiKey || quotaExceeded) {
     return (
-      <div className="h-[340px] w-full rounded-lg border border-outline-variant bg-surface-container-low dark:bg-slate-900 flex flex-col items-center justify-center p-6 text-center shadow-sm">
+      <div className="min-h-[300px] sm:h-[340px] w-full rounded-lg border border-outline-variant bg-surface-container-low dark:bg-slate-900 flex flex-col items-center justify-center p-4 sm:p-6 text-center shadow-sm">
         <div className="w-12 h-12 rounded-full bg-surface-container-lowest dark:bg-slate-800 flex items-center justify-center text-secondary mb-3 border border-outline-variant">
           <MapPin className="w-6 h-6" />
         </div>
-        <h4 className="font-semibold text-primary dark:text-white text-base">{libraryName}</h4>
-        <p className="text-sm text-on-surface-variant dark:text-slate-300 max-w-md mt-1">{address}</p>
+        <h4 className="font-semibold text-primary dark:text-white text-base break-words">{libraryName}</h4>
+        <p className="text-sm text-on-surface-variant dark:text-slate-300 max-w-md mt-1 break-words">{address}</p>
         {ratingText && (
-          <p className="text-xs font-semibold text-secondary mt-1">{ratingText}</p>
+          <p className="text-xs font-semibold text-secondary mt-1 break-words">{ratingText}</p>
         )}
         <p className="text-xs font-mono text-outline mt-1 tabular-nums">
           Coordinates: {lat.toFixed(4)}, {lng.toFixed(4)}
@@ -121,13 +121,13 @@ export const LibraryMap: React.FC<LibraryMapProps> = ({
           </GoogleMap>
         </APIProvider>
       </div>
-      <div className="flex items-center justify-between text-xs text-on-surface-variant px-1">
-        <span>{ratingText || 'Darbhanga · Mirzapur Chowk'}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-on-surface-variant px-1">
+        <span className="min-w-0 break-words">{ratingText || 'Darbhanga · Mirzapur Chowk'}</span>
         <a
           href={directionsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-secondary hover:text-primary font-semibold"
+          className="inline-flex items-center gap-1 text-secondary hover:text-primary font-semibold shrink-0"
         >
           Open in Google Maps <ExternalLink className="w-3.5 h-3.5" />
         </a>
