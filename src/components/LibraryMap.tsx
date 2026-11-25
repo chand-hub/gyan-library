@@ -14,6 +14,7 @@ interface LibraryMapProps {
   lng: number;
   libraryName: string;
   address: string;
+  nearbyLandmarks?: string;
   openingHours: string;
   mapUrl?: string;
   ratingText?: string;
@@ -62,6 +63,7 @@ export const LibraryMap: React.FC<LibraryMapProps> = ({
   lng,
   libraryName,
   address,
+  nearbyLandmarks,
   openingHours,
   mapUrl,
   ratingText,
@@ -80,6 +82,11 @@ export const LibraryMap: React.FC<LibraryMapProps> = ({
         </div>
         <h4 className="font-semibold text-primary dark:text-white text-base break-words">{libraryName}</h4>
         <p className="text-sm text-on-surface-variant dark:text-slate-300 max-w-md mt-1 break-words">{address}</p>
+        {nearbyLandmarks && (
+          <p className="text-xs text-secondary dark:text-blue-400 font-medium max-w-md mt-1 break-words">
+            Landmarks: {nearbyLandmarks}
+          </p>
+        )}
         {ratingText && (
           <p className="text-xs font-semibold text-secondary mt-1 break-words">{ratingText}</p>
         )}
@@ -122,7 +129,9 @@ export const LibraryMap: React.FC<LibraryMapProps> = ({
         </APIProvider>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-on-surface-variant px-1">
-        <span className="min-w-0 break-words">{ratingText || 'Darbhanga · Mirzapur Chowk'}</span>
+        <span className="min-w-0 break-words">
+          {nearbyLandmarks || ratingText || 'Darbhanga · Mirzapur Chowk'}
+        </span>
         <a
           href={directionsUrl}
           target="_blank"

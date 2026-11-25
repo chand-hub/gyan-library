@@ -103,6 +103,7 @@ export async function seedDemoDataset(actorUid: string): Promise<{ created: numb
     libraryName: DEFAULT_GYAN_ADDA_SETTINGS.libraryName,
     tagline: DEFAULT_GYAN_ADDA_SETTINGS.tagline,
     address: DEFAULT_GYAN_ADDA_SETTINGS.address,
+    nearbyLandmarks: DEFAULT_GYAN_ADDA_SETTINGS.nearbyLandmarks,
     phone: DEFAULT_GYAN_ADDA_SETTINGS.phone,
     whatsapp: DEFAULT_GYAN_ADDA_SETTINGS.whatsapp,
     email: DEFAULT_GYAN_ADDA_SETTINGS.email,
@@ -199,11 +200,11 @@ export async function seedDemoDataset(actorUid: string): Promise<{ created: numb
 
   // 3. 5 Staff Members
   const staffMembers = [
-    { id: 'staff_demo_1', code: 'STF001', name: 'Rajendra Prasad', email: 'rajendra.manager@vidhyalibrary.in', mobile: '8797640034', role: 'manager', shift: 'Morning (06:00–14:00)', salary: 28000, perms: ['view_students', 'manage_seats', 'mark_attendance', 'record_offline_payments', 'manage_books', 'view_enquiries'] },
-    { id: 'staff_demo_2', code: 'STF002', name: 'Sunita Choudhary', email: 'sunita.manager@vidhyalibrary.in', mobile: '8789702011', role: 'manager', shift: 'Evening (14:00–22:00)', salary: 26500, perms: ['view_students', 'manage_seats', 'mark_attendance', 'manage_books'] },
-    { id: 'staff_demo_3', code: 'STF003', name: 'Mahesh Kumar', email: 'mahesh.desk@vidhyalibrary.in', mobile: '9829011223', role: 'staff', shift: 'Morning (06:00–14:00)', salary: 16500, perms: ['view_students', 'mark_attendance', 'manage_books'] },
-    { id: 'staff_demo_4', code: 'STF004', name: 'Deepika Jha', email: 'deepika.desk@vidhyalibrary.in', mobile: '9829011224', role: 'staff', shift: 'Afternoon (12:00–20:00)', salary: 16000, perms: ['view_students', 'manage_seats', 'record_offline_payments'] },
-    { id: 'staff_demo_5', code: 'STF005', name: 'Vinod Thakur', email: 'vinod.night@vidhyalibrary.in', mobile: '9829011225', role: 'staff', shift: 'Night (20:00–06:00)', salary: 18000, perms: ['view_students', 'mark_attendance'] },
+    { id: 'staff_demo_1', code: 'STF001', name: 'Rajendra Prasad', email: 'rajendra.manager@gyanaddalibrary.in', mobile: '8797640034', role: 'manager', shift: 'Morning (06:00–14:00)', salary: 28000, perms: ['view_students', 'manage_seats', 'mark_attendance', 'record_offline_payments', 'manage_books', 'view_enquiries'] },
+    { id: 'staff_demo_2', code: 'STF002', name: 'Sunita Choudhary', email: 'sunita.manager@gyanaddalibrary.in', mobile: '8789702011', role: 'manager', shift: 'Evening (14:00–22:00)', salary: 26500, perms: ['view_students', 'manage_seats', 'mark_attendance', 'manage_books'] },
+    { id: 'staff_demo_3', code: 'STF003', name: 'Mahesh Kumar', email: 'mahesh.desk@gyanaddalibrary.in', mobile: '9829011223', role: 'staff', shift: 'Morning (06:00–14:00)', salary: 16500, perms: ['view_students', 'mark_attendance', 'manage_books'] },
+    { id: 'staff_demo_4', code: 'STF004', name: 'Deepika Jha', email: 'deepika.desk@gyanaddalibrary.in', mobile: '9829011224', role: 'staff', shift: 'Afternoon (12:00–20:00)', salary: 16000, perms: ['view_students', 'manage_seats', 'record_offline_payments'] },
+    { id: 'staff_demo_5', code: 'STF005', name: 'Vinod Thakur', email: 'vinod.night@gyanaddalibrary.in', mobile: '9829011225', role: 'staff', shift: 'Night (20:00–06:00)', salary: 18000, perms: ['view_students', 'mark_attendance'] },
   ];
 
   staffMembers.forEach((s) => {
@@ -266,6 +267,7 @@ export async function seedDemoDataset(actorUid: string): Promise<{ created: numb
       imageUrl: g.imageUrl,
       caption: g.caption,
       sortOrder: g.sortOrder,
+      approved: true,
       createdAt: serverTimestamp(),
     });
   });
@@ -332,6 +334,9 @@ export async function seedDemoDataset(actorUid: string): Promise<{ created: numb
       emergencyContact: `98292${String(20000 + idx * 131).slice(0, 5)}`,
       seatId,
       seatCode,
+      shiftId: ['shift_morning', 'shift_afternoon', 'shift_evening', 'shift_fullday'][i % 4],
+      shiftName: ['Morning Shift', 'Afternoon Shift', 'Evening Shift', 'Full Day'][i % 4],
+      shiftTiming: ['06:00 – 12:00', '12:00 – 18:00', '16:00 – 22:00', '06:00 – 22:00'][i % 4],
       membershipId: `mem_demo_${idx}`,
       membershipPlanName: assignedPlan.name,
       membershipStatus,

@@ -18,18 +18,22 @@ import {
 import {
   Activity,
   Award,
+  BarChart3,
   Bell,
   BookOpen,
   CalendarCheck,
   CheckCircle2,
+  Clock,
   Cpu,
   CreditCard,
   Database,
   Download,
   FileText,
   FileUp,
+  HelpCircle,
   Home,
   Image as ImageIcon,
+  KeyRound,
   LayoutDashboard,
   LayoutGrid,
   LogOut,
@@ -41,6 +45,8 @@ import {
   RefreshCw,
   Settings,
   Shield,
+  ShieldCheck,
+  Sparkles,
   Sun,
   Users,
   Wifi,
@@ -61,12 +67,15 @@ import { BrandLogo } from './BrandLogo';
 import { StudentsPanel } from './admin/StudentsPanel';
 import { SeatManagementPanel } from './admin/SeatManagementPanel';
 import { AttendancePanel } from './admin/AttendancePanel';
+import { ShiftManagementPanel } from './admin/ShiftManagementPanel';
 import { BooksAndIssuesPanel } from './admin/BooksAndIssuesPanel';
 import { FinancePanel } from './admin/FinancePanel';
 import { SettingsAndOpsPanel } from './admin/SettingsAndOpsPanel';
 import { AIPdfImportPanel } from './admin/AIPdfImportPanel';
 import { ExamManagementPanel } from './admin/ExamManagementPanel';
 import { FeeReminderPanel } from './admin/FeeReminderPanel';
+import { FaqManagementPanel } from './admin/FaqManagementPanel';
+import { AdminProfilePanel } from './admin/AdminProfilePanel';
 import {
   AnnouncementRecord,
   AttendanceRecord,
@@ -113,21 +122,27 @@ interface AdminDashboardProps {
 type AdminTab =
   | 'overview'
   | 'students'
-  | 'seats'
   | 'attendance'
-  | 'books'
-  | 'finance'
+  | 'shifts'
   | 'fee_reminders'
+  | 'finance'
+  | 'analytics'
+  | 'faqs'
+  | 'facilities'
+  | 'gallery'
+  | 'settings'
+  | 'admin_profile'
+  | 'change_password'
+  | 'seats'
+  | 'books'
   | 'pdf_import'
   | 'exam_management'
   | 'staff'
   | 'enquiries'
-  | 'gallery'
   | 'announcements'
   | 'notifications'
   | 'audit'
-  | 'monitoring'
-  | 'settings';
+  | 'monitoring';
 
 interface SystemStatusResponse {
   timestamp: string;
@@ -190,6 +205,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const {
     firebaseUser,
+    adminSession,
     profile,
     effectiveRole,
     actualRole,
@@ -227,6 +243,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [enquiries, setEnquiries] = useState<EnquiryRecord[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogRecord[]>([]);
   const [attempts, setAttempts] = useState<TestAttemptRecord[]>([]);
+
+  // Backend telemetry snapshot for attendance/shifts/fees when logged in with Mobile+Password
+  const [serverAttSummary, setServerAttSummary] = useState<{
+    kpis?: { totalRegistered: number; presentToday: number; onLeaveToday: number; absentToday: number; unmarkedToday: number };
+    shiftSummary?: Array<{ shiftId: string; shiftName: string; timing: string; totalStudents: number; present: number; leave: number; absent: number }>;
+    students?: StudentRecord[];
+    records?: AttendanceRecord[];
+  } | null>(null);
 
   // System Monitor state
   const [sysStatus, setSysStatus] = useState<SystemStatusResponse | null>(null);
@@ -387,6 +411,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, [getIdToken, handleNotify]);
 
   useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const token = await getIdToken();
+        if (!token) return;
+        const res = await fetch('/api/admin/attendance', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok && active) {
+          setServerAttSummary(await res.json());
+        }
+      } catch {
+        // Ignore transient network errors
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [getIdToken, tab]);
+
+  useEffect(() => {
     if (tab === 'monitoring' && isAdmin) {
       fetchSystemStatus();
     }
@@ -432,10 +477,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const scopeFilter = <T extends { isDemo?: boolean }>(arr: T[]) =>
       includeDemoInOverview ? arr : arr.filter((item) => !item.isDemo);
 
-    const scStudents = scopeFilter(students);
+    const activeStudentsSrc =
+      students.length > 0 ? students : serverAttSummary?.students || [];
+    const activeAttendanceSrc =
+      attendance.length > 0 ? attendance : serverAttSummary?.records || [];
+
+    const scStudents = scopeFilter(activeStudentsSrc as StudentRecord[]);
     const scMemberships = scopeFilter(memberships);
     const scPayments = scopeFilter(payments);
-    const scAttendance = scopeFilter(attendance);
+    const scAttendance = scopeFilter(activeAttendanceSrc as AttendanceRecord[]);
     const scIssues = scopeFilter(bookIssues);
 
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -443,7 +493,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const expiredMemberships =
       scMemberships.filter((m) => m.status === 'expired').length ||
       scStudents.filter((s) => s.membershipStatus === 'expired').length;
-    const todayAttendance = scAttendance.filter((a) => a.date === todayStr).length;
+    const todayAttendance =
+      serverAttSummary?.kpis?.presentToday ??
+      scAttendance.filter((a) => a.date === todayStr).length;
     const availableSeats = seats.filter((s) => s.status === 'available').length;
     const occupiedSeats = seats.filter((s) => s.status === 'occupied').length;
     const verifiedRevenue = scPayments
@@ -455,7 +507,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const issuedBooks = scIssues.filter((i) => i.status === 'issued' || i.status === 'overdue').length;
 
     return {
-      totalStudents: scStudents.length,
+      totalStudents: serverAttSummary?.kpis?.totalRegistered ?? scStudents.length,
       activeMembers,
       expiredMemberships,
       todayAttendance,
@@ -466,7 +518,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       totalBooks: books.length,
       issuedBooks,
     };
-  }, [students, memberships, payments, attendance, bookIssues, seats, books, includeDemoInOverview]);
+  }, [students, memberships, payments, attendance, bookIssues, seats, books, includeDemoInOverview, serverAttSummary]);
 
   const planDistributionData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -505,17 +557,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     items: Array<{ id: AdminTab; label: string; icon: React.ReactNode; visible: boolean; badge?: number }>;
   }> = [
     {
-      group: 'Overview',
+      group: 'Core Administration',
       items: [
-        { id: 'overview', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" />, visible: true },
+        { id: 'overview', label: 'Dashboard Overview', icon: <LayoutDashboard className="w-4 h-4" />, visible: true },
+        { id: 'students', label: 'Student Management', icon: <Users className="w-4 h-4" />, visible: hasStaffPerm('view_students') },
+        { id: 'attendance', label: 'Attendance Management', icon: <CalendarCheck className="w-4 h-4" />, visible: hasStaffPerm('mark_attendance') },
+        { id: 'shifts', label: 'Shift Management', icon: <Clock className="w-4 h-4" />, visible: hasStaffPerm('mark_attendance') },
+        { id: 'fee_reminders', label: 'Fee Management', icon: <MessageCircle className="w-4 h-4" />, visible: isManagerOrAdmin },
+        { id: 'finance', label: 'Payment History', icon: <CreditCard className="w-4 h-4" />, visible: isManagerOrAdmin || hasStaffPerm('record_offline_payments') },
+        { id: 'analytics', label: 'Reports & Analytics', icon: <BarChart3 className="w-4 h-4" />, visible: isManagerOrAdmin },
       ],
     },
     {
-      group: 'Operations',
+      group: 'Public Website CMS',
       items: [
-        { id: 'students', label: 'Students', icon: <Users className="w-4 h-4" />, visible: hasStaffPerm('view_students') },
+        { id: 'faqs', label: 'FAQ Management', icon: <HelpCircle className="w-4 h-4" />, visible: isManagerOrAdmin },
+        { id: 'facilities', label: 'Library Facilities', icon: <Sparkles className="w-4 h-4" />, visible: isManagerOrAdmin },
+        { id: 'gallery', label: 'Photo Gallery', icon: <ImageIcon className="w-4 h-4" />, visible: isManagerOrAdmin },
+        { id: 'settings', label: 'Public Website Settings', icon: <Settings className="w-4 h-4" />, visible: isAdmin },
+        { id: 'enquiries', label: 'Enquiries', icon: <MessageSquare className="w-4 h-4" />, visible: hasStaffPerm('view_enquiries') },
+      ],
+    },
+    {
+      group: 'Library & Exam Desk',
+      items: [
         { id: 'seats', label: 'Study Seats', icon: <LayoutGrid className="w-4 h-4" />, visible: hasStaffPerm('manage_seats') },
-        { id: 'attendance', label: 'Attendance', icon: <CalendarCheck className="w-4 h-4" />, visible: hasStaffPerm('mark_attendance') },
         {
           id: 'books',
           label: 'Book Management',
@@ -523,52 +589,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           visible: hasStaffPerm('manage_books'),
           badge: kpis.issuedBooks > 0 ? kpis.issuedBooks : undefined,
         },
-        { id: 'enquiries', label: 'Enquiries', icon: <MessageSquare className="w-4 h-4" />, visible: hasStaffPerm('view_enquiries') },
-      ],
-    },
-    {
-      group: 'Finance',
-      items: [
-        {
-          id: 'finance',
-          label: isManagerOrAdmin ? 'Finance & Plans' : 'Desk Payments',
-          icon: <CreditCard className="w-4 h-4" />,
-          visible: isManagerOrAdmin || hasStaffPerm('record_offline_payments'),
-        },
-        {
-          id: 'fee_reminders',
-          label: 'Fee Reminders & WA',
-          icon: <MessageCircle className="w-4 h-4" />,
-          visible: isManagerOrAdmin,
-        },
-      ],
-    },
-    {
-      group: 'Exams & AI',
-      items: [
         { id: 'exam_management', label: 'Exam & News CMS', icon: <Award className="w-4 h-4" />, visible: isManagerOrAdmin },
         { id: 'pdf_import', label: 'AI PDF Importer', icon: <FileUp className="w-4 h-4" />, visible: isManagerOrAdmin },
       ],
     },
     {
-      group: 'System',
+      group: 'Security & Account',
       items: [
+        { id: 'admin_profile', label: 'Admin Profile & Security', icon: <ShieldCheck className="w-4 h-4" />, visible: isAdmin },
+        { id: 'change_password', label: 'Change Password', icon: <KeyRound className="w-4 h-4" />, visible: isAdmin },
         { id: 'staff', label: 'Staff & RBAC', icon: <Shield className="w-4 h-4" />, visible: isManagerOrAdmin },
-        { id: 'gallery', label: 'Gallery', icon: <ImageIcon className="w-4 h-4" />, visible: isManagerOrAdmin },
         { id: 'announcements', label: 'Notices', icon: <Megaphone className="w-4 h-4" />, visible: isManagerOrAdmin },
         { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" />, visible: isManagerOrAdmin },
         { id: 'audit', label: 'Audit Logs', icon: <FileText className="w-4 h-4" />, visible: isAdmin },
         { id: 'monitoring', label: 'System Monitor', icon: <Activity className="w-4 h-4" />, visible: isAdmin },
-        { id: 'settings', label: 'Library Settings', icon: <Settings className="w-4 h-4" />, visible: isAdmin },
       ],
     },
   ];
 
-  const userInitials = (profile?.displayName || firebaseUser?.email || 'VL')
+  const actorDisplayName =
+    adminSession?.displayName || profile?.displayName || firebaseUser?.email || 'Administrator';
+  const userInitials = actorDisplayName
     .split(/\s+/)
     .slice(0, 2)
     .map((p) => p[0]?.toUpperCase() || '')
-    .join('') || 'VL';
+    .join('') || 'GA';
 
   const selectTab = (next: AdminTab) => {
     setTab(next);
@@ -644,6 +689,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               );
             })}
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="flex items-center gap-2.5 px-3 py-2 rounded text-left font-label text-sm font-semibold text-error-container hover:bg-error/20 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
           </nav>
         </div>
 
@@ -655,7 +708,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-title text-sm font-semibold text-on-primary truncate">
-                {profile?.displayName || firebaseUser?.email || 'Administrator'}
+                {actorDisplayName}
               </span>
               <span className="font-body text-xs text-on-primary-container capitalize truncate">
                 Role: {effectiveRole}
@@ -680,10 +733,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
             <div className="min-w-0">
               <p className="font-headline text-sm sm:text-base font-bold text-primary truncate">
-                VIDHYA LIBRARY · Gyan Adda
+                GYAN ADDA LIBRARY
               </p>
               <p className="font-body text-xs text-on-surface-variant capitalize truncate">
-                {effectiveRole} Workspace
+                {effectiveRole} Management Console
               </p>
             </div>
           </div>
@@ -814,7 +867,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     type="button"
                     onClick={() =>
                       downloadCsv(
-                        `vidhya-executive-summary-${new Date().toISOString().slice(0, 10)}.csv`,
+                        `gyan-adda-executive-summary-${new Date().toISOString().slice(0, 10)}.csv`,
                         ['Metric', 'Value'],
                         [
                           ['Total Students', kpis.totalStudents],
@@ -974,12 +1027,91 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
 
+          {tab === 'analytics' && isManagerOrAdmin && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="font-headline text-2xl font-bold text-on-surface">
+                    Reports &amp; Library Analytics
+                  </h1>
+                  <p className="text-sm text-on-surface-variant">
+                    Shift attendance breakdown, occupancy utilization, and financial collection analytics.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    downloadCsv(
+                      `gyan-adda-analytics-${new Date().toISOString().slice(0, 10)}.csv`,
+                      ['Metric', 'Value'],
+                      [
+                        ['Total Registered Students', kpis.totalStudents],
+                        ['Present Today (IST)', kpis.todayAttendance],
+                        ['On Leave Today', serverAttSummary?.kpis?.onLeaveToday ?? 0],
+                        ['Absent Today', serverAttSummary?.kpis?.absentToday ?? 0],
+                        ['Verified Revenue (INR)', kpis.verifiedRevenue],
+                        ['Pending Dues (INR)', kpis.pendingPayments],
+                      ]
+                    )
+                  }
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" /> Export Analytics CSV
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-3">
+                    Shift-Wise Attendance Breakdown
+                  </h3>
+                  <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={serverAttSummary?.shiftSummary || []}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#C4C6CF" strokeOpacity={0.5} />
+                        <XAxis dataKey="shiftName" tick={{ fontSize: 10, fill: '#44474E' }} />
+                        <YAxis tick={{ fontSize: 11, fill: '#44474E' }} />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="present" name="Present" fill="#006D30" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="leave" name="Leave" fill="#9B4500" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="absent" name="Absent" fill="#B3261E" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                    Shift Utilization Summary
+                  </h3>
+                  <div className="divide-y divide-outline-variant/60">
+                    {(serverAttSummary?.shiftSummary || []).map((s) => (
+                      <div key={s.shiftId} className="py-2.5 flex items-center justify-between gap-2 text-xs">
+                        <div>
+                          <p className="font-semibold text-primary">{s.shiftName}</p>
+                          <p className="font-mono text-[11px] text-on-surface-variant">{s.timing}</p>
+                        </div>
+                        <div className="font-mono tabular-nums flex items-center gap-3">
+                          <span className="text-success font-bold">P: {s.present}</span>
+                          <span className="text-warning font-bold">L: {s.leave}</span>
+                          <span className="text-error font-bold">A: {s.absent}</span>
+                          <span className="text-on-surface-variant">Total: {s.totalStudents}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {tab === 'fee_reminders' && isManagerOrAdmin && (
             <FeeReminderPanel
               students={students}
               plans={plans}
-              actorUid={firebaseUser?.uid || ''}
-              actorEmail={firebaseUser?.email || ''}
+              actorUid={firebaseUser?.uid || adminSession?.adminId || ''}
+              actorEmail={firebaseUser?.email || adminSession?.mobile || ''}
               getIdToken={getIdToken}
               onNotify={handleNotify}
             />
@@ -1238,6 +1370,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               payments={payments}
               isManagerOrAdmin={isManagerOrAdmin}
               actorRole={effectiveRole}
+              hasFirebaseSession={Boolean(firebaseUser)}
+              getIdToken={getIdToken}
               onNotify={handleNotify}
             />
           )}
@@ -1257,9 +1391,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <AttendancePanel
               attendance={attendance}
               students={students}
-              actorUid={firebaseUser?.uid || ''}
+              actorUid={firebaseUser?.uid || adminSession?.adminId || ''}
+              hasFirebaseSession={Boolean(firebaseUser)}
+              getIdToken={getIdToken}
               onNotify={handleNotify}
             />
+          )}
+
+          {tab === 'shifts' && (
+            <ShiftManagementPanel
+              students={students}
+              hasFirebaseSession={Boolean(firebaseUser)}
+              isManagerOrAdmin={isManagerOrAdmin}
+              getIdToken={getIdToken}
+              onNotify={handleNotify}
+            />
+          )}
+
+          {tab === 'faqs' && isManagerOrAdmin && (
+            <FaqManagementPanel
+              hasFirebaseSession={Boolean(firebaseUser)}
+              getIdToken={getIdToken}
+              onNotify={handleNotify}
+            />
+          )}
+
+          {tab === 'admin_profile' && isAdmin && (
+            <AdminProfilePanel mode="profile" onNotify={handleNotify} />
+          )}
+
+          {tab === 'change_password' && isAdmin && (
+            <AdminProfilePanel mode="password" onNotify={handleNotify} />
           )}
 
           {tab === 'books' && (
@@ -1280,7 +1442,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               expenses={expenses}
               students={students}
               settings={settings}
-              actorUid={firebaseUser?.uid || ''}
+              actorUid={firebaseUser?.uid || adminSession?.adminId || ''}
               actorRole={effectiveRole}
               isAdmin={isAdmin}
               isManagerOrAdmin={isManagerOrAdmin}
@@ -1291,6 +1453,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {(tab === 'staff' ||
             tab === 'enquiries' ||
             tab === 'gallery' ||
+            tab === 'facilities' ||
             tab === 'announcements' ||
             tab === 'notifications' ||
             tab === 'audit' ||
@@ -1304,10 +1467,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               auditLogs={auditLogs}
               students={students}
               settings={settings}
-              actorUid={firebaseUser?.uid || ''}
+              actorUid={firebaseUser?.uid || adminSession?.adminId || ''}
               actorRole={effectiveRole}
               isAdmin={isAdmin}
               isManagerOrAdmin={isManagerOrAdmin}
+              hasFirebaseSession={Boolean(firebaseUser)}
               getIdToken={getIdToken}
               onNotify={handleNotify}
             />

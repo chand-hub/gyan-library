@@ -605,7 +605,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
               type="button"
               onClick={() =>
                 downloadCsv(
-                  `vidhya-payments-${new Date().toISOString().slice(0, 10)}.csv`,
+                  `gyan-adda-payments-${new Date().toISOString().slice(0, 10)}.csv`,
                   ['Receipt', 'Student ID', 'Student Name', 'Plan', 'Amount (INR)', 'Method', 'Status', 'Dataset'],
                   scopedPayments.map((p) => [
                     p.receiptNumber,
@@ -868,7 +868,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                 type="button"
                 onClick={() =>
                   downloadCsv(
-                    `vidhya-expenses-${new Date().toISOString().slice(0, 10)}.csv`,
+                    `gyan-adda-expenses-${new Date().toISOString().slice(0, 10)}.csv`,
                     ['Date', 'Title', 'Category', 'Amount (INR)', 'Notes', 'Dataset'],
                     scopedExpenses.map((e) => [
                       e.expenseDate,
@@ -1282,7 +1282,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                 onClick={() =>
                   downloadReceiptHtml(
                     receiptPreview,
-                    settings?.libraryName || 'VIDHYA LIBRARY',
+                    settings?.libraryName || 'GYAN ADDA LIBRARY',
                     settings?.address || ''
                   )
                 }

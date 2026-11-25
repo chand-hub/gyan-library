@@ -153,7 +153,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 Your study desk, AI tests, and fee receipts in one place
               </h2>
               <p className="text-sm text-on-primary-container leading-relaxed">
-                Sign in with your Vidhya Library ID or register as a new member to reserve your desk and start competitive exam prep.
+                Sign in with your GYAN ADDA LIBRARY ID or register as a new member to reserve your desk and access your study portal.
               </p>
             </div>
             <ul className="space-y-3 text-sm text-on-primary-container">
@@ -285,7 +285,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         required
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
-                        placeholder="student@vidhyalibrary.in"
+                        placeholder="student@gyanaddalibrary.in"
                         className={inputIconCls}
                       />
                     </div>
@@ -343,7 +343,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                 {tab === 'complete_profile' && (
                   <div className="p-3 rounded bg-surface-container-low border border-outline-variant text-xs text-on-surface-variant mb-3">
-                    Complete your member details to generate your unique VIDHYA LIBRARY Student ID (e.g. VL2026XXX) and QR Pass.
+                    Complete your member details to generate your unique GYAN ADDA LIBRARY Student ID (e.g. VL2026XXX) and QR Pass.
                   </div>
                 )}
 

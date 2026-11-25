@@ -1,1256 +1,1192 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Award,
+  ArrowRight,
+  BatteryCharging,
   BookOpen,
-  Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Clock,
-  Globe,
+  Droplets,
+  HelpCircle,
+  LampDesk,
+  Lock,
   Mail,
   MapPin,
   Menu,
+  MessageCircle,
   Moon,
-  Newspaper,
+  Navigation,
   Phone,
-  Search,
   ShieldCheck,
   Sparkles,
   Star,
   Sun,
-  Users,
+  UserCheck,
   Wifi,
+  Wind,
   X,
-  Zap,
 } from 'lucide-react';
-import {
-  AnnouncementRecord,
-  CurrentAffairsItem,
-  DEFAULT_FACILITIES,
-  DEFAULT_GYAN_ADDA_SETTINGS,
-  DigitalGKBook,
-  ExamCategory,
-  GalleryItem,
-  LibrarySettings,
-  MembershipPlan,
-  SeatRecord,
-} from '../types/library';
-import { DEMO_IMAGES } from '../lib/demoSeed';
-import { BrandLogo } from './BrandLogo';
-import { LibraryMap } from './LibraryMap';
-import { CurrentAffairsModule } from './exam/CurrentAffairsModule';
-import { DigitalGKBookModule } from './exam/DigitalGKBookModule';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { DEMO_IMAGES } from '../lib/demoSeed';
+import {
+  DEFAULT_GYAN_ADDA_SETTINGS,
+  FacilityItem,
+  FaqItem,
+  GalleryItem,
+  LibrarySettings,
+} from '../types/library';
+import { BrandLogo } from './BrandLogo';
+import { LibraryMap } from './LibraryMap';
 
 interface PublicWebsiteProps {
   settings: LibrarySettings | null;
-  plans: MembershipPlan[];
-  seats: SeatRecord[];
+  faqs: FaqItem[];
+  importantQuestions: FaqItem[];
   gallery: GalleryItem[];
-  announcements: AnnouncementRecord[];
-  exams: ExamCategory[];
-  currentAffairs: CurrentAffairsItem[];
-  gkBooks: DigitalGKBook[];
-  totalBooksCount: number;
-  totalQuestionsCount: number;
   isSignedIn: boolean;
   darkMode: boolean;
   onToggleDarkMode: () => void;
-  onOpenAuth: (tab: 'login' | 'register') => void;
-  onOpenPortal: (initialTab?: string) => void;
+  onOpenAdminLogin: () => void;
+  onOpenStudentAuth: (tab: 'login' | 'register') => void;
+  onOpenPortal: () => void;
   quotaExceeded: boolean;
 }
 
-const TESTIMONIALS = [
+const DEFAULT_PUBLIC_FACILITIES: FacilityItem[] = [
   {
-    name: 'Raghavendra Singh',
-    role: 'UPSC & BPSC Aspirant',
-    org: 'Mirzapur Study Hall',
-    quote:
-      'Moving to Gyan Adda Self-Study Center in Mirzapur Chowk transformed my preparation. Full air conditioning, bright LED desk lamps, and 24-hour quiet seating boosted my focused daily study to 10+ hours.',
+    id: 'fac_24h',
+    name: 'Open 24 Hours Self-Study Access',
+    description: 'Quiet study hall open round-the-clock Monday through Sunday.',
+    icon: 'Clock',
+    available: true,
   },
   {
-    name: 'Dr. Anjali Kumari',
-    role: 'NEET PG Candidate',
-    org: '24-Hour Member',
-    quote:
-      'Between chilled RO water, comfortable chairs, and instant AI PYQ mock tests in the student portal, everything I need for medical revision is in one place.',
+    id: 'fac_ac',
+    name: 'Full Centralized Air Conditioning',
+    description: 'Comfortable temperature-regulated reading hall throughout the year.',
+    icon: 'Wind',
+    available: true,
   },
   {
-    name: 'Prashant Jha',
-    role: 'SSC CGL & Banking Scholar',
-    org: 'Darbhanga Campus',
-    quote:
-      'The Digital GK Books including Bihar Special and negative-marking mock analytics helped pinpoint my weak math chapters within weeks.',
+    id: 'fac_wifi',
+    name: 'High-Speed Dual-Band Fiber Wi-Fi',
+    description: 'Reliable fiber internet for online classes, lectures, and mock exams.',
+    icon: 'Wifi',
+    available: true,
+  },
+  {
+    id: 'fac_desk',
+    name: 'Individual Partitioned Study Desks',
+    description: 'Ergonomic seating, personal LED desk lamp, and dedicated charging socket.',
+    icon: 'LampDesk',
+    available: true,
+  },
+  {
+    id: 'fac_water',
+    name: 'RO Chilled Drinking Water',
+    description: 'Clean chilled and normal purified drinking water available on the floor.',
+    icon: 'Droplets',
+    available: true,
+  },
+  {
+    id: 'fac_cctv',
+    name: '24/7 HD CCTV Surveillance & Discipline',
+    description: 'Monitored campus safety, sanitized washrooms, and helpful desk support.',
+    icon: 'ShieldCheck',
+    available: true,
   },
 ];
 
-const FAQS = [
+const DEFAULT_PUBLIC_FAQS: FaqItem[] = [
   {
-    q: 'Where is VIDHYA LIBRARY (Gyan Adda Self-Study Center) located in Darbhanga?',
-    a: 'We are located on the 2nd Floor, Station Rd, in front of Poor Home Road, Mirzapur Chowk, Darbhanga, Bihar 846004 — open 24 hours from Monday through Sunday.',
+    id: 'faq_1',
+    section: 'faq',
+    category: 'Timings',
+    question: 'What are the opening and closing times of GYAN ADDA LIBRARY?',
+    answer:
+      'GYAN ADDA LIBRARY is open 24 hours a day, Monday through Sunday. Students may enroll in Morning, Afternoon, Evening, Full-Day, or Night shifts.',
+    sortOrder: 1,
+    published: true,
+    createdAt: null,
+    updatedAt: null,
   },
   {
-    q: 'How do I reserve a study desk and access the AI Competitive Exam Portal?',
-    a: 'Click Register now to create your free student profile (VL2026XXX). Once inside your Student Portal, select any available desk and launch PYQ tests, AI Mocks, Current Affairs, and Digital GK Books.',
+    id: 'faq_2',
+    section: 'faq',
+    category: 'Fees',
+    question: 'How can I enquire about monthly fees and shift availability?',
+    answer:
+      'Monthly charges depend on your selected shift timing and desk reservation. Call our help line at +91 87976 40034 or send an admission enquiry below for the current fee card.',
+    sortOrder: 2,
+    published: true,
+    createdAt: null,
+    updatedAt: null,
   },
   {
-    q: 'Which competitive exams are supported on the AI Examination Platform?',
-    a: 'We support NEET UG, JEE Main, JEE Advanced, NDA, UPSC, BPSC, SSC CGL, SSC CHSL, SSC MTS, Railway NTPC, Railway Group D, Bihar Police, Bihar SSC, Banking, and custom exams added by our academic desk.',
+    id: 'faq_3',
+    section: 'faq',
+    category: 'Admission',
+    question: 'What is the admission procedure?',
+    answer:
+      'Visit GYAN ADDA LIBRARY at 2nd Floor, Station Rd, Mirzapur Chowk, Darbhanga or submit the online enquiry form below. Pick your preferred study shift, verify your ID at the desk, and start studying immediately.',
+    sortOrder: 3,
+    published: true,
+    createdAt: null,
+    updatedAt: null,
   },
   {
-    q: 'Which online payment methods are accepted for membership fees?',
-    a: 'Online payments work seamlessly via Razorpay supporting UPI, Debit/Credit Cards, and Net Banking with instant downloadable payment receipts, alongside cash/UPI payments verified at the campus desk.',
+    id: 'faq_4',
+    section: 'faq',
+    category: 'Documents',
+    question: 'Which documents are required for admission?',
+    answer:
+      'Carry one valid Government Photo ID (Aadhaar Card / Voter ID / Driving License), two passport-size photographs, and an active mobile & parent/guardian emergency number.',
+    sortOrder: 4,
+    published: true,
+    createdAt: null,
+    updatedAt: null,
+  },
+  {
+    id: 'faq_5',
+    section: 'faq',
+    category: 'Wi-Fi & Power',
+    question: 'Are Wi-Fi and desk power sockets provided for laptops and tablets?',
+    answer:
+      'Yes. High-speed dual-band fiber Wi-Fi and dedicated desk charging sockets are available at study desks for online classes and competitive exam practice.',
+    sortOrder: 5,
+    published: true,
+    createdAt: null,
+    updatedAt: null,
+  },
+  {
+    id: 'faq_6',
+    section: 'faq',
+    category: 'Attendance',
+    question: 'How are shift check-ins and attendance tracked?',
+    answer:
+      'Members check in at the library desk according to their registered shift, with accurate timestamps and leave records maintained by the desk staff.',
+    sortOrder: 6,
+    published: true,
+    createdAt: null,
+    updatedAt: null,
   },
 ];
+
+const DEFAULT_IMPORTANT_QUESTIONS: FaqItem[] = [
+  {
+    id: 'imp_1',
+    section: 'important',
+    category: 'Membership',
+    question: 'Is library membership transferable between students?',
+    answer:
+      'No. Every GYAN ADDA LIBRARY membership and allocated desk is strictly personal and non-transferable.',
+    sortOrder: 1,
+    published: true,
+    createdAt: null,
+    updatedAt: null,
+  },
+  {
+    id: 'imp_2',
+    section: 'important',
+    category: 'Seat & Shifts',
+    question: 'How do seat reservation and shift rules work?',
+    answer:
+      'Seats are assigned against your selected shift window. Shift-based members must vacate cleanly at the close of their shift unless enrolled in Full-Day / 24-hour reserved access.',
+    sortOrder: 2,
+    published: true,
+    createdAt: null,
+    updatedAt: null,
+  },
+  {
+    id: 'imp_3',
+    section: 'important',
+    category: 'Discipline',
+    question: 'What are the core study hall discipline rules?',
+    answer:
+      'Maintain strict silence inside the reading hall, keep mobile phones on silent mode, take phone calls outside, avoid bringing food items onto study desks, and keep earphones at low volume.',
+    sortOrder: 3,
+    published: true,
+    createdAt: null,
+    updatedAt: null,
+  },
+  {
+    id: 'imp_4',
+    section: 'important',
+    category: 'Renewal',
+    question: 'What is the monthly renewal policy?',
+    answer:
+      'Monthly membership should be renewed on or before the due date to retain the same reserved desk number without interruption.',
+    sortOrder: 4,
+    published: true,
+    createdAt: null,
+    updatedAt: null,
+  },
+];
+
+function renderFacilityIcon(iconName: string) {
+  const cls = 'w-5 h-5 text-secondary dark:text-blue-400';
+  switch (iconName) {
+    case 'Clock':
+      return <Clock className={cls} />;
+    case 'Wind':
+      return <Wind className={cls} />;
+    case 'Wifi':
+      return <Wifi className={cls} />;
+    case 'LampDesk':
+      return <LampDesk className={cls} />;
+    case 'Droplets':
+      return <Droplets className={cls} />;
+    case 'ShieldCheck':
+      return <ShieldCheck className={cls} />;
+    case 'BookOpen':
+      return <BookOpen className={cls} />;
+    case 'BatteryCharging':
+      return <BatteryCharging className={cls} />;
+    default:
+      return <Sparkles className={cls} />;
+  }
+}
 
 export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
   settings,
-  plans,
-  seats,
+  faqs,
+  importantQuestions,
   gallery,
-  announcements,
-  exams,
-  currentAffairs,
-  gkBooks,
-  totalBooksCount,
-  totalQuestionsCount,
   isSignedIn,
   darkMode,
   onToggleDarkMode,
-  onOpenAuth,
+  onOpenAdminLogin,
+  onOpenStudentAuth,
   onOpenPortal,
   quotaExceeded,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedZone, setSelectedZone] = useState<string>('ALL');
+  const [openFaqId, setOpenFaqId] = useState<string | null>('faq_1');
+  const [openImpId, setOpenImpId] = useState<string | null>('imp_1');
   const [galleryCategory, setGalleryCategory] = useState<string>('ALL');
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [quickSearch, setQuickSearch] = useState('');
-  const [publicHubTab, setPublicHubTab] = useState<'none' | 'news' | 'books'>('none');
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  // Contact form
-  const [contactName, setContactName] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactPhone, setContactPhone] = useState('');
-  const [contactSubject, setContactSubject] = useState('');
-  const [contactMessage, setContactMessage] = useState('');
-  const [contactSubmitting, setContactSubmitting] = useState(false);
-  const [contactFeedback, setContactFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(
-    null
-  );
+  // Help Line Enquiry Form
+  const [enqName, setEnqName] = useState('');
+  const [enqPhone, setEnqPhone] = useState('');
+  const [enqEmail, setEnqEmail] = useState('');
+  const [enqSubject, setEnqSubject] = useState('New Admission & Shift Enquiry');
+  const [enqMessage, setEnqMessage] = useState('');
+  const [enqSubmitting, setEnqSubmitting] = useState(false);
+  const [enqFeedback, setEnqFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
-  const effectiveSettings: LibrarySettings = settings || {
+  const effectiveSettings: LibrarySettings = {
     ...DEFAULT_GYAN_ADDA_SETTINGS,
-    facilities: DEFAULT_FACILITIES,
+    ...(settings || {}),
+    libraryName: settings?.libraryName || 'GYAN ADDA LIBRARY',
   };
 
-  const seatCounts = useMemo(() => {
-    const total = seats.length;
-    const available = seats.filter((s) => s.status === 'available').length;
-    const occupied = seats.filter((s) => s.status === 'occupied').length;
-    const reserved = seats.filter((s) => s.status === 'reserved').length;
-    return { total, available, occupied, reserved };
-  }, [seats]);
+  const phoneNumbers = useMemo(() => {
+    return (effectiveSettings.phone || '+91 87976 40034')
+      .split('/')
+      .map((p) => p.trim())
+      .filter(Boolean);
+  }, [effectiveSettings.phone]);
 
-  const zones = useMemo(() => {
-    const unique = Array.from(new Set(seats.map((s) => s.zone)));
-    return ['ALL', ...unique];
-  }, [seats]);
+  const primaryTelHref = `tel:${(phoneNumbers[0] || '+918797640034').replace(/[^+\d]/g, '')}`;
+  const whatsappDigits = (effectiveSettings.whatsapp || '+91 87976 40034').replace(/\D/g, '');
+  const whatsappUrl = `https://wa.me/${whatsappDigits.length === 10 ? `91${whatsappDigits}` : whatsappDigits}?text=${encodeURIComponent(
+    'Hello GYAN ADDA LIBRARY, I would like information about study hall admission and shift availability.'
+  )}`;
 
-  const filteredSeats = useMemo(() => {
-    if (selectedZone === 'ALL') return seats;
-    return seats.filter((s) => s.zone === selectedZone);
-  }, [seats, selectedZone]);
+  const directionsUrl =
+    effectiveSettings.mapUrl ||
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      `${effectiveSettings.mapLat},${effectiveSettings.mapLng}`
+    )}`;
 
-  const displayGallery = useMemo(() => {
-    const source: GalleryItem[] =
-      gallery.length > 0
-        ? gallery
+  // 4. Facilities (strictly available items only)
+  const displayFacilities: FacilityItem[] = useMemo(() => {
+    if (Array.isArray(settings?.facilityItems) && settings.facilityItems.length > 0) {
+      return settings.facilityItems.filter((f) => f.available !== false);
+    }
+    if (Array.isArray(settings?.facilities) && settings.facilities.length > 0) {
+      return settings.facilities.map((name, idx) => ({
+        id: `fac_str_${idx}`,
+        name,
+        description: 'Available inside GYAN ADDA LIBRARY study halls.',
+        icon: idx === 0 ? 'Clock' : idx === 1 ? 'Wind' : idx === 2 ? 'Droplets' : 'Sparkles',
+        available: true,
+      }));
+    }
+    return DEFAULT_PUBLIC_FACILITIES;
+  }, [settings]);
+
+  // 5. Published FAQs
+  const displayFaqs = useMemo(() => {
+    const src = faqs.filter((f) => f.published !== false && f.section === 'faq');
+    return (src.length > 0 ? src : DEFAULT_PUBLIC_FAQS).sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [faqs]);
+
+  // 6. Published Important Questions
+  const displayImportant = useMemo(() => {
+    const src = importantQuestions.filter((f) => f.published !== false && f.section === 'important');
+    return (src.length > 0 ? src : DEFAULT_IMPORTANT_QUESTIONS).sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [importantQuestions]);
+
+  // 7. Approved Photo Gallery only
+  const approvedGallery = useMemo(() => {
+    const src = gallery.filter((g) => g.approved !== false);
+    const list: GalleryItem[] =
+      src.length > 0
+        ? src
         : [
             {
-              id: 'fallback-1',
-              title: 'Gyan Adda Main Reading Hall · Darbhanga',
+              id: 'gal_default_1',
+              title: 'GYAN ADDA LIBRARY · Main Reading Hall',
               category: 'Reading Hall',
               imageUrl: DEMO_IMAGES.hero,
-              caption: 'Spacious individual study desks with comfortable chairs, LED lighting, and full AC.',
+              caption: 'Partitioned study desks with ergonomic seating, LED desk lighting, and centralized AC.',
               sortOrder: 1,
+              approved: true,
               createdAt: null,
             },
             {
-              id: 'fallback-2',
+              id: 'gal_default_2',
               title: 'Silent AC Study Cubicles · Mirzapur Chowk',
               category: 'Silent Zone',
               imageUrl: DEMO_IMAGES.silentZone,
-              caption: 'Quiet partitioned desks designed for deep UPSC, BPSC, NEET & JEE concentration.',
+              caption: 'Quiet individual study cubicles built for focused UPSC, BPSC, NEET, JEE, and SSC preparation.',
               sortOrder: 2,
+              approved: true,
               createdAt: null,
             },
           ];
-    if (galleryCategory === 'ALL') return source;
-    return source.filter((g) => g.category === galleryCategory);
+    if (galleryCategory === 'ALL') return list;
+    return list.filter((g) => g.category === galleryCategory);
   }, [gallery, galleryCategory]);
 
   const galleryCategories = useMemo(() => {
+    const src = gallery.filter((g) => g.approved !== false);
     const cats = Array.from(
-      new Set(
-        gallery.length > 0
-          ? gallery.map((g) => g.category)
-          : ['Reading Hall', 'Silent Zone']
-      )
+      new Set(src.length > 0 ? src.map((g) => g.category) : ['Reading Hall', 'Silent Zone'])
     );
     return ['ALL', ...cats];
   }, [gallery]);
 
-  const displayExams = useMemo(() => {
-    const base =
-      exams.length > 0
-        ? exams.filter((e) => e.active)
-        : [
-            { id: '1', name: 'UPSC', categoryGroup: 'Civil Services', description: 'IAS / IPS Prelims PYQs & Mocks' },
-            { id: '2', name: 'BPSC', categoryGroup: 'State PSC', description: 'Bihar PCS Prelims & Bihar Special' },
-            { id: '3', name: 'NEET UG', categoryGroup: 'Medical', description: 'NCERT Biology, Physics & Chemistry' },
-            { id: '4', name: 'JEE Main', categoryGroup: 'Engineering', description: 'NTA Pattern Physics, Chem & Maths' },
-            { id: '5', name: 'SSC CGL', categoryGroup: 'SSC', description: 'Quantitative, English & Reasoning CBT' },
-            { id: '6', name: 'Bihar Police', categoryGroup: 'State Police', description: 'Constable & SI Practice Tests' },
-          ];
-    const q = quickSearch.trim().toLowerCase();
-    if (!q) return base.slice(0, 6);
-    return base.filter(
-      (e) =>
-        e.name.toLowerCase().includes(q) ||
-        (e.categoryGroup || '').toLowerCase().includes(q) ||
-        (e.description || '').toLowerCase().includes(q)
-    );
-  }, [exams, quickSearch]);
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxIndex(null);
+      if (e.key === 'ArrowRight') {
+        setLightboxIndex((i) => (i === null ? null : (i + 1) % approvedGallery.length));
+      }
+      if (e.key === 'ArrowLeft') {
+        setLightboxIndex((i) =>
+          i === null ? null : (i - 1 + approvedGallery.length) % approvedGallery.length
+        );
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightboxIndex, approvedGallery.length]);
 
   const handleEnquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setContactSubmitting(true);
-    setContactFeedback(null);
+    setEnqSubmitting(true);
+    setEnqFeedback(null);
     try {
-      const ref = await addDoc(collection(db, 'enquiries'), {
-        name: contactName.trim(),
-        email: contactEmail.trim(),
-        phone: contactPhone.trim(),
-        subject: contactSubject.trim() || 'Membership & Seat Enquiry',
-        message: contactMessage.trim(),
-        status: 'new',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-      setContactFeedback({
+      const payload = {
+        name: enqName.trim(),
+        phone: enqPhone.trim(),
+        email: enqEmail.trim() || 'visitor@gyanaddalibrary.in',
+        subject: enqSubject.trim() || 'Admission Enquiry',
+        message: enqMessage.trim(),
+      };
+
+      let savedOk = false;
+      const apiRes = await fetch('/api/public/enquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(() => null);
+      if (apiRes && apiRes.ok) savedOk = true;
+
+      try {
+        await addDoc(collection(db, 'enquiries'), {
+          ...payload,
+          status: 'new',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        savedOk = true;
+      } catch {
+        // Resilient if public server endpoint already persisted it
+      }
+
+      if (!savedOk) throw new Error('Unable to submit your enquiry right now.');
+
+      setEnqFeedback({
         type: 'ok',
-        text: `Enquiry received (Ref: ${ref.id.slice(0, 8)}). Our Darbhanga desk will contact you shortly.`,
+        text: 'Thank you! Your enquiry has been received by the GYAN ADDA LIBRARY desk. We will contact you shortly.',
       });
-      setContactName('');
-      setContactEmail('');
-      setContactPhone('');
-      setContactSubject('');
-      setContactMessage('');
+      setEnqName('');
+      setEnqPhone('');
+      setEnqEmail('');
+      setEnqMessage('');
     } catch (err: any) {
-      setContactFeedback({
+      setEnqFeedback({
         type: 'err',
-        text: err?.message || 'Unable to submit enquiry. Please verify all fields.',
+        text: err?.message || 'Unable to submit enquiry. Please call our help line directly.',
       });
     } finally {
-      setContactSubmitting(false);
+      setEnqSubmitting(false);
     }
   };
 
+  const navLinks = [
+    { href: '#home', label: 'Home' },
+    { href: '#location', label: 'Location' },
+    { href: '#helpline', label: 'Help Line' },
+    { href: '#facilities', label: 'Facilities' },
+    { href: '#faqs', label: 'FAQs' },
+    { href: '#important', label: 'Important' },
+    { href: '#gallery', label: 'Gallery' },
+  ];
+
+  const inputCls =
+    'w-full px-3.5 py-2.5 text-sm rounded-lg border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-900 text-on-surface dark:text-white focus:border-secondary focus:outline-none';
+
   return (
-    <div className="min-h-screen flex flex-col bg-surface text-on-surface dark:bg-slate-950 dark:text-slate-100">
-      {/* Top Public Navigation */}
-      <header className="sticky top-0 z-40 bg-surface-container-lowest/95 dark:bg-slate-900/95 backdrop-blur-sm border-b border-outline-variant dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-3.5 flex items-center justify-between gap-2 sm:gap-4">
-          <a href="#top" className="whitespace-nowrap shrink-0 min-w-0">
-            <BrandLogo variant={darkMode ? 'light' : 'dark'} />
+    <div className="min-h-screen bg-surface dark:bg-slate-950 text-on-surface dark:text-slate-100 font-body">
+      {/* Top Navigation Bar */}
+      <header className="sticky top-0 z-30 bg-surface-container-lowest/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-outline-variant dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+          <a href="#home" className="shrink-0">
+            <BrandLogo variant={darkMode ? 'light' : 'dark'} subtitle="Self-Study Campus" />
           </a>
 
-          <nav aria-label="Public navigation" className="hidden lg:flex items-center gap-6">
-            <a href="#about" className="text-sm font-semibold text-on-surface-variant hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors whitespace-nowrap">
-              Study Halls
-            </a>
-            <a href="#exams" className="text-sm font-semibold text-on-surface-variant hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors whitespace-nowrap">
-              Exams &amp; AI Hub
-            </a>
-            <a href="#facilities" className="text-sm font-semibold text-on-surface-variant hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors whitespace-nowrap">
-              Facilities
-            </a>
-            <a href="#plans" className="text-sm font-semibold text-on-surface-variant hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors whitespace-nowrap">
-              Membership Plans
-            </a>
-            <a href="#seats" className="text-sm font-semibold text-on-surface-variant hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors whitespace-nowrap">
-              Live Seats
-            </a>
-            <a href="#contact" className="text-sm font-semibold text-on-surface-variant hover:text-primary dark:text-slate-300 dark:hover:text-white transition-colors whitespace-nowrap">
-              Contact
-            </a>
+          {/* Public Navigation Links */}
+          <nav aria-label="Public navigation" className="hidden lg:flex items-center gap-5 text-xs font-semibold text-on-surface-variant dark:text-slate-300">
+            {navLinks.map((lnk) => (
+              <a
+                key={lnk.href}
+                href={lnk.href}
+                className="hover:text-secondary dark:hover:text-blue-400 transition-colors whitespace-nowrap"
+              >
+                {lnk.label}
+              </a>
+            ))}
           </nav>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Right Controls: Admission CTA + Visually Separated Admin Login Button */}
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="#helpline"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary transition-colors"
+            >
+              Admission Enquiry
+            </a>
+
             <button
               type="button"
               onClick={onToggleDarkMode}
               aria-label="Toggle color theme"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-800 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container-low flex items-center justify-center transition-colors shrink-0"
+              className="p-2 rounded-lg border border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container-low dark:hover:bg-slate-800 cursor-pointer"
             >
               {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            {!isSignedIn && (
-              <button
-                type="button"
-                onClick={() => onOpenAuth('login')}
-                className="hidden sm:inline-flex items-center justify-center px-3 sm:px-4 py-2 rounded bg-surface-container-lowest dark:bg-slate-800 text-primary dark:text-white border border-outline-variant dark:border-slate-700 hover:bg-surface-container-low text-sm font-semibold transition-colors whitespace-nowrap"
-              >
-                Student Login
-              </button>
-            )}
+
+            <div className="h-5 w-px bg-outline-variant dark:bg-slate-800 hidden sm:block mx-0.5" />
+
             <button
               type="button"
-              onClick={isSignedIn ? () => onOpenPortal() : () => onOpenAuth('register')}
-              className="inline-flex items-center justify-center px-2.5 sm:px-4 py-1.5 sm:py-2 rounded bg-primary text-on-primary hover:bg-primary-container text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap shrink-0"
+              onClick={onOpenAdminLogin}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/25 dark:border-blue-400/30 bg-primary/5 dark:bg-slate-900 text-primary dark:text-blue-300 text-xs font-bold hover:bg-primary hover:text-on-primary transition-colors cursor-pointer whitespace-nowrap"
             >
-              {isSignedIn ? 'Open Portal' : 'Join Now'}
+              <Lock className="w-3.5 h-3.5" />
+              <span>Admin Login</span>
             </button>
+
             <button
               type="button"
               onClick={() => setMobileMenuOpen((v) => !v)}
               aria-label="Toggle navigation menu"
-              className="lg:hidden inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded border border-outline-variant dark:border-slate-700 text-on-surface dark:text-slate-200 hover:bg-surface-container-low shrink-0"
+              className="lg:hidden p-2 rounded-lg border border-outline-variant dark:border-slate-700 text-on-surface dark:text-white cursor-pointer"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
 
+        {/* Mobile Nav Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-outline-variant dark:border-slate-800 bg-surface-container-lowest dark:bg-slate-900 px-4 py-4 space-y-2 max-h-[calc(100dvh-64px)] overflow-y-auto">
-            {[
-              ['Study Halls & About', '#about'],
-              ['Exams & AI Hub', '#exams'],
-              ['Facilities', '#facilities'],
-              ['Membership Plans', '#plans'],
-              ['Live Seats', '#seats'],
-              ['Gallery', '#gallery'],
-              ['Contact', '#contact'],
-            ].map(([label, href]) => (
-              <a
-                key={href}
-                href={href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="block py-2 text-sm font-semibold text-on-surface dark:text-slate-200 hover:text-secondary"
-              >
-                {label}
-              </a>
-            ))}
-            <div className="pt-2 flex flex-wrap gap-2 border-t border-outline-variant dark:border-slate-800">
-              {!isSignedIn && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onOpenAuth('login');
-                  }}
-                  className="flex-1 min-w-[120px] py-2 rounded border border-outline-variant dark:border-slate-700 text-sm font-semibold text-primary dark:text-white"
+          <div className="lg:hidden border-t border-outline-variant dark:border-slate-800 bg-surface-container-lowest dark:bg-slate-950 px-4 py-4 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              {navLinks.map((lnk) => (
+                <a
+                  key={lnk.href}
+                  href={lnk.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg text-xs font-semibold text-on-surface dark:text-slate-200 hover:bg-surface-container-low dark:hover:bg-slate-900"
                 >
-                  Student Login
-                </button>
-              )}
+                  {lnk.label}
+                </a>
+              ))}
+            </div>
+            <div className="pt-2 border-t border-outline-variant dark:border-slate-800 flex flex-wrap gap-2">
+              <a
+                href="#helpline"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 text-center py-2 px-3 rounded-lg bg-secondary text-on-secondary text-xs font-semibold"
+              >
+                Admission Enquiry
+              </a>
               <button
                 type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  if (isSignedIn) onOpenPortal();
-                  else onOpenAuth('register');
+                  onOpenAdminLogin();
                 }}
-                className="flex-1 min-w-[120px] py-2 rounded bg-primary text-on-primary text-sm font-semibold"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-primary/30 text-primary dark:text-blue-300 text-xs font-bold"
               >
-                {isSignedIn ? 'Open Portal' : 'Register'}
+                <Lock className="w-3.5 h-3.5" /> Admin Login
               </button>
             </div>
           </div>
         )}
       </header>
 
-      <main className="flex-1">
-        {/* Hero Section */}
-        <section
-          id="top"
-          className="bg-surface-container-low dark:bg-slate-900/60 border-b border-outline-variant dark:border-slate-800"
-        >
-          <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8 sm:py-10 lg:py-16 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-            <div className="lg:col-span-6 min-w-0 flex flex-col gap-6">
-              <div className="flex flex-col gap-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-secondary dark:text-blue-400 break-words">
-                  {effectiveSettings.libraryName} · {effectiveSettings.ratingText || '4.9/5 (116 Google Reviews)'}
-                </p>
-                <h1 className="font-display text-2xl sm:text-4xl lg:text-[40px] lg:leading-[48px] font-extrabold tracking-tight text-primary dark:text-white [text-wrap:balance]">
-                  A quiet, structured space built for focused study
-                </h1>
-                <p className="text-[15px] leading-relaxed text-on-surface-variant dark:text-slate-300 max-w-prose">
-                  {effectiveSettings.tagline} Reserve a 24-hour quiet AC reading desk at{' '}
-                  <span className="font-semibold text-on-surface dark:text-white">Mirzapur Chowk, Darbhanga</span> — powered by{' '}
-                  <span className="font-semibold text-on-surface dark:text-white">AI Mock Tests, Bilingual PYQs, Current Affairs &amp; Digital GK Books</span>.
-                </p>
+      <main>
+        {/* 1. HOME / HERO SECTION */}
+        <section id="home" className="relative bg-gradient-to-br from-[#001633] via-[#002046] to-[#0b336b] text-white overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div className="lg:col-span-7 space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold text-blue-100">
+                <Star className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                <span>{effectiveSettings.ratingText || '4.9/5 Student Rating · Open 24 Hours'}</span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={isSignedIn ? () => onOpenPortal('exams') : () => onOpenAuth('register')}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 rounded bg-secondary text-on-secondary hover:bg-primary text-sm font-semibold transition-colors cursor-pointer sm:whitespace-nowrap"
-                >
-                  <Sparkles className="w-4 h-4 shrink-0" />
-                  <span>{isSignedIn ? 'Launch AI Exam Hub' : 'Apply for Membership'}</span>
-                </button>
+              <h1 className="font-display text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+                {effectiveSettings.libraryName}
+              </h1>
+
+              <p className="text-base sm:text-lg text-blue-100 leading-relaxed max-w-2xl">
+                {effectiveSettings.tagline || 'Your Knowledge, Your Future.'} Welcome to Darbhanga&apos;s calm, air-conditioned 24-hour self-study campus crafted for disciplined UPSC, BPSC, NEET, JEE, SSC, and Banking preparation.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3 pt-1">
                 <a
-                  href="#plans"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 rounded bg-surface-container-lowest dark:bg-slate-800 text-primary dark:text-white border border-outline-variant dark:border-slate-700 hover:bg-surface-container text-sm font-semibold transition-colors sm:whitespace-nowrap text-center"
+                  href="#helpline"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-secondary hover:bg-blue-500 text-white text-sm font-bold shadow-lg transition-colors"
                 >
-                  Explore Membership Plans
+                  <span>Admission Enquiry</span>
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+                <a
+                  href="#location"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-semibold transition-colors"
+                >
+                  <MapPin className="w-4 h-4" />
+                  <span>View Location</span>
+                </a>
+                {isSignedIn && (
+                  <button
+                    type="button"
+                    onClick={onOpenPortal}
+                    className="inline-flex items-center gap-2 px-4 py-3 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-300/40 text-emerald-100 text-sm font-semibold cursor-pointer"
+                  >
+                    <UserCheck className="w-4 h-4" /> Open Portal
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-white/15 text-xs text-blue-100">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-300 shrink-0" />
+                  <span>{effectiveSettings.openingHours}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Wifi className="w-4 h-4 text-blue-300 shrink-0" />
+                  <span>High-Speed Fiber Wi-Fi</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-blue-300 shrink-0" />
+                  <span>24/7 CCTV &amp; AC Study Hall</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-5">
+              <div className="relative rounded-2xl overflow-hidden border border-white/20 shadow-2xl bg-slate-900">
+                <img
+                  src={DEMO_IMAGES.hero}
+                  alt="GYAN ADDA LIBRARY air-conditioned self-study reading hall"
+                  className="w-full aspect-4/3 object-cover"
+                />
+                <div className="p-4 bg-slate-950/85 border-t border-white/10 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-white truncate">
+                      {effectiveSettings.libraryName} · Darbhanga
+                    </p>
+                    <p className="text-[11px] text-blue-200 truncate">
+                      Mirzapur Chowk · Station Road · Quiet Study Desks
+                    </p>
+                  </div>
+                  <a
+                    href={primaryTelHref}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-secondary text-white text-xs font-bold shrink-0"
+                  >
+                    <Phone className="w-3.5 h-3.5" /> Call Desk
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 2. LIBRARY LOCATION SECTION */}
+        <section id="location" className="py-14 sm:py-16 bg-surface-container-lowest dark:bg-slate-900 border-b border-outline-variant dark:border-slate-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            <div className="max-w-2xl">
+              <p className="text-xs font-bold uppercase tracking-wider text-secondary dark:text-blue-400">
+                Campus Location
+              </p>
+              <h2 className="font-display text-2xl sm:text-3xl font-bold text-primary dark:text-white mt-1">
+                Visit {effectiveSettings.libraryName}
+              </h2>
+              <p className="text-sm text-on-surface-variant dark:text-slate-400 mt-1">
+                Conveniently situated near Darbhanga Junction with easy access for morning, afternoon, evening, and 24-hour students.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              <div className="lg:col-span-5 p-6 rounded-xl bg-surface dark:bg-slate-950 border border-outline-variant dark:border-slate-800 space-y-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-sm text-primary dark:text-white">Complete Address</h3>
+                    <p className="text-sm text-on-surface-variant dark:text-slate-300 mt-1 break-words leading-relaxed">
+                      {effectiveSettings.address}
+                    </p>
+                  </div>
+                </div>
+
+                {effectiveSettings.nearbyLandmarks && (
+                  <div className="p-3.5 rounded-lg bg-surface-container-low dark:bg-slate-900 border border-outline-variant/60 dark:border-slate-800">
+                    <p className="text-[11px] font-bold uppercase text-secondary dark:text-blue-400">
+                      Nearby Landmarks
+                    </p>
+                    <p className="text-xs text-on-surface dark:text-slate-200 mt-1 break-words">
+                      {effectiveSettings.nearbyLandmarks}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2.5 text-xs text-on-surface-variant dark:text-slate-300">
+                  <Clock className="w-4 h-4 text-secondary shrink-0" />
+                  <span>{effectiveSettings.openingHours}</span>
+                </div>
+
+                <a
+                  href={directionsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-primary text-on-primary text-sm font-semibold hover:bg-primary-container transition-colors"
+                >
+                  <Navigation className="w-4 h-4" />
+                  Get Google Maps Directions
                 </a>
               </div>
 
-              {announcements.filter((a) => a.published).length > 0 && (
-                <div className="p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-800 border border-outline-variant dark:border-slate-700 shadow-sm">
-                  <p className="text-xs font-semibold text-secondary dark:text-blue-400 mb-1 break-words">
-                    Notice Board · {announcements.filter((a) => a.published)[0].title}
-                  </p>
-                  <p className="text-xs text-on-surface-variant dark:text-slate-300 leading-relaxed break-words">
-                    {announcements.filter((a) => a.published)[0].body}
-                  </p>
+              <div className="lg:col-span-7">
+                <LibraryMap
+                  lat={effectiveSettings.mapLat}
+                  lng={effectiveSettings.mapLng}
+                  libraryName={effectiveSettings.libraryName}
+                  address={effectiveSettings.address}
+                  nearbyLandmarks={effectiveSettings.nearbyLandmarks}
+                  openingHours={effectiveSettings.openingHours}
+                  mapUrl={effectiveSettings.mapUrl}
+                  ratingText={effectiveSettings.ratingText}
+                  quotaExceeded={quotaExceeded}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. HELP LINE & ADMISSION ENQUIRY SECTION */}
+        <section id="helpline" className="py-14 sm:py-16 bg-surface dark:bg-slate-950 border-b border-outline-variant dark:border-slate-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-5 space-y-5">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-secondary dark:text-blue-400">
+                  24-Hour Help Line &amp; Admissions
+                </p>
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-primary dark:text-white mt-1">
+                  Speak With Our Study Desk
+                </h2>
+                <p className="text-sm text-on-surface-variant dark:text-slate-400 mt-1">
+                  Call or message on WhatsApp to check shift timings, visit the reading hall, or enquire about new admission.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {phoneNumbers.map((num, idx) => {
+                  const href = `tel:${num.replace(/[^+\d]/g, '')}`;
+                  return (
+                    <a
+                      key={`${num}-${idx}`}
+                      href={href}
+                      className="flex items-center justify-between gap-3 p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 hover:border-secondary transition-colors shadow-sm"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
+                          <Phone className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-semibold uppercase text-on-surface-variant dark:text-slate-400">
+                            Help Line {idx + 1}
+                          </p>
+                          <p className="font-mono text-sm font-bold text-primary dark:text-white truncate">
+                            {num}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 rounded bg-secondary text-on-secondary text-xs font-semibold shrink-0">
+                        Call Now
+                      </span>
+                    </a>
+                  );
+                })}
+
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-3 p-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-sm"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
+                      <MessageCircle className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase text-emerald-100">
+                        WhatsApp Desk Support
+                      </p>
+                      <p className="font-mono text-sm font-bold truncate">
+                        {effectiveSettings.whatsapp}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 rounded bg-white text-emerald-700 text-xs font-bold shrink-0">
+                    Chat on WhatsApp
+                  </span>
+                </a>
+
+                <a
+                  href={`mailto:${effectiveSettings.email}`}
+                  className="flex items-center gap-3 p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 hover:border-secondary transition-colors"
+                >
+                  <Mail className="w-5 h-5 text-secondary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase text-on-surface-variant dark:text-slate-400">
+                      Email Support
+                    </p>
+                    <p className="text-sm font-semibold text-primary dark:text-white truncate">
+                      {effectiveSettings.email}
+                    </p>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            <form
+              onSubmit={handleEnquirySubmit}
+              className="lg:col-span-7 p-6 sm:p-8 rounded-2xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm space-y-4"
+            >
+              <h3 className="font-display text-xl font-bold text-primary dark:text-white">
+                Send Admission / Shift Enquiry
+              </h3>
+              <p className="text-xs text-on-surface-variant dark:text-slate-400">
+                Leave your details below and our campus coordinator will call you back.
+              </p>
+
+              {enqFeedback && (
+                <div
+                  className={`p-3 rounded-lg text-xs font-medium border ${
+                    enqFeedback.type === 'ok'
+                      ? 'bg-success-container text-on-success-container border-success/30'
+                      : 'bg-error-container text-on-error-container border-error/30'
+                  }`}
+                >
+                  {enqFeedback.text}
                 </div>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-5 border-t border-outline-variant dark:border-slate-800">
-                <div className="flex flex-col">
-                  <span className="font-display text-xl font-bold text-primary dark:text-white tabular-nums">
-                    {seatCounts.total > 0 ? `${seatCounts.available}/${seatCounts.total}` : '40 Desks'}
-                  </span>
-                  <span className="text-xs text-on-surface-variant dark:text-slate-400">Available desks</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-display text-xl font-bold text-primary dark:text-white tabular-nums">
-                    {totalBooksCount + (gkBooks.length || 11)}+
-                  </span>
-                  <span className="text-xs text-on-surface-variant dark:text-slate-400">Library &amp; GK books</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-display text-xl font-bold text-primary dark:text-white tabular-nums">
-                    {totalQuestionsCount > 0 ? `${totalQuestionsCount}+` : '15 Tracks'}
-                  </span>
-                  <span className="text-xs text-on-surface-variant dark:text-slate-400">AI Exam MCQs</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-display text-xl font-bold text-primary dark:text-white tabular-nums">
-                    24 Hours
-                  </span>
-                  <span className="text-xs text-on-surface-variant dark:text-slate-400">Open all 7 days</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-6 min-w-0 flex flex-col gap-4">
-              <div className="relative rounded-xl overflow-hidden border border-outline-variant dark:border-slate-700 shadow-sm bg-surface-container-lowest">
-                <img
-                  src={DEMO_IMAGES.hero}
-                  alt="Gyan Adda Self-Study Center Darbhanga quiet reading hall with partitioned desks"
-                  className="w-full h-56 sm:h-80 lg:h-96 object-cover"
-                />
-              </div>
-              <div className="bg-surface-container-lowest dark:bg-slate-800 rounded-lg border border-outline-variant dark:border-slate-700 px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <span
-                    role="status"
-                    aria-label="Open now"
-                    className="inline-block w-2.5 h-2.5 rounded-full bg-success shrink-0"
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={enqName}
+                    onChange={(e) => setEnqName(e.target.value)}
+                    placeholder="Enter student name"
+                    className={inputCls}
                   />
-                  <span className="text-sm font-semibold text-on-surface dark:text-white">
-                    {seatCounts.available > 0
-                      ? `${seatCounts.available} seats available right now`
-                      : 'Open 24 Hours · 7 Days a Week'}
-                  </span>
                 </div>
-                <span className="font-mono text-xs text-on-surface-variant dark:text-slate-400 tabular-nums break-words">
-                  {effectiveSettings.openingHours} · Mirzapur Chowk, Darbhanga
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Competitive Exams Quick Search, AI Hub Actions & Track Cards */}
-        <section id="exams" className="max-w-7xl mx-auto px-4 lg:px-8 py-10 space-y-6">
-          <div className="bg-surface-container-lowest dark:bg-slate-900 rounded-lg border border-outline-variant dark:border-slate-800 p-4 sm:p-6 shadow-sm space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="font-display text-xl sm:text-[22px] font-bold text-on-surface dark:text-white">
-                  Search Competitive Exams &amp; Learning Modules
-                </h2>
-                <p className="text-sm text-on-surface-variant dark:text-slate-400">
-                  Explore UPSC, BPSC, NEET, JEE, SSC, Bihar Police tests, Daily Current Affairs, and Digital GK Books.
-                </p>
-              </div>
-              <div className="relative w-full md:w-96 shrink-0">
-                <Search className="w-4 h-4 text-outline absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="search"
-                  value={quickSearch}
-                  onChange={(e) => setQuickSearch(e.target.value)}
-                  placeholder="Search exams (UPSC, BPSC, NEET, JEE, SSC)..."
-                  className="w-full pl-10 pr-3 py-2.5 rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-sm text-on-surface dark:text-white placeholder:text-outline focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-              <div className="lg:col-span-5 min-w-0">
-                <div className="aspect-[16/10] rounded-lg overflow-hidden border border-outline-variant dark:border-slate-700 bg-surface-container-low">
-                  <img
-                    src={DEMO_IMAGES.silentZone}
-                    alt="Quiet self-study cubicles at Gyan Adda Self-Study Center Darbhanga"
-                    className="w-full h-full object-cover"
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Mobile / WhatsApp Number</label>
+                  <input
+                    type="tel"
+                    required
+                    value={enqPhone}
+                    onChange={(e) => setEnqPhone(e.target.value)}
+                    placeholder="e.g. 9876543210"
+                    className={inputCls}
                   />
                 </div>
               </div>
 
-              <div className="lg:col-span-7 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={isSignedIn ? () => onOpenPortal('exams') : () => onOpenAuth('login')}
-                  className="p-4 rounded-lg bg-secondary text-on-secondary hover:bg-primary transition-colors flex items-center justify-between gap-3 text-left font-semibold text-sm shadow-sm cursor-pointer"
-                >
-                  <span>Explore Competitive Exams &amp; PYQ Tests</span>
-                  <Sparkles className="w-4 h-4 shrink-0" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPublicHubTab(publicHubTab === 'news' ? 'none' : 'news')}
-                  className={`p-4 rounded-lg border transition-colors flex items-center justify-between gap-3 text-left font-semibold text-sm cursor-pointer ${
-                    publicHubTab === 'news'
-                      ? 'bg-primary text-on-primary border-primary'
-                      : 'bg-surface-container-low dark:bg-slate-800 text-primary dark:text-white border-outline-variant dark:border-slate-700 hover:bg-surface-container'
-                  }`}
-                >
-                  <span>Daily Current Affairs &amp; Bihar Updates</span>
-                  <Newspaper className="w-4 h-4 shrink-0" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPublicHubTab(publicHubTab === 'books' ? 'none' : 'books')}
-                  className={`p-4 rounded-lg border transition-colors flex items-center justify-between gap-3 text-left font-semibold text-sm cursor-pointer ${
-                    publicHubTab === 'books'
-                      ? 'bg-primary text-on-primary border-primary'
-                      : 'bg-surface-container-low dark:bg-slate-800 text-primary dark:text-white border-outline-variant dark:border-slate-700 hover:bg-surface-container'
-                  }`}
-                >
-                  <span>Open {gkBooks.length || 11} Digital GK Books &amp; PDFs</span>
-                  <BookOpen className="w-4 h-4 shrink-0" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={isSignedIn ? () => onOpenPortal('seats') : () => onOpenAuth('register')}
-                  className="p-4 rounded-lg bg-surface-container-low dark:bg-slate-800 text-primary dark:text-white border border-outline-variant dark:border-slate-700 hover:bg-surface-container transition-colors flex items-center justify-between gap-3 text-left font-semibold text-sm cursor-pointer"
-                >
-                  <span>Reserve Your 24-Hour AC Study Desk</span>
-                  <Award className="w-4 h-4 shrink-0 text-secondary" />
-                </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Email (Optional)</label>
+                  <input
+                    type="email"
+                    value={enqEmail}
+                    onChange={(e) => setEnqEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Preferred Shift / Topic</label>
+                  <input
+                    type="text"
+                    required
+                    value={enqSubject}
+                    onChange={(e) => setEnqSubject(e.target.value)}
+                    className={inputCls}
+                  />
+                </div>
               </div>
-            </div>
 
-            {publicHubTab === 'news' && (
-              <div className="pt-6 border-t border-outline-variant dark:border-slate-800">
-                <CurrentAffairsModule items={currentAffairs} questions={[]} />
-              </div>
-            )}
-
-            {publicHubTab === 'books' && (
-              <div className="pt-6 border-t border-outline-variant dark:border-slate-800">
-                <DigitalGKBookModule
-                  books={gkBooks}
-                  questions={[]}
-                  bookmarks={[]}
-                  userUid={null}
+              <div>
+                <label className="block text-xs font-semibold mb-1">Message</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={enqMessage}
+                  onChange={(e) => setEnqMessage(e.target.value)}
+                  placeholder="Preferred timing (Morning / Afternoon / Evening / Full Day) or questions..."
+                  className={inputCls}
                 />
               </div>
-            )}
 
-            <div className="pt-2 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
-                <h3 className="font-display text-xl font-bold text-on-surface dark:text-white">
-                  Popular Competitive Tracks
-                </h3>
-                <button
-                  type="button"
-                  onClick={isSignedIn ? () => onOpenPortal('exams') : () => onOpenAuth('login')}
-                  className="text-xs sm:text-sm font-semibold text-secondary hover:text-primary dark:text-blue-400 shrink-0"
-                >
-                  Explore All 15+ Exams →
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {displayExams.map((ex: any) => (
-                  <div
-                    key={ex.id || ex.name}
-                    className="p-5 rounded-lg bg-surface-container-low dark:bg-slate-800/80 border border-outline-variant dark:border-slate-700 flex flex-col justify-between gap-4 hover:border-secondary transition-colors"
-                  >
-                    <div>
-                      <p className="text-xs font-semibold text-secondary dark:text-blue-400">{ex.categoryGroup}</p>
-                      <h4 className="font-display text-lg font-bold text-on-surface dark:text-white mt-1">{ex.name}</h4>
-                      <p className="text-xs text-on-surface-variant dark:text-slate-300 mt-1 leading-relaxed">{ex.description}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={isSignedIn ? () => onOpenPortal('exams') : () => onOpenAuth('login')}
-                      className="self-start px-3.5 py-1.5 rounded bg-primary text-on-primary hover:bg-primary-container text-xs font-semibold transition-colors cursor-pointer"
-                    >
-                      Start Practice →
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+              <button
+                type="submit"
+                disabled={enqSubmitting}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-secondary text-on-secondary text-sm font-bold hover:bg-primary disabled:opacity-50 cursor-pointer"
+              >
+                {enqSubmitting ? 'Submitting Enquiry...' : 'Submit Admission Enquiry'}
+              </button>
+            </form>
           </div>
         </section>
 
-        {/* Study Halls & About Section */}
-        <section id="about" className="max-w-7xl mx-auto px-4 lg:px-8 py-8 space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            <div className="lg:col-span-5 space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-secondary dark:text-blue-400">
-                About Gyan Adda Self-Study Center · Vidhya Library
+        {/* 4. LIBRARY FACILITIES SECTION */}
+        <section id="facilities" className="py-14 sm:py-16 bg-surface-container-lowest dark:bg-slate-900 border-b border-outline-variant dark:border-slate-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            <div className="max-w-2xl">
+              <p className="text-xs font-bold uppercase tracking-wider text-secondary dark:text-blue-400">
+                Study Environment
               </p>
-              <h2 className="font-display text-[28px] leading-[34px] font-bold text-on-surface dark:text-white [text-wrap:balance]">
-                Designed for uninterrupted preparation in Darbhanga
+              <h2 className="font-display text-2xl sm:text-3xl font-bold text-primary dark:text-white mt-1">
+                Library Facilities
               </h2>
-              <p className="text-sm text-on-surface-variant dark:text-slate-300 leading-relaxed">
-                Rated <span className="font-semibold text-on-surface dark:text-white">{effectiveSettings.ratingText || '4.9/5'}</span>, our self-study campus near Mirzapur Chowk combines quiet ergonomic cubicles, chilled RO water, LED study lighting, and AI-assisted competitive test readiness.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div className="p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
-                  <h3 className="text-sm font-bold text-primary dark:text-white">Our Mission</h3>
-                  <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400 leading-relaxed">
-                    Deliver quiet, 24-hour climate-controlled study spaces paired with instant AI analytics.
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
-                  <h3 className="text-sm font-bold text-primary dark:text-white">Our Vision</h3>
-                  <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400 leading-relaxed">
-                    Empower Bihar civil service, medical, SSC, and engineering aspirants under one disciplined roof.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                {
-                  num: '01',
-                  title: 'Guaranteed Desk Exclusivity',
-                  desc: 'Real-time live seating map prevents double booking. Reserve your preferred desk directly online.',
-                  icon: Users,
-                },
-                {
-                  num: '02',
-                  title: 'QR Attendance & Study Analytics',
-                  desc: 'Each scholar receives a unique VL2026XXX Student ID and QR pass for instant daily logs.',
-                  icon: Clock,
-                },
-                {
-                  num: '03',
-                  title: '24/7 CCTV, AC & RO Water',
-                  desc: 'Continuous HD CCTV surveillance, full air conditioning, and clean chilled RO drinking water.',
-                  icon: ShieldCheck,
-                },
-                {
-                  num: '04',
-                  title: 'AI PYQs, Mocks & GK Books',
-                  desc: 'Solve unseen AI mocks, Bihar Current Affairs quizzes, and read 11 downloadable GK books.',
-                  icon: Globe,
-                },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <article
-                    key={item.num}
-                    className="bg-surface-container-lowest dark:bg-slate-900 rounded-lg border border-outline-variant dark:border-slate-800 p-5 flex items-start gap-4 shadow-sm"
-                  >
-                    <div className="w-11 h-11 rounded-md bg-surface-container-low dark:bg-slate-800 text-secondary flex items-center justify-center shrink-0">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="font-mono text-[11px] font-medium text-outline">{item.num}</span>
-                      <h3 className="text-base font-semibold text-on-surface dark:text-white">{item.title}</h3>
-                      <p className="text-sm text-on-surface-variant dark:text-slate-400 leading-relaxed">{item.desc}</p>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Facilities Section */}
-        <section id="facilities" className="bg-surface-container-low dark:bg-slate-900/50 border-y border-outline-variant dark:border-slate-800 py-12">
-          <div className="max-w-7xl mx-auto px-4 lg:px-8">
-            <div className="max-w-2xl mb-8">
-              <p className="text-xs font-semibold uppercase tracking-wider text-secondary dark:text-blue-400">
-                Campus Amenities
-              </p>
-              <h2 className="mt-1 font-display text-[28px] leading-[34px] font-bold text-on-surface dark:text-white">
-                Library Facilities &amp; Study Environment
-              </h2>
-              <p className="mt-2 text-sm text-on-surface-variant dark:text-slate-400">
-                Comfortable cushioned chairs, spacious individual tables, LED study lamps, and silent 24-hour discipline.
+              <p className="text-sm text-on-surface-variant dark:text-slate-400 mt-1">
+                Verified campus amenities designed for uninterrupted, distraction-free daily preparation.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {effectiveSettings.facilities.map((facility, idx) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {displayFacilities.map((fac) => (
                 <div
-                  key={`${facility}-${idx}`}
-                  className="flex items-center gap-3.5 p-4 rounded-lg border border-outline-variant dark:border-slate-800 bg-surface-container-lowest dark:bg-slate-900 shadow-sm"
+                  key={fac.id}
+                  className="p-5 rounded-xl bg-surface dark:bg-slate-950 border border-outline-variant dark:border-slate-800 shadow-sm flex items-start gap-4"
                 >
-                  <div className="w-9 h-9 rounded-md bg-surface-container-low dark:bg-slate-800 text-secondary flex items-center justify-center shrink-0">
-                    {facility.toLowerCase().includes('wi-fi') ? (
-                      <Wifi className="w-4 h-4" />
-                    ) : facility.toLowerCase().includes('charg') ? (
-                      <Zap className="w-4 h-4" />
-                    ) : (
-                      <Check className="w-4 h-4" />
-                    )}
+                  <div className="w-11 h-11 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0">
+                    {renderFacilityIcon(fac.icon)}
                   </div>
-                  <span className="text-sm font-medium text-on-surface dark:text-slate-200">{facility}</span>
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-base text-primary dark:text-white break-words">
+                      {fac.name}
+                    </h3>
+                    <p className="text-xs text-on-surface-variant dark:text-slate-400 mt-1 leading-relaxed break-words">
+                      {fac.description}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Membership Plans */}
-        <section id="plans" className="max-w-7xl mx-auto px-4 lg:px-8 py-12">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-secondary dark:text-blue-400">
-                Flexible Memberships
+        {/* 5. FREQUENTLY ASKED QUESTIONS (FAQs) */}
+        <section id="faqs" className="py-14 sm:py-16 bg-surface dark:bg-slate-950 border-b border-outline-variant dark:border-slate-800">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <div className="text-center space-y-1.5">
+              <p className="text-xs font-bold uppercase tracking-wider text-secondary dark:text-blue-400">
+                Student Information
               </p>
-              <h2 className="mt-1 font-display text-[28px] leading-[34px] font-bold text-on-surface dark:text-white">
-                Membership Plans &amp; Timings
+              <h2 className="font-display text-2xl sm:text-3xl font-bold text-primary dark:text-white">
+                Frequently Asked Questions
               </h2>
+              <p className="text-sm text-on-surface-variant dark:text-slate-400">
+                Answers about library timings, admission steps, required ID documents, Wi-Fi, and attendance.
+              </p>
             </div>
-            <p className="text-sm text-on-surface-variant dark:text-slate-400 max-w-md">
-              Includes reserved study desk plus full Student Portal access to AI Exams, Current Affairs, and Digital GK Books.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {plans
-              .filter((p) => p.active)
-              .map((plan, index) => {
-                const highlighted = index === 1 || plan.name.toLowerCase().includes('24') || plan.name.toLowerCase().includes('full');
+            <div className="space-y-3">
+              {displayFaqs.map((item) => {
+                const open = openFaqId === item.id;
                 return (
-                  <article
-                    key={plan.id}
-                    className={`h-full bg-surface-container-lowest dark:bg-slate-900 rounded-lg p-6 flex flex-col justify-between gap-6 shadow-sm ${
-                      highlighted
-                        ? 'border-2 border-secondary'
-                        : 'border border-outline-variant dark:border-slate-800'
-                    }`}
+                  <div
+                    key={item.id}
+                    className="rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 overflow-hidden shadow-xs"
                   >
-                    <div className="space-y-4">
-                      <header className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="text-base font-bold text-on-surface dark:text-white">
-                            {plan.name}
-                          </h3>
-                          <p className="text-xs text-on-surface-variant dark:text-slate-400 mt-0.5">
-                            {plan.durationDays} Days · {plan.timings}
-                          </p>
-                        </div>
-                        {highlighted && (
-                          <span className="px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-[11px] font-semibold whitespace-nowrap shrink-0">
-                            Popular
-                          </span>
-                        )}
-                      </header>
-
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-display text-3xl font-bold text-primary dark:text-white tabular-nums">
-                          ₹{Number(plan.price).toLocaleString('en-IN')}
-                        </span>
-                        <span className="text-xs text-on-surface-variant dark:text-slate-400">
-                          / {plan.durationDays} days
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaqId(open ? null : item.id)}
+                      className="w-full px-5 py-4 flex items-center justify-between gap-3 text-left cursor-pointer"
+                    >
+                      <div className="min-w-0 flex items-center gap-2.5">
+                        <HelpCircle className="w-4 h-4 text-secondary shrink-0" />
+                        <span className="font-semibold text-sm text-primary dark:text-white break-words">
+                          {item.question}
                         </span>
                       </div>
-
-                      <p className="text-xs font-semibold text-secondary dark:text-blue-400">
-                        {plan.seatAccess}
-                      </p>
-
-                      <ul className="space-y-2 border-t border-outline-variant dark:border-slate-800 pt-4">
-                        {plan.facilities.map((f, idx) => (
-                          <li key={idx} className="flex items-center gap-2 text-xs text-on-surface-variant dark:text-slate-300">
-                            <Check className="w-3.5 h-3.5 text-success shrink-0" />
-                            <span>{f}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <footer className="pt-4 border-t border-outline-variant dark:border-slate-800">
-                      <button
-                        type="button"
-                        onClick={isSignedIn ? () => onOpenPortal('membership') : () => onOpenAuth('register')}
-                        className={`w-full py-2.5 px-4 rounded text-sm font-semibold transition-colors cursor-pointer ${
-                          highlighted
-                            ? 'bg-secondary text-on-secondary hover:bg-primary'
-                            : 'bg-surface-container-low dark:bg-slate-800 text-primary dark:text-white hover:bg-surface-container'
+                      <ChevronDown
+                        className={`w-4 h-4 text-outline shrink-0 transition-transform ${
+                          open ? 'rotate-180' : ''
                         }`}
-                      >
-                        {isSignedIn ? 'Select in Portal' : 'Join With This Plan'}
-                      </button>
-                    </footer>
-                  </article>
+                      />
+                    </button>
+                    {open && (
+                      <div className="px-5 pb-4 pt-1 text-xs sm:text-sm text-on-surface-variant dark:text-slate-300 leading-relaxed border-t border-outline-variant/40 dark:border-slate-800">
+                        {item.answer}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
+            </div>
           </div>
         </section>
 
-        {/* Available Study Seats Live Grid */}
-        <section id="seats" className="bg-surface-container-low dark:bg-slate-900/50 border-y border-outline-variant dark:border-slate-800 py-12">
-          <div className="max-w-7xl mx-auto px-4 lg:px-8">
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-secondary dark:text-blue-400">
-                  Live Seating Layout
-                </p>
-                <h2 className="mt-1 font-display text-[28px] leading-[34px] font-bold text-on-surface dark:text-white">
-                  Available Study Seats
-                </h2>
-                <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-on-surface-variant dark:text-slate-300">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-xs bg-success inline-block" /> Available ({seatCounts.available})
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-xs bg-error inline-block" /> Occupied ({seatCounts.occupied})
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-xs bg-warning inline-block" /> Reserved ({seatCounts.reserved})
-                  </span>
-                </div>
-              </div>
+        {/* 6. IMPORTANT QUESTIONS SECTION */}
+        <section id="important" className="py-14 sm:py-16 bg-surface-container-lowest dark:bg-slate-900 border-b border-outline-variant dark:border-slate-800">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <div className="text-center space-y-1.5">
+              <p className="text-xs font-bold uppercase tracking-wider text-secondary dark:text-blue-400">
+                Campus Rules &amp; Policies
+              </p>
+              <h2 className="font-display text-2xl sm:text-3xl font-bold text-primary dark:text-white">
+                Important Questions
+              </h2>
+              <p className="text-sm text-on-surface-variant dark:text-slate-400">
+                Essential guidelines on membership rules, seat allocation, silence discipline, and monthly renewals.
+              </p>
+            </div>
 
-              <div className="flex flex-wrap gap-1 p-1 bg-surface-container-lowest dark:bg-slate-900 rounded border border-outline-variant dark:border-slate-800 max-w-full min-w-0">
-                {zones.map((z) => (
+            <div className="space-y-3">
+              {displayImportant.map((item) => {
+                const open = openImpId === item.id;
+                return (
+                  <div
+                    key={item.id}
+                    className="rounded-xl bg-surface dark:bg-slate-950 border border-outline-variant dark:border-slate-800 overflow-hidden shadow-xs"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenImpId(open ? null : item.id)}
+                      className="w-full px-5 py-4 flex items-center justify-between gap-3 text-left cursor-pointer"
+                    >
+                      <div className="min-w-0 flex items-center gap-2.5">
+                        <ShieldCheck className="w-4 h-4 text-secondary shrink-0" />
+                        <span className="font-semibold text-sm text-primary dark:text-white break-words">
+                          {item.question}
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-outline shrink-0 transition-transform ${
+                          open ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                    {open && (
+                      <div className="px-5 pb-4 pt-1 text-xs sm:text-sm text-on-surface-variant dark:text-slate-300 leading-relaxed border-t border-outline-variant/40 dark:border-slate-800">
+                        {item.answer}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* 7. PHOTO GALLERY SECTION (ADMIN-APPROVED PHOTOS ONLY + LIGHTBOX) */}
+        <section id="gallery" className="py-14 sm:py-16 bg-surface dark:bg-slate-950">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-secondary dark:text-blue-400">
+                  Inside GYAN ADDA LIBRARY
+                </p>
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-primary dark:text-white mt-1">
+                  Photo Gallery
+                </h2>
+                <p className="text-sm text-on-surface-variant dark:text-slate-400 mt-1">
+                  Click any photograph to view full size.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {galleryCategories.map((cat) => (
                   <button
-                    key={z}
+                    key={cat}
                     type="button"
-                    onClick={() => setSelectedZone(z)}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded transition-colors text-left sm:whitespace-nowrap cursor-pointer ${
-                      selectedZone === z
+                    onClick={() => setGalleryCategory(cat)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                      galleryCategory === cat
                         ? 'bg-primary text-on-primary'
-                        : 'text-on-surface-variant dark:text-slate-300 hover:bg-surface-container-low'
+                        : 'bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 text-on-surface-variant dark:text-slate-300'
                     }`}
                   >
-                    {z === 'ALL' ? 'All Zones' : z}
+                    {cat === 'ALL' ? 'All Photos' : cat}
                   </button>
                 ))}
               </div>
             </div>
 
-            {filteredSeats.length === 0 ? (
-              <div className="p-8 rounded-lg border border-outline-variant dark:border-slate-800 bg-surface-container-lowest dark:bg-slate-900 text-center text-sm text-on-surface-variant dark:text-slate-400">
-                Live seat layout initializes upon admin setup.
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 min-[400px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-2 sm:gap-2.5">
-                {filteredSeats.map((seat) => {
-                  const styleMap: Record<string, string> = {
-                    available: 'bg-success-container border-success text-on-success-container hover:opacity-90 cursor-pointer',
-                    occupied: 'bg-error-container border-error/40 text-on-error-container cursor-not-allowed opacity-90',
-                    reserved: 'bg-warning-container border-warning/40 text-on-warning-container cursor-not-allowed',
-                    maintenance: 'bg-surface-variant border-outline-variant text-on-surface-variant cursor-not-allowed',
-                  };
-                  return (
-                    <button
-                      key={seat.id}
-                      type="button"
-                      onClick={() => {
-                        if (seat.status === 'available') {
-                          if (isSignedIn) onOpenPortal('seats');
-                          else onOpenAuth('register');
-                        }
-                      }}
-                      title={`${seat.seatCode} · ${seat.zone} · ${seat.status.toUpperCase()}`}
-                      className={`min-w-0 overflow-hidden p-2 sm:p-2.5 rounded border text-center transition-all ${styleMap[seat.status]}`}
-                    >
-                      <div className="font-mono text-xs font-bold tabular-nums truncate">{seat.seatCode}</div>
-                      <div className="text-[10px] mt-0.5 capitalize font-medium truncate">{seat.status}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Gallery Section */}
-        <section id="gallery" className="max-w-7xl mx-auto px-4 lg:px-8 py-12">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-secondary dark:text-blue-400">
-                Inside Our Darbhanga Campus
-              </p>
-              <h2 className="mt-1 font-display text-[28px] leading-[34px] font-bold text-on-surface dark:text-white">
-                Library Gallery
-              </h2>
-            </div>
-
-            <div className="flex flex-wrap gap-1 p-1 bg-surface-container-lowest dark:bg-slate-900 rounded border border-outline-variant dark:border-slate-800 max-w-full min-w-0">
-              {galleryCategories.map((cat) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {approvedGallery.map((g, idx) => (
                 <button
-                  key={cat}
+                  key={g.id}
                   type="button"
-                  onClick={() => setGalleryCategory(cat)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded transition-colors text-left sm:whitespace-nowrap cursor-pointer ${
-                    galleryCategory === cat
-                      ? 'bg-primary text-on-primary'
-                      : 'text-on-surface-variant dark:text-slate-300 hover:bg-surface-container-low'
-                  }`}
+                  onClick={() => setLightboxIndex(idx)}
+                  className="text-left group rounded-xl overflow-hidden bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm hover:shadow-md transition-all cursor-pointer"
                 >
-                  {cat === 'ALL' ? 'All Photos' : cat}
+                  <div className="overflow-hidden">
+                    <img
+                      src={g.imageUrl}
+                      alt={g.title}
+                      className="w-full aspect-4/3 object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[11px] font-bold uppercase text-secondary dark:text-blue-400">
+                      {g.category}
+                    </p>
+                    <h3 className="font-semibold text-sm text-primary dark:text-white mt-0.5 break-words">
+                      {g.title}
+                    </h3>
+                    <p className="text-xs text-on-surface-variant dark:text-slate-400 mt-1 break-words">
+                      {g.caption}
+                    </p>
+                  </div>
                 </button>
               ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {displayGallery.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-lg overflow-hidden bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm"
-              >
-                <div className="aspect-[16/10] bg-surface-container-low overflow-hidden">
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="p-5">
-                  <p className="text-xs font-semibold text-secondary dark:text-blue-400">{item.category}</p>
-                  <h3 className="mt-1 text-base font-bold text-on-surface dark:text-white">{item.title}</h3>
-                  <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">{item.caption}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Testimonials & FAQ */}
-        <section className="bg-surface-container-low dark:bg-slate-900/50 border-y border-outline-variant dark:border-slate-800 py-12">
-          <div className="max-w-7xl mx-auto px-4 lg:px-8 space-y-10">
-            <div className="space-y-6">
-              <div className="text-center">
-                <p className="text-xs font-semibold text-secondary dark:text-blue-400 inline-flex items-center gap-1.5">
-                  <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                  {effectiveSettings.ratingText || '4.9/5 Rating · 116 Google Reviews'}
-                </p>
-                <h2 className="mt-1 font-display text-[28px] leading-[34px] font-bold text-on-surface dark:text-white">
-                  What Our Scholars Say
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {TESTIMONIALS.map((t) => (
-                  <div
-                    key={t.name}
-                    className="p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4"
-                  >
-                    <p className="text-sm text-on-surface dark:text-slate-200 leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
-                    <div className="text-xs text-on-surface-variant dark:text-slate-400 pt-3 border-t border-outline-variant dark:border-slate-800">
-                      <p className="font-bold text-primary dark:text-white">{t.name}</p>
-                      <p>{t.role} · {t.org}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="max-w-4xl mx-auto space-y-4">
-              <h2 className="font-display text-2xl font-bold text-on-surface dark:text-white text-center">
-                Frequently Asked Questions
-              </h2>
-              <div className="space-y-3">
-                {FAQS.map((faq, idx) => {
-                  const open = openFaq === idx;
-                  return (
-                    <div
-                      key={faq.q}
-                      className="rounded-lg border border-outline-variant dark:border-slate-800 bg-surface-container-lowest dark:bg-slate-900 overflow-hidden shadow-sm"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setOpenFaq(open ? null : idx)}
-                        className="w-full px-5 py-4 text-left flex items-center justify-between gap-4 text-sm font-semibold text-on-surface dark:text-white cursor-pointer"
-                      >
-                        <span>{faq.q}</span>
-                        <ChevronDown
-                          className={`w-4 h-4 text-on-surface-variant shrink-0 transition-transform ${
-                            open ? 'rotate-180' : ''
-                          }`}
-                        />
-                      </button>
-                      {open && (
-                        <div className="px-5 pb-4 text-sm text-on-surface-variant dark:text-slate-300 leading-relaxed">
-                          {faq.a}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Contact Banner + Map & Enquiry Form */}
-        <section id="contact" className="max-w-7xl mx-auto px-4 lg:px-8 py-12 space-y-8">
-          <div className="p-5 sm:p-8 rounded-lg bg-primary text-on-primary flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-            <div className="min-w-0">
-              <h2 className="font-display text-2xl sm:text-3xl font-bold text-on-primary">
-                Want To Know More? Contact Us
-              </h2>
-              <p className="text-sm text-on-primary-container mt-1">
-                Speak directly with our Darbhanga reading hall admissions desk on WhatsApp or visit us 24/7.
-              </p>
-            </div>
-            <a
-              href={`https://wa.me/${effectiveSettings.whatsapp.replace(/[^0-9]/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-5 py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-surface-container-lowest hover:text-primary transition-colors whitespace-nowrap shrink-0"
-            >
-              WhatsApp Desk
-            </a>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-6 min-w-0 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div className="min-w-0 p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-secondary dark:text-blue-400">
-                    <Phone className="w-3.5 h-3.5 shrink-0" /> Phone &amp; WhatsApp
-                  </div>
-                  <p className="mt-1 font-semibold text-on-surface dark:text-white tabular-nums break-words">
-                    {effectiveSettings.phone}
-                  </p>
-                  <a
-                    href={`https://wa.me/${effectiveSettings.whatsapp.replace(/[^0-9]/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-1 inline-block text-xs font-semibold text-secondary hover:underline"
-                  >
-                    Chat on WhatsApp →
-                  </a>
-                </div>
-                <div className="min-w-0 p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-secondary dark:text-blue-400">
-                    <Mail className="w-3.5 h-3.5 shrink-0" /> Desk Email &amp; Hours
-                  </div>
-                  <p className="mt-1 font-semibold text-on-surface dark:text-white break-all">
-                    {effectiveSettings.email}
-                  </p>
-                  <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400 break-words">
-                    {effectiveSettings.openingHours}
-                  </p>
-                </div>
-                <div className="sm:col-span-2 min-w-0 p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-secondary dark:text-blue-400">
-                    <MapPin className="w-3.5 h-3.5 shrink-0" /> Campus Address
-                  </div>
-                  <p className="mt-1 text-sm text-on-surface dark:text-slate-200 break-words">{effectiveSettings.address}</p>
-                </div>
-              </div>
-
-              <LibraryMap
-                lat={effectiveSettings.mapLat}
-                lng={effectiveSettings.mapLng}
-                libraryName={effectiveSettings.libraryName}
-                address={effectiveSettings.address}
-                openingHours={effectiveSettings.openingHours}
-                mapUrl={effectiveSettings.mapUrl}
-                ratingText={effectiveSettings.ratingText}
-                quotaExceeded={quotaExceeded}
-              />
-            </div>
-
-            <div className="lg:col-span-6 min-w-0">
-              <form
-                onSubmit={handleEnquirySubmit}
-                className="p-5 sm:p-8 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm space-y-4"
-              >
-                <div>
-                  <h3 className="font-display text-xl font-bold text-on-surface dark:text-white">
-                    Send an Enquiry
-                  </h3>
-                  <p className="text-xs text-on-surface-variant dark:text-slate-400 mt-0.5">
-                    All enquiries are logged directly for our Darbhanga study center administrators.
-                  </p>
-                </div>
-
-                {contactFeedback && (
-                  <div
-                    className={`p-3 rounded text-xs border ${
-                      contactFeedback.type === 'ok'
-                        ? 'bg-success-container border-success text-on-success-container'
-                        : 'bg-error-container border-error text-on-error-container'
-                    }`}
-                  >
-                    {contactFeedback.text}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">
-                      Your Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      minLength={2}
-                      maxLength={120}
-                      value={contactName}
-                      onChange={(e) => setContactName(e.target.value)}
-                      placeholder="Full Name"
-                      className="w-full px-3 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white placeholder:text-outline focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">
-                      Mobile Number
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      minLength={7}
-                      maxLength={20}
-                      value={contactPhone}
-                      onChange={(e) => setContactPhone(e.target.value)}
-                      placeholder="+91 87976 40034"
-                      className="w-full px-3 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white placeholder:text-outline focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="w-full px-3 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white placeholder:text-outline focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">
-                    Subject
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    minLength={2}
-                    maxLength={150}
-                    value={contactSubject}
-                    onChange={(e) => setContactSubject(e.target.value)}
-                    placeholder="24-hr Seat booking / BPSC Test Series query"
-                    className="w-full px-3 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white placeholder:text-outline focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">
-                    Message
-                  </label>
-                  <textarea
-                    rows={4}
-                    required
-                    minLength={5}
-                    maxLength={1000}
-                    value={contactMessage}
-                    onChange={(e) => setContactMessage(e.target.value)}
-                    placeholder="Tell us your preferred study shift or competitive exam goal..."
-                    className="w-full px-3 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white placeholder:text-outline focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={contactSubmitting}
-                  className="w-full py-2.5 px-4 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary transition-colors disabled:opacity-60 cursor-pointer"
-                >
-                  {contactSubmitting ? 'Submitting...' : 'Submit Enquiry'}
-                </button>
-              </form>
             </div>
           </div>
         </section>
       </main>
 
-      {/* Navy Institutional Footer */}
-      <footer className="bg-primary text-on-primary border-t border-primary-container py-10">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="space-y-2">
-              <BrandLogo variant="light" />
-              <p className="text-xs text-on-primary-container leading-relaxed">
-                {effectiveSettings.address}
-              </p>
-              <p className="text-xs font-mono text-on-primary-container tabular-nums">
-                {effectiveSettings.phone}
-              </p>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              <p className="font-bold text-on-primary uppercase tracking-wider">Campus</p>
-              <a href="#about" className="block text-on-primary-container hover:text-on-primary">About Campus</a>
-              <a href="#facilities" className="block text-on-primary-container hover:text-on-primary">Facilities</a>
-              <a href="#gallery" className="block text-on-primary-container hover:text-on-primary">Study Hall Gallery</a>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              <p className="font-bold text-on-primary uppercase tracking-wider">Learning</p>
-              <a href="#exams" className="block text-on-primary-container hover:text-on-primary">Competitive Exams Hub</a>
-              <button type="button" onClick={() => setPublicHubTab('news')} className="block text-on-primary-container hover:text-on-primary cursor-pointer">
-                Daily Current Affairs
-              </button>
-              <button type="button" onClick={() => setPublicHubTab('books')} className="block text-on-primary-container hover:text-on-primary cursor-pointer">
-                Digital GK Books
-              </button>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              <p className="font-bold text-on-primary uppercase tracking-wider">Support</p>
-              <a href="#plans" className="block text-on-primary-container hover:text-on-primary">Membership Plans</a>
-              <a href="#contact" className="block text-on-primary-container hover:text-on-primary">Contact Desk</a>
-              <a href="/sitemap.xml" className="block text-on-primary-container hover:text-on-primary">Sitemap</a>
+      {/* Lightbox Modal */}
+      {lightboxIndex !== null && approvedGallery[lightboxIndex] && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setLightboxIndex(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full bg-slate-900 rounded-2xl overflow-hidden border border-white/15 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setLightboxIndex(null)}
+              aria-label="Close lightbox"
+              className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/60 text-white hover:bg-black cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img
+              src={approvedGallery[lightboxIndex].imageUrl}
+              alt={approvedGallery[lightboxIndex].title}
+              className="w-full max-h-[72dvh] object-contain bg-black"
+            />
+            <div className="p-4 flex items-center justify-between gap-4 text-white border-t border-white/10">
+              <div className="min-w-0">
+                <p className="text-sm font-bold truncate">{approvedGallery[lightboxIndex].title}</p>
+                <p className="text-xs text-slate-300 truncate">{approvedGallery[lightboxIndex].caption}</p>
+              </div>
+              {approvedGallery.length > 1 && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLightboxIndex(
+                        (lightboxIndex - 1 + approvedGallery.length) % approvedGallery.length
+                      )
+                    }
+                    className="p-2 rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer"
+                    aria-label="Previous photo"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLightboxIndex((lightboxIndex + 1) % approvedGallery.length)}
+                    className="p-2 rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer"
+                    aria-label="Next photo"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="pt-6 border-t border-primary-container flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 text-xs text-on-primary-container text-center sm:text-left">
-            <span>{effectiveSettings.openingHours}</span>
-            <span>© {new Date().getFullYear()} {effectiveSettings.libraryName} · Darbhanga, Bihar</span>
+      {/* Footer */}
+      <footer className="bg-[#001633] text-blue-100 border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
+          <div className="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
+            <BrandLogo variant="light" />
+            <span className="text-blue-200/80">
+              {effectiveSettings.address} · {effectiveSettings.openingHours}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              type="button"
+              onClick={() => (isSignedIn ? onOpenPortal() : onOpenStudentAuth('login'))}
+              className="text-blue-200 hover:text-white underline cursor-pointer"
+            >
+              Student Member Login
+            </button>
+            <button
+              type="button"
+              onClick={onOpenAdminLogin}
+              className="text-blue-200 hover:text-white underline cursor-pointer"
+            >
+              Admin Login
+            </button>
+            <span className="text-blue-200/70">
+              © {new Date().getFullYear()} {effectiveSettings.libraryName}. All rights reserved.
+            </span>
           </div>
         </div>
       </footer>

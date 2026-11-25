@@ -27,6 +27,9 @@ export interface StudentRecord {
   idDocumentUrl?: string;
   seatId?: string;
   seatCode?: string;
+  shiftId?: string;
+  shiftName?: string;
+  shiftTiming?: string;
   membershipId?: string;
   membershipPlanName?: string;
   membershipStatus: 'active' | 'expired' | 'pending' | 'none';
@@ -120,22 +123,92 @@ export interface SeatBookingRecord {
   updatedAt: any;
 }
 
+export type AttendanceStatusCode =
+  | 'PRESENT'
+  | 'LEAVE'
+  | 'ABSENT'
+  | 'HALF_DAY'
+  | 'HOLIDAY'
+  | 'OTHER';
+
 export interface AttendanceRecord {
   id: string;
   studentDocId: string;
   studentUid: string;
   studentCode: string;
   studentName: string;
-  date: string; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD (Asia/Kolkata)
   checkInTime: string;
   checkOutTime?: string;
+  recordedAtIst?: string;
+  recordedByLabel?: string;
   durationMinutes: number;
   method: 'qr' | 'manual' | 'id';
   isLate: boolean;
   markedBy?: string;
+  status?: AttendanceStatusCode;
+  customStatusLabel?: string;
+  leaveType?: string;
+  leaveReason?: string;
+  remarks?: string;
+  entryDate?: string;
+  shiftId?: string;
+  shiftName?: string;
   isDemo: boolean;
   createdAt: any;
   updatedAt: any;
+}
+
+export interface LibraryShift {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  description?: string;
+  active: boolean;
+  createdAt: any;
+  updatedAt: any;
+}
+
+export interface CustomAttendanceStatus {
+  id: string;
+  label: string;
+  color: string;
+  createdAt: string;
+}
+
+export interface AttendanceAuditEntry {
+  id: string;
+  attendanceId: string;
+  studentDocId: string;
+  studentCode: string;
+  studentName: string;
+  date: string;
+  previousStatus: string;
+  newStatus: string;
+  previousTimeIst?: string;
+  newTimeIst?: string;
+  reason: string;
+  editedBy: string;
+  editedAtIst: string;
+}
+
+export interface AdminLoginActivity {
+  id: string;
+  mobile: string;
+  action:
+    | 'mobile_password_login'
+    | 'admin_setup'
+    | 'password_changed'
+    | 'mobile_changed'
+    | 'otp_requested'
+    | 'password_reset_otp';
+  status: 'success' | 'failed' | 'info';
+  ip: string;
+  userAgent: string;
+  details: string;
+  timestampIso: string;
+  timestampIst: string;
 }
 
 export interface BookCategory {
@@ -256,6 +329,27 @@ export interface AnnouncementRecord {
   createdAt: any;
 }
 
+export interface FacilityItem {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  imageUrl?: string;
+  available: boolean;
+}
+
+export interface FaqItem {
+  id: string;
+  section: 'faq' | 'important';
+  category: string;
+  question: string;
+  answer: string;
+  sortOrder: number;
+  published: boolean;
+  createdAt: any;
+  updatedAt: any;
+}
+
 export interface GalleryItem {
   id: string;
   title: string;
@@ -263,6 +357,7 @@ export interface GalleryItem {
   imageUrl: string;
   caption: string;
   sortOrder: number;
+  approved?: boolean;
   createdAt: any;
 }
 
@@ -271,6 +366,7 @@ export interface LibrarySettings {
   libraryName: string;
   tagline: string;
   address: string;
+  nearbyLandmarks?: string;
   phone: string;
   whatsapp: string;
   email: string;
@@ -281,6 +377,7 @@ export interface LibrarySettings {
   mapUrl?: string;
   ratingText?: string;
   facilities: string[];
+  facilityItems?: FacilityItem[];
   termsText?: string;
   privacyText?: string;
   razorpayEnabled?: boolean;
@@ -636,12 +733,13 @@ export const GK_BOOK_SUBJECTS: string[] = [
 ];
 
 export const DEFAULT_GYAN_ADDA_SETTINGS: LibrarySettings = {
-  libraryName: 'VIDHYA LIBRARY · Gyan Adda Self-Study Center',
+  libraryName: 'GYAN ADDA LIBRARY',
   tagline: 'Your Knowledge, Your Future.',
   address: '2nd Floor, Station Rd, in front of Poor Home Road, Mirzapur Chowk, Darbhanga, Bihar 846004',
+  nearbyLandmarks: 'In front of Poor Home Road · 350m from Darbhanga Junction',
   phone: '+91 87976 40034 / +91 87897 02011',
   whatsapp: '+91 87976 40034',
-  email: 'desk@vidhyalibrary.in',
+  email: 'desk@gyanaddalibrary.in',
   openingHours: 'Open 24 hours (Monday–Sunday)',
   is24HourAccess: true,
   mapLat: 26.1542,

@@ -31,6 +31,10 @@ import {
   FeeWhatsAppEngine,
   getMetaWhatsAppConfig,
 } from './server/feeWhatsAppEngine.ts';
+import {
+  AdminSessionPayload,
+  AdminSystemEngine,
+} from './server/adminSystemEngine.ts';
 
 dotenv.config();
 
@@ -45,6 +49,7 @@ const adminAuth = getAuth();
 interface AuthenticatedRequest extends Request {
   authUser?: DecodedIdToken;
   rawIdToken?: string;
+  adminSession?: AdminSessionPayload;
 }
 
 function isHmrEnabled(): boolean {
@@ -417,6 +422,24 @@ async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextF
     return res.status(401).json({ error: 'Unauthorized: Missing bearer token' });
   }
   const token = header.slice('Bearer '.length).trim();
+
+  // 1. Check Admin Mobile+Password HMAC session token first if prefixed with adm_v1.
+  if (token.startsWith('adm_v1.')) {
+    const adminSession = adminSystemEngine.verifyAdminToken(token);
+    if (!adminSession) {
+      return res.status(401).json({ error: 'Unauthorized: Admin session expired or revoked.' });
+    }
+    req.adminSession = adminSession;
+    req.rawIdToken = token;
+    req.authUser = {
+      uid: adminSession.sub,
+      email: 'admin@gyanaddalibrary.in',
+      email_verified: true,
+    } as unknown as DecodedIdToken;
+    return next();
+  }
+
+  // 2. Otherwise verify Firebase ID Token
   try {
     const decoded = await adminAuth.verifyIdToken(token);
     req.authUser = decoded;
@@ -428,19 +451,15 @@ async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextF
   }
 }
 
-async function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+async function isCallerAdmin(req: AuthenticatedRequest): Promise<boolean> {
+  if (req.adminSession?.role === 'admin') return true;
   const user = req.authUser;
-  if (!user) {
-    return res.status(401).json({ error: 'Unauthorized: Authentication required.' });
-  }
+  if (!user) return false;
   if (user.email === 'educationrevolution90@gmail.com' && user.email_verified === true) {
-    return next();
+    return true;
   }
-  // Verify promoted admin status via Firestore REST using the caller's own verified ID token
   const token = req.rawIdToken;
-  if (!token) {
-    return res.status(403).json({ error: 'Forbidden: Administrator privileges required.' });
-  }
+  if (!token || token.startsWith('adm_v1.')) return false;
   try {
     const dbId = firebaseConfig.firestoreDatabaseId || '(default)';
     const adminDocUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(
@@ -449,13 +468,54 @@ async function requireAdmin(req: AuthenticatedRequest, res: Response, next: Next
     const checkRes = await fetch(adminDocUrl, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (checkRes.ok) {
-      return next();
-    }
+    return checkRes.ok;
   } catch (err) {
     console.warn('Admin REST verification check failed:', err);
+    return false;
+  }
+}
+
+async function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  if (!req.authUser && !req.adminSession) {
+    return res.status(401).json({ error: 'Unauthorized: Authentication required.' });
+  }
+  if (await isCallerAdmin(req)) {
+    return next();
   }
   return res.status(403).json({ error: 'Forbidden: Administrator privileges required.' });
+}
+
+async function requireStaffOrAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  if (!req.authUser && !req.adminSession) {
+    return res.status(401).json({ error: 'Unauthorized: Authentication required.' });
+  }
+  if (await isCallerAdmin(req)) {
+    return next();
+  }
+  const token = req.rawIdToken;
+  const uid = req.authUser?.uid;
+  if (token && uid && !token.startsWith('adm_v1.')) {
+    try {
+      const dbId = firebaseConfig.firestoreDatabaseId || '(default)';
+      const roleDocUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(
+        firebaseConfig.projectId
+      )}/databases/${encodeURIComponent(dbId)}/documents/user_roles/${encodeURIComponent(uid)}`;
+      const roleRes = await fetch(roleDocUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (roleRes.ok) {
+        const docJson = (await roleRes.json()) as any;
+        const active = docJson?.fields?.active?.booleanValue === true;
+        const role = docJson?.fields?.role?.stringValue || '';
+        if (active && (role === 'admin' || role === 'manager' || role === 'staff')) {
+          return next();
+        }
+      }
+    } catch (err) {
+      console.warn('Staff REST role verification failed:', err);
+    }
+  }
+  return res.status(403).json({ error: 'Forbidden: Staff or Administrator access required.' });
 }
 
 function sendGeminiError(res: Response, err: any, requestId?: string) {
@@ -497,6 +557,9 @@ function getNotificationProviderStatus() {
 }
 
 const feeWhatsAppEngine = new FeeWhatsAppEngine();
+const adminSystemEngine = new AdminSystemEngine({
+  hmacSecret: SANDBOX_HMAC_SECRET,
+});
 
 async function startServer() {
   ensureTmpDir();
@@ -530,7 +593,7 @@ async function startServer() {
       (process.env.APP_URL || '').replace(/\/$/, '') ||
       `${req.protocol}://${req.get('host')}`;
     res.type('text/plain').send(
-      `User-agent: *\nAllow: /\nDisallow: /portal\nSitemap: ${baseUrl}/sitemap.xml\n`
+      `User-agent: *\nAllow: /\nDisallow: /portal\nDisallow: /admin\nSitemap: ${baseUrl}/sitemap.xml\n`
     );
   });
 
@@ -538,7 +601,7 @@ async function startServer() {
     const baseUrl =
       (process.env.APP_URL || '').replace(/\/$/, '') ||
       `${req.protocol}://${req.get('host')}`;
-    const urls = ['/', '/#about', '/#facilities', '/#plans', '/#seats', '/#gallery', '/#contact'];
+    const urls = ['/', '/#location', '/#helpline', '/#facilities', '/#faqs', '/#important', '/#gallery'];
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls
@@ -560,12 +623,355 @@ ${urls
     const cooldown = geminiCoordinator.getCooldownInfo();
     res.json({
       status: 'ok',
-      service: 'vidhya-library',
+      service: 'gyan-adda-library',
       geminiConfigured: Boolean(getGeminiClient()),
       geminiModel: getActiveGeminiModel(),
       geminiCooldownActive: cooldown.active,
       timestamp: new Date().toISOString(),
     });
+  });
+
+  // =========================================================================
+  // PUBLIC WEBSITE SANITIZED INFO & ENQUIRY ENDPOINTS
+  // =========================================================================
+  app.get('/api/public/library-info', (_req, res) => {
+    return res.json(adminSystemEngine.getSanitizedPublicInfo());
+  });
+
+  app.post('/api/public/enquiries', (req, res) => {
+    try {
+      const saved = adminSystemEngine.submitPublicEnquiry(req.body || {});
+      return res.status(201).json({ enquiry: saved });
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Unable to submit enquiry.' });
+    }
+  });
+
+  // =========================================================================
+  // ADMIN MOBILE+PASSWORD AUTHENTICATION, PROFILE & REAL SMS OTP RECOVERY
+  // =========================================================================
+  app.get('/api/admin/auth/status', (_req, res) => {
+    return res.json(adminSystemEngine.getAuthStatus());
+  });
+
+  app.post('/api/admin/auth/setup', (req, res) => {
+    try {
+      const result = adminSystemEngine.setupFirstAdmin({
+        mobile: req.body?.mobile,
+        password: req.body?.password,
+        displayName: req.body?.displayName,
+        ip: req.ip,
+        userAgent: String(req.headers['user-agent'] || ''),
+      });
+      return res.status(201).json(result);
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Setup failed.' });
+    }
+  });
+
+  app.post('/api/admin/auth/login', (req, res) => {
+    try {
+      const result = adminSystemEngine.loginWithMobilePassword({
+        mobile: req.body?.mobile,
+        password: req.body?.password,
+        ip: req.ip,
+        userAgent: String(req.headers['user-agent'] || ''),
+      });
+      return res.json(result);
+    } catch (err: any) {
+      return res.status(err?.statusCode || 401).json({ error: err?.message || 'Login failed.' });
+    }
+  });
+
+  app.post('/api/admin/auth/logout', requireAuth, (req: AuthenticatedRequest, res) => {
+    if (req.rawIdToken?.startsWith('adm_v1.')) {
+      adminSystemEngine.revokeToken(req.rawIdToken);
+    }
+    return res.json({ loggedOut: true });
+  });
+
+  app.post('/api/admin/auth/forgot-password/request-otp', async (req, res) => {
+    try {
+      const result = await adminSystemEngine.requestPasswordResetOtp({
+        mobile: req.body?.mobile,
+        ip: req.ip,
+        userAgent: String(req.headers['user-agent'] || ''),
+      });
+      return res.json(result);
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Unable to send OTP.' });
+    }
+  });
+
+  app.post('/api/admin/auth/forgot-password/verify-otp', (req, res) => {
+    try {
+      const result = adminSystemEngine.verifyResetOtp({
+        mobile: req.body?.mobile,
+        otp: req.body?.otp,
+      });
+      return res.json(result);
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'OTP verification failed.' });
+    }
+  });
+
+  app.post('/api/admin/auth/forgot-password/reset', (req, res) => {
+    try {
+      const result = adminSystemEngine.resetPasswordWithOtp({
+        mobile: req.body?.mobile,
+        resetToken: req.body?.resetToken,
+        newPassword: req.body?.newPassword,
+        ip: req.ip,
+        userAgent: String(req.headers['user-agent'] || ''),
+      });
+      return res.json(result);
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Password reset failed.' });
+    }
+  });
+
+  app.get('/api/admin/profile', requireAuth, requireAdmin, (_req, res) => {
+    return res.json(adminSystemEngine.getAdminProfile());
+  });
+
+  app.post('/api/admin/profile/init-credentials', requireAuth, requireAdmin, (req, res) => {
+    try {
+      const profile = adminSystemEngine.initializeOrUpdateFromAuthenticatedOwner({
+        mobile: req.body?.mobile,
+        newPassword: req.body?.newPassword,
+        displayName: req.body?.displayName,
+        ip: req.ip,
+        userAgent: String(req.headers['user-agent'] || ''),
+      });
+      return res.json(profile);
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Update failed.' });
+    }
+  });
+
+  app.post('/api/admin/change-password', requireAuth, requireAdmin, (req, res) => {
+    try {
+      const result = adminSystemEngine.changePassword({
+        currentPassword: req.body?.currentPassword,
+        newPassword: req.body?.newPassword,
+        ip: req.ip,
+        userAgent: String(req.headers['user-agent'] || ''),
+      });
+      return res.json(result);
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Change password failed.' });
+    }
+  });
+
+  app.post('/api/admin/change-mobile', requireAuth, requireAdmin, (req, res) => {
+    try {
+      const profile = adminSystemEngine.changeMobile({
+        currentPassword: req.body?.currentPassword,
+        newMobile: req.body?.newMobile,
+        displayName: req.body?.displayName,
+        ip: req.ip,
+        userAgent: String(req.headers['user-agent'] || ''),
+      });
+      return res.json(profile);
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Change mobile failed.' });
+    }
+  });
+
+  // =========================================================================
+  // ADMIN PUBLIC CONTENT CMS (SETTINGS, FACILITIES, FAQS, GALLERY, ENQUIRIES)
+  // =========================================================================
+  app.get('/api/admin/public-content', requireAuth, requireAdmin, (_req, res) => {
+    return res.json(adminSystemEngine.getAdminPublicContent());
+  });
+
+  app.put('/api/admin/public-settings', requireAuth, requireAdmin, (req, res) => {
+    const saved = adminSystemEngine.updatePublicSettings(req.body || {});
+    return res.json({ settings: saved });
+  });
+
+  app.post('/api/admin/faqs', requireAuth, requireAdmin, (req, res) => {
+    try {
+      const item = adminSystemEngine.upsertFaq(req.body || {});
+      return res.json({ faq: item });
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Unable to save FAQ.' });
+    }
+  });
+
+  app.delete('/api/admin/faqs/:id', requireAuth, requireAdmin, (req, res) => {
+    adminSystemEngine.deleteFaq(req.params.id);
+    return res.json({ deleted: true });
+  });
+
+  app.post('/api/admin/gallery', requireAuth, requireAdmin, (req, res) => {
+    try {
+      const item = adminSystemEngine.upsertGalleryItem(req.body || {});
+      return res.json({ item });
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Unable to save gallery item.' });
+    }
+  });
+
+  app.delete('/api/admin/gallery/:id', requireAuth, requireAdmin, (req, res) => {
+    adminSystemEngine.deleteGalleryItem(req.params.id);
+    return res.json({ deleted: true });
+  });
+
+  app.put('/api/admin/enquiries/:id', requireAuth, requireStaffOrAdmin, (req, res) => {
+    try {
+      const status = req.body?.status;
+      if (status !== 'new' && status !== 'contacted' && status !== 'resolved') {
+        return res.status(400).json({ error: 'Invalid enquiry status.' });
+      }
+      const enquiry = adminSystemEngine.updateEnquiryStatus(req.params.id, status);
+      return res.json({ enquiry });
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Unable to update enquiry.' });
+    }
+  });
+
+  // =========================================================================
+  // SHIFT & TAMPER-PROOF ATTENDANCE MANAGEMENT (SERVER ASIA/KOLKATA CLOCK)
+  // =========================================================================
+  app.get('/api/admin/shifts', requireAuth, requireStaffOrAdmin, (_req, res) => {
+    return res.json(adminSystemEngine.listShifts());
+  });
+
+  app.post('/api/admin/shifts', requireAuth, requireStaffOrAdmin, (req, res) => {
+    try {
+      const shift = adminSystemEngine.upsertShift(req.body || {});
+      return res.json({ shift });
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Unable to save shift.' });
+    }
+  });
+
+  app.delete('/api/admin/shifts/:id', requireAuth, requireStaffOrAdmin, (req, res) => {
+    adminSystemEngine.deleteShift(req.params.id);
+    return res.json({ deleted: true });
+  });
+
+  app.post('/api/admin/shifts/assign-student', requireAuth, requireStaffOrAdmin, (req, res) => {
+    try {
+      const assignment = adminSystemEngine.assignStudentShift(req.body || {});
+      return res.json({ assignment });
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Unable to assign shift.' });
+    }
+  });
+
+  app.post('/api/admin/attendance/sync-students', requireAuth, requireStaffOrAdmin, (req, res) => {
+    const list = Array.isArray(req.body?.students) ? req.body.students : [];
+    const students = adminSystemEngine.syncStudentsDirectory(list);
+    return res.json({ count: students.length, students });
+  });
+
+  app.get('/api/admin/attendance', requireAuth, requireStaffOrAdmin, (req, res) => {
+    const date = typeof req.query.date === 'string' ? req.query.date : undefined;
+    const shiftId = typeof req.query.shiftId === 'string' ? req.query.shiftId : undefined;
+    const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+    return res.json(adminSystemEngine.getAttendanceDashboard({ date, shiftId, status }));
+  });
+
+  app.post('/api/admin/attendance/mark-present', requireAuth, requireStaffOrAdmin, (req: AuthenticatedRequest, res) => {
+    try {
+      const { studentDocId, studentUid, studentCode, studentName, shiftId, shiftName } = req.body || {};
+      if (!studentDocId || !studentCode || !studentName) {
+        return res.status(400).json({ error: 'Student ID, code, and name are required.' });
+      }
+      const actorLabel =
+        req.adminSession?.displayName || req.authUser?.email || req.authUser?.uid || 'Admin';
+      const record = adminSystemEngine.markPresentOneClick({
+        studentDocId: String(studentDocId),
+        studentUid: studentUid ? String(studentUid) : undefined,
+        studentCode: String(studentCode),
+        studentName: String(studentName),
+        shiftId: shiftId ? String(shiftId) : undefined,
+        shiftName: shiftName ? String(shiftName) : undefined,
+        actorId: req.authUser?.uid || 'admin',
+        actorLabel,
+      });
+      return res.status(201).json({ record });
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Unable to mark present.' });
+    }
+  });
+
+  app.post('/api/admin/attendance/mark-status', requireAuth, requireStaffOrAdmin, (req: AuthenticatedRequest, res) => {
+    try {
+      const {
+        studentDocId,
+        studentUid,
+        studentCode,
+        studentName,
+        date,
+        status,
+        customStatusLabel,
+        leaveType,
+        leaveReason,
+        remarks,
+        entryDate,
+        shiftId,
+      } = req.body || {};
+      if (!studentDocId || !studentCode || !studentName || !status) {
+        return res.status(400).json({ error: 'Student metadata and attendance status are required.' });
+      }
+      const actorLabel =
+        req.adminSession?.displayName || req.authUser?.email || req.authUser?.uid || 'Admin';
+      const record = adminSystemEngine.markAttendanceStatus({
+        studentDocId: String(studentDocId),
+        studentUid: studentUid ? String(studentUid) : undefined,
+        studentCode: String(studentCode),
+        studentName: String(studentName),
+        date: typeof date === 'string' ? date : undefined,
+        status,
+        customStatusLabel,
+        leaveType,
+        leaveReason,
+        remarks,
+        entryDate,
+        shiftId,
+        actorId: req.authUser?.uid || 'admin',
+        actorLabel,
+      });
+      return res.status(201).json({ record });
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Unable to mark status.' });
+    }
+  });
+
+  app.patch('/api/admin/attendance/:id', requireAuth, requireStaffOrAdmin, (req: AuthenticatedRequest, res) => {
+    try {
+      const actorLabel =
+        req.adminSession?.displayName || req.authUser?.email || req.authUser?.uid || 'Admin';
+      const record = adminSystemEngine.correctAttendanceRecord({
+        attendanceId: req.params.id,
+        status: req.body?.status,
+        customStatusLabel: req.body?.customStatusLabel,
+        leaveType: req.body?.leaveType,
+        leaveReason: req.body?.leaveReason,
+        remarks: req.body?.remarks,
+        correctionReason: req.body?.correctionReason,
+        actorId: req.authUser?.uid || 'admin',
+        actorLabel,
+      });
+      return res.json({ record });
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Unable to update attendance.' });
+    }
+  });
+
+  app.post('/api/admin/attendance/statuses', requireAuth, requireStaffOrAdmin, (req, res) => {
+    try {
+      const status = adminSystemEngine.createCustomAttendanceStatus({
+        label: req.body?.label,
+        color: req.body?.color,
+      });
+      return res.status(201).json({ status });
+    } catch (err: any) {
+      return res.status(err?.statusCode || 400).json({ error: err?.message || 'Unable to create custom status.' });
+    }
   });
 
   app.get('/api/ai/status', requireAuth, (_req, res) => {
@@ -826,11 +1232,11 @@ ${urls
     }
   });
 
-  app.get('/api/notifications/providers', requireAuth, (_req, res) => {
+  app.get('/api/notifications/providers', requireAuth, requireStaffOrAdmin, (_req, res) => {
     res.json(getNotificationProviderStatus());
   });
 
-  app.post('/api/notifications/dispatch', requireAuth, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/notifications/dispatch', requireAuth, requireStaffOrAdmin, async (req: AuthenticatedRequest, res) => {
     const { channel, recipient, title, message } = req.body || {};
     const status = getNotificationProviderStatus();
     if (channel !== 'whatsapp' && channel !== 'email' && channel !== 'sms') {
@@ -1019,7 +1425,7 @@ ${urls
   // =========================================================================
   // QUESTION VAULT SEALING & SERVER-SIDE EXAM ENGINE
   // =========================================================================
-  app.post('/api/exams/seal-questions', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.post('/api/exams/seal-questions', requireAuth, requireStaffOrAdmin, (req: AuthenticatedRequest, res) => {
     const items = Array.isArray(req.body?.items) ? req.body.items : [];
     if (items.length === 0 || items.length > 200) {
       return res.status(400).json({ error: 'Provide between 1 and 200 questions to seal.' });
@@ -1486,7 +1892,7 @@ Rules:
       const { value: advicePayload, deduped } = await geminiCoordinator.runIdempotent(
         idempotencyKey,
         async () => {
-          const prompt = `You are a disciplined competitive exam mentor at VIDHYA LIBRARY.
+          const prompt = `You are a disciplined competitive exam mentor at GYAN ADDA LIBRARY.
 Analyze ONLY the student's real test attempt data below and provide a focused, actionable 4-part study plan (plain structured prose, no fluff):
 Exam: ${examName}
 Score: ${totalMarks}/${maxMarks} | Correct: ${correctCount}, Incorrect: ${incorrectCount}, Unanswered: ${unansweredCount} (Total ${totalQuestions})
@@ -1530,7 +1936,7 @@ Provide:
   // =========================================================================
   // AI PYQ PDF IMPORT SYSTEM (CHUNKED RESUMABLE UPLOAD + BACKGROUND QUEUE)
   // =========================================================================
-  app.post('/api/exams/upload/init', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.post('/api/exams/upload/init', requireAuth, requireStaffOrAdmin, (req: AuthenticatedRequest, res) => {
     const { fileName, fileSize, totalChunks } = req.body || {};
     const size = Number(fileSize);
     const chunks = Number(totalChunks);
@@ -1563,7 +1969,7 @@ Provide:
     return res.json({ uploadId, maxBytes: MAX_PDF_BYTES });
   });
 
-  app.post('/api/exams/upload/chunk', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.post('/api/exams/upload/chunk', requireAuth, requireStaffOrAdmin, (req: AuthenticatedRequest, res) => {
     const { uploadId, chunkIndex, dataBase64 } = req.body || {};
     const session = uploadSessions.get(String(uploadId || ''));
     if (!session) {
@@ -1611,7 +2017,7 @@ Provide:
     });
   });
 
-  app.post('/api/exams/upload/finalize', requireAuth, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/exams/upload/finalize', requireAuth, requireStaffOrAdmin, async (req: AuthenticatedRequest, res) => {
     const {
       uploadId,
       examName = 'UPSC',
@@ -1742,10 +2148,10 @@ Provide:
     }
   });
 
-  app.get('/api/exams/import/jobs', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.get('/api/exams/import/jobs', requireAuth, requireStaffOrAdmin, (req: AuthenticatedRequest, res) => {
     const uid = req.authUser?.uid;
     const jobs = Array.from(importJobs.values())
-      .filter((j) => !j.createdByUid || j.createdByUid === uid)
+      .filter((j) => !j.createdByUid || j.createdByUid === uid || req.adminSession?.role === 'admin')
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
       .slice(0, 20)
       .map((j) => {
@@ -1759,13 +2165,13 @@ Provide:
     return res.json({ jobs });
   });
 
-  app.get('/api/exams/import/status/:jobId', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.get('/api/exams/import/status/:jobId', requireAuth, requireStaffOrAdmin, (req: AuthenticatedRequest, res) => {
     const job = importJobs.get(req.params.jobId);
     if (!job) return res.status(404).json({ error: 'Import job not found.' });
     return res.json(serializeJobSnapshot(job));
   });
 
-  app.post('/api/exams/import/control', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.post('/api/exams/import/control', requireAuth, requireStaffOrAdmin, (req: AuthenticatedRequest, res) => {
     const { jobId, action, batchIndex } = req.body || {};
     const job = importJobs.get(String(jobId || ''));
     if (!job) return res.status(404).json({ error: 'Import job not found.' });
@@ -1861,7 +2267,7 @@ Provide:
   // =========================================================================
   // DAILY CURRENT AFFAIRS SCHEDULER & ON-DEMAND COLLECTION
   // =========================================================================
-  app.get('/api/current-affairs/status', requireAuth, (_req, res) => {
+  app.get('/api/current-affairs/status', requireAuth, requireStaffOrAdmin, (_req, res) => {
     const cooldown = geminiCoordinator.getCooldownInfo();
     res.json({
       paused: currentAffairsState.paused,
@@ -1876,7 +2282,7 @@ Provide:
     });
   });
 
-  app.post('/api/current-affairs/schedule', requireAuth, (req, res) => {
+  app.post('/api/current-affairs/schedule', requireAuth, requireStaffOrAdmin, (req, res) => {
     const { paused, autoPublishEnabled } = req.body || {};
     if (typeof paused === 'boolean') currentAffairsState.paused = paused;
     if (typeof autoPublishEnabled === 'boolean') {
@@ -1888,7 +2294,7 @@ Provide:
     });
   });
 
-  app.post('/api/current-affairs/collect', requireAuth, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/current-affairs/collect', requireAuth, requireStaffOrAdmin, async (req: AuthenticatedRequest, res) => {
     const rawReqId = String(req.headers['x-idempotency-key'] || req.body?.requestId || '').trim();
     const requestId = rawReqId || `req_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     try {
@@ -1956,7 +2362,7 @@ Provide:
   }
 
   httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`VIDHYA LIBRARY server running on http://0.0.0.0:${PORT}`);
+    console.log(`GYAN ADDA LIBRARY server running on http://0.0.0.0:${PORT}`);
   });
 }
 

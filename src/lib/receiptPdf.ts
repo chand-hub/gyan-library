@@ -9,7 +9,7 @@ export function escapeHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-export function downloadReceiptHtml(payment: PaymentRecord, libraryName = 'VIDHYA LIBRARY', address = '') {
+export function downloadReceiptHtml(payment: PaymentRecord, libraryName = 'GYAN ADDA LIBRARY', address = '') {
   const safeHtml = `<!doctype html>
 <html lang="en">
 <head>

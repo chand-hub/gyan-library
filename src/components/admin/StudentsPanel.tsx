@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   addDoc,
   collection,
@@ -12,6 +12,7 @@ import { db, logAuditEvent } from '../../lib/firebase';
 import { downloadCsv } from '../../lib/receiptPdf';
 import {
   AttendanceRecord,
+  LibraryShift,
   MembershipPlan,
   PaymentRecord,
   SeatRecord,
@@ -26,6 +27,8 @@ interface StudentsPanelProps {
   payments: PaymentRecord[];
   isManagerOrAdmin: boolean;
   actorRole: string;
+  hasFirebaseSession?: boolean;
+  getIdToken: () => Promise<string | null>;
   onNotify: (type: 'ok' | 'err', msg: string) => void;
 }
 
@@ -37,6 +40,8 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
   payments,
   isManagerOrAdmin,
   actorRole,
+  hasFirebaseSession = true,
+  getIdToken,
   onNotify,
 }) => {
   const [search, setSearch] = useState('');
@@ -45,6 +50,13 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
   const [showCsvModal, setShowCsvModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<StudentRecord | null>(null);
   const [viewingStudent, setViewingStudent] = useState<StudentRecord | null>(null);
+
+  // Shifts & server directory mirror
+  const [shifts, setShifts] = useState<LibraryShift[]>([]);
+  const [shiftAssignments, setShiftAssignments] = useState<
+    Record<string, { shiftId: string; shiftName: string; shiftTiming: string }>
+  >({});
+  const [serverStudents, setServerStudents] = useState<StudentRecord[]>([]);
 
   // Add / Edit Form
   const [fullName, setFullName] = useState('');
@@ -55,6 +67,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
   const [emergencyContact, setEmergencyContact] = useState('');
   const [assignSeatId, setAssignSeatId] = useState('');
   const [assignPlanId, setAssignPlanId] = useState('');
+  const [assignShiftId, setAssignShiftId] = useState('shift_fullday');
 
   // Bulk CSV Import
   const [csvText, setCsvText] = useState(
@@ -62,19 +75,58 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
   );
   const [importingCsv, setImportingCsv] = useState(false);
 
+  const loadShiftMeta = useCallback(async () => {
+    try {
+      const token = await getIdToken();
+      if (!token) return;
+      const [shRes, attRes] = await Promise.all([
+        fetch('/api/admin/shifts', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/admin/attendance', { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      if (shRes.ok) {
+        const d = await shRes.json();
+        setShifts(d.shifts || []);
+        setShiftAssignments(d.assignments || {});
+      }
+      if (attRes.ok) {
+        const a = await attRes.json();
+        if (Array.isArray(a.students)) setServerStudents(a.students);
+      }
+    } catch {
+      // Ignore transient network errors
+    }
+  }, [getIdToken]);
+
+  useEffect(() => {
+    loadShiftMeta();
+  }, [loadShiftMeta]);
+
+  const effectiveStudents = useMemo(() => {
+    const base = students.length > 0 ? students : serverStudents;
+    return base.map((s) => {
+      const assign = shiftAssignments[s.id];
+      return {
+        ...s,
+        shiftId: assign?.shiftId || s.shiftId || 'shift_fullday',
+        shiftName: assign?.shiftName || s.shiftName || 'Full Day',
+        shiftTiming: assign?.shiftTiming || s.shiftTiming || '06:00 – 22:00',
+      };
+    });
+  }, [students, serverStudents, shiftAssignments]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return students.filter((s) => {
+    return effectiveStudents.filter((s) => {
       if (statusFilter !== 'ALL' && s.status !== statusFilter) return false;
       if (!q) return true;
       return (
         s.studentCode.toLowerCase().includes(q) ||
         s.fullName.toLowerCase().includes(q) ||
         s.mobile.toLowerCase().includes(q) ||
-        s.email.toLowerCase().includes(q)
+        (s.email || '').toLowerCase().includes(q)
       );
     });
-  }, [students, search, statusFilter]);
+  }, [effectiveStudents, search, statusFilter]);
 
   const openAddModal = () => {
     setEditingStudent(null);
@@ -86,6 +138,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
     setEmergencyContact('');
     setAssignSeatId('');
     setAssignPlanId('');
+    setAssignShiftId(shifts[0]?.id || 'shift_fullday');
     setShowAddModal(true);
   };
 
@@ -99,7 +152,44 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
     setEmergencyContact(s.emergencyContact);
     setAssignSeatId(s.seatId || '');
     setAssignPlanId('');
+    setAssignShiftId(s.shiftId || 'shift_fullday');
     setShowAddModal(true);
+  };
+
+  const handleQuickShiftChange = async (s: StudentRecord, nextShiftId: string) => {
+    try {
+      const token = await getIdToken();
+      if (!token) return;
+      const res = await fetch('/api/admin/shifts/assign-student', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          studentDocId: s.id,
+          studentCode: s.studentCode,
+          studentName: s.fullName,
+          mobile: s.mobile,
+          seatCode: s.seatCode,
+          shiftId: nextShiftId,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Failed to update shift.');
+      setShiftAssignments((prev) => ({ ...prev, [s.id]: d.assignment }));
+      if (hasFirebaseSession) {
+        updateDoc(doc(db, 'students', s.id), {
+          shiftId: d.assignment.shiftId,
+          shiftName: d.assignment.shiftName,
+          shiftTiming: d.assignment.shiftTiming,
+          updatedAt: serverTimestamp(),
+        }).catch(() => {});
+      }
+      onNotify('ok', `${s.fullName} moved to ${d.assignment.shiftName}.`);
+    } catch (err: any) {
+      onNotify('err', err?.message || 'Unable to assign shift.');
+    }
   };
 
   const handleSaveStudent = async (e: React.FormEvent) => {
@@ -108,9 +198,14 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
       onNotify('err', 'Only Manager or Admin can create or edit student records.');
       return;
     }
+    if (!hasFirebaseSession) {
+      onNotify('err', 'Creating or editing Firestore student records requires linking your Google Owner Admin session.');
+      return;
+    }
     try {
       const selectedSeat = seats.find((st) => st.id === assignSeatId);
       const selectedPlan = plans.find((p) => p.id === assignPlanId);
+      const selectedShift = shifts.find((sh) => sh.id === assignShiftId);
 
       if (editingStudent) {
         if (selectedSeat && selectedSeat.id !== editingStudent.seatId) {
@@ -143,6 +238,13 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
           fatherName: fatherName.trim(),
           address: address.trim(),
           emergencyContact: emergencyContact.trim(),
+          ...(selectedShift
+            ? {
+                shiftId: selectedShift.id,
+                shiftName: selectedShift.name,
+                shiftTiming: `${selectedShift.startTime} – ${selectedShift.endTime}`,
+              }
+            : {}),
           ...(selectedSeat ? { seatId: selectedSeat.id, seatCode: selectedSeat.seatCode } : {}),
           updatedAt: serverTimestamp(),
         };
@@ -174,6 +276,12 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
         }
 
         await updateDoc(doc(db, 'students', editingStudent.id), updates);
+        if (selectedShift) {
+          await handleQuickShiftChange(
+            { ...editingStudent, fullName: fullName.trim(), mobile: mobile.trim() },
+            selectedShift.id
+          );
+        }
         await logAuditEvent(
           'STUDENT_UPDATED',
           'students',
@@ -199,6 +307,13 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
           fatherName: fatherName.trim(),
           address: address.trim(),
           emergencyContact: emergencyContact.trim(),
+          ...(selectedShift
+            ? {
+                shiftId: selectedShift.id,
+                shiftName: selectedShift.name,
+                shiftTiming: `${selectedShift.startTime} – ${selectedShift.endTime}`,
+              }
+            : {}),
           ...(selectedSeat ? { seatId: selectedSeat.id, seatCode: selectedSeat.seatCode } : {}),
           ...(selectedPlan
             ? {
@@ -243,6 +358,27 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
             membershipId: memRef.id,
             updatedAt: serverTimestamp(),
           });
+        }
+
+        if (selectedShift) {
+          const token = await getIdToken();
+          if (token) {
+            fetch('/api/admin/shifts/assign-student', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                studentDocId: ref.id,
+                studentCode,
+                studentName: fullName.trim(),
+                mobile: mobile.trim(),
+                seatCode: selectedSeat?.seatCode,
+                shiftId: selectedShift.id,
+              }),
+            }).catch(() => {});
+          }
         }
 
         await logAuditEvent('STUDENT_CREATED', 'students', ref.id, `Added ${studentCode}`, actorRole);
@@ -336,13 +472,14 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
             type="button"
             onClick={() =>
               downloadCsv(
-                `vidhya-students-${new Date().toISOString().slice(0, 10)}.csv`,
-                ['Student ID', 'Full Name', 'Mobile', 'Email', 'Seat', 'Plan', 'Membership Status', 'Account Status'],
+                `gyan-adda-students-${new Date().toISOString().slice(0, 10)}.csv`,
+                ['Student ID', 'Full Name', 'Mobile', 'Email', 'Shift', 'Seat', 'Plan', 'Membership Status', 'Account Status'],
                 filtered.map((s) => [
                   s.studentCode,
                   s.fullName,
                   s.mobile,
                   s.email,
+                  s.shiftName || 'Full Day',
                   s.seatCode || '',
                   s.membershipPlanName || '',
                   s.membershipStatus,
@@ -412,6 +549,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
             <tr>
               <th className="px-4 py-3 font-semibold">Student ID</th>
               <th className="px-4 py-3 font-semibold">Name &amp; Contact</th>
+              <th className="px-4 py-3 font-semibold">Shift</th>
               <th className="px-4 py-3 font-semibold">Seat</th>
               <th className="px-4 py-3 font-semibold">Membership</th>
               <th className="px-4 py-3 font-semibold">Account</th>
@@ -429,6 +567,24 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
                   <div className="text-[11px] text-on-surface-variant dark:text-slate-400">
                     {s.mobile} · {s.email}
                   </div>
+                </td>
+                <td className="px-4 py-3 text-xs">
+                  {shifts.length > 0 && isManagerOrAdmin ? (
+                    <select
+                      aria-label={`Shift for ${s.fullName}`}
+                      value={s.shiftId || 'shift_fullday'}
+                      onChange={(e) => handleQuickShiftChange(s, e.target.value)}
+                      className="px-2 py-1 text-xs rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white"
+                    >
+                      {shifts.map((sh) => (
+                        <option key={sh.id} value={sh.id}>
+                          {sh.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="font-medium text-on-surface dark:text-white">{s.shiftName || 'Full Day'}</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 font-mono text-xs font-semibold text-primary dark:text-white">
                   {s.seatCode || '—'}
@@ -649,7 +805,21 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
                   className={inputCls}
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Study Shift</label>
+                  <select
+                    value={assignShiftId}
+                    onChange={(e) => setAssignShiftId(e.target.value)}
+                    className={inputCls}
+                  >
+                    {shifts.map((sh) => (
+                      <option key={sh.id} value={sh.id}>
+                        {sh.name} ({sh.startTime}–{sh.endTime})
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div>
                   <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Assign Study Seat</label>
                   <select

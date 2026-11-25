@@ -59,6 +59,9 @@
         "idDocumentUrl": { "type": "string", "maxLength": 1000 },
         "seatId": { "type": "string", "maxLength": 128 },
         "seatCode": { "type": "string", "maxLength": 16 },
+        "shiftId": { "type": "string", "maxLength": 128 },
+        "shiftName": { "type": "string", "maxLength": 80 },
+        "shiftTiming": { "type": "string", "maxLength": 60 },
         "membershipId": { "type": "string", "maxLength": 128 },
         "membershipPlanName": { "type": "string", "maxLength": 100 },
         "membershipStatus": { "type": "string", "enum": ["active", "expired", "pending", "none"] },
@@ -183,10 +186,20 @@
         "date": { "type": "string", "maxLength": 20 },
         "checkInTime": { "type": "string", "maxLength": 40 },
         "checkOutTime": { "type": "string", "maxLength": 40 },
+        "recordedAtIst": { "type": "string", "maxLength": 40 },
+        "recordedByLabel": { "type": "string", "maxLength": 120 },
         "durationMinutes": { "type": "integer" },
         "method": { "type": "string", "enum": ["qr", "manual", "id"] },
         "isLate": { "type": "boolean" },
         "markedBy": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["PRESENT", "LEAVE", "ABSENT", "HALF_DAY", "HOLIDAY", "OTHER"] },
+        "customStatusLabel": { "type": "string", "maxLength": 60 },
+        "leaveType": { "type": "string", "maxLength": 80 },
+        "leaveReason": { "type": "string", "maxLength": 300 },
+        "remarks": { "type": "string", "maxLength": 300 },
+        "entryDate": { "type": "string", "maxLength": 20 },
+        "shiftId": { "type": "string", "maxLength": 128 },
+        "shiftName": { "type": "string", "maxLength": 80 },
         "isDemo": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
@@ -335,6 +348,68 @@
       },
       "required": ["title", "body", "priority", "published", "createdAt"]
     },
+    "FaqItem": {
+      "title": "FaqItem",
+      "description": "Public FAQ or Important Question accordion item.",
+      "type": "object",
+      "properties": {
+        "section": { "type": "string", "enum": ["faq", "important"] },
+        "category": { "type": "string", "maxLength": 60 },
+        "question": { "type": "string", "minLength": 3, "maxLength": 300 },
+        "answer": { "type": "string", "minLength": 3, "maxLength": 2000 },
+        "sortOrder": { "type": "integer" },
+        "published": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["section", "category", "question", "answer", "sortOrder", "published", "createdAt", "updatedAt"]
+    },
+    "LibraryShift": {
+      "title": "LibraryShift",
+      "description": "Configurable study shift with start and end timings.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "startTime": { "type": "string", "maxLength": 20 },
+        "endTime": { "type": "string", "maxLength": 20 },
+        "description": { "type": "string", "maxLength": 240 },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "startTime", "endTime", "active", "createdAt", "updatedAt"]
+    },
+    "CustomAttendanceStatus": {
+      "title": "CustomAttendanceStatus",
+      "description": "Custom admin-defined attendance status label.",
+      "type": "object",
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "color": { "type": "string", "maxLength": 24 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["label", "color", "createdAt"]
+    },
+    "AttendanceAuditEntry": {
+      "title": "AttendanceAuditEntry",
+      "description": "Immutable attendance correction audit trail entry.",
+      "type": "object",
+      "properties": {
+        "attendanceId": { "type": "string", "maxLength": 128 },
+        "studentDocId": { "type": "string", "maxLength": 128 },
+        "studentCode": { "type": "string", "maxLength": 24 },
+        "studentName": { "type": "string", "maxLength": 120 },
+        "date": { "type": "string", "maxLength": 20 },
+        "previousStatus": { "type": "string", "maxLength": 80 },
+        "newStatus": { "type": "string", "maxLength": 80 },
+        "previousTimeIst": { "type": "string", "maxLength": 40 },
+        "newTimeIst": { "type": "string", "maxLength": 40 },
+        "reason": { "type": "string", "maxLength": 300 },
+        "editedBy": { "type": "string", "maxLength": 120 },
+        "editedAtIst": { "type": "string", "maxLength": 60 }
+      },
+      "required": ["attendanceId", "studentDocId", "studentCode", "studentName", "date", "previousStatus", "newStatus", "reason", "editedBy", "editedAtIst"]
+    },
     "GalleryItem": {
       "title": "GalleryItem",
       "description": "Public library photo gallery entry.",
@@ -345,18 +420,20 @@
         "imageUrl": { "type": "string", "maxLength": 1000 },
         "caption": { "type": "string", "maxLength": 300 },
         "sortOrder": { "type": "integer" },
+        "approved": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["title", "category", "imageUrl", "caption", "sortOrder", "createdAt"]
     },
     "LibrarySettings": {
       "title": "LibrarySettings",
-      "description": "Public and operational configuration for VIDHYA LIBRARY / Gyan Adda.",
+      "description": "Public and operational configuration for GYAN ADDA LIBRARY.",
       "type": "object",
       "properties": {
         "libraryName": { "type": "string", "maxLength": 120 },
         "tagline": { "type": "string", "maxLength": 200 },
         "address": { "type": "string", "maxLength": 300 },
+        "nearbyLandmarks": { "type": "string", "maxLength": 300 },
         "phone": { "type": "string", "maxLength": 30 },
         "whatsapp": { "type": "string", "maxLength": 30 },
         "email": { "type": "string", "maxLength": 200 },
@@ -367,6 +444,7 @@
         "mapUrl": { "type": "string", "maxLength": 500 },
         "ratingText": { "type": "string", "maxLength": 100 },
         "facilities": { "type": "array" },
+        "facilityItems": { "type": "array" },
         "termsText": { "type": "string", "maxLength": 4000 },
         "privacyText": { "type": "string", "maxLength": 4000 },
         "razorpayEnabled": { "type": "boolean" },
@@ -698,6 +776,10 @@
     "/current_affairs/{caId}": { "schema": { "$ref": "#/entities/CurrentAffairsItem" }, "description": "Bilingual grounded daily current affairs." },
     "/current_affairs_settings/{settingId}": { "schema": { "$ref": "#/entities/CurrentAffairsSettings" }, "description": "Daily current affairs scheduler controls." },
     "/gk_books/{bookId}": { "schema": { "$ref": "#/entities/DigitalGKBook" }, "description": "Digital chapter-wise GK books." },
-    "/study_bookmarks/{bookmarkId}": { "schema": { "$ref": "#/entities/StudyBookmark" }, "description": "Student chapter bookmarks." }
+    "/study_bookmarks/{bookmarkId}": { "schema": { "$ref": "#/entities/StudyBookmark" }, "description": "Student chapter bookmarks." },
+    "/faqs/{faqId}": { "schema": { "$ref": "#/entities/FaqItem" }, "description": "Public FAQs and Important Questions." },
+    "/shifts/{shiftId}": { "schema": { "$ref": "#/entities/LibraryShift" }, "description": "Study shifts and timings." },
+    "/attendance_statuses/{statusId}": { "schema": { "$ref": "#/entities/CustomAttendanceStatus" }, "description": "Custom attendance status labels." },
+    "/attendance_audit/{logId}": { "schema": { "$ref": "#/entities/AttendanceAuditEntry" }, "description": "Immutable attendance correction audit log." }
   }
 }

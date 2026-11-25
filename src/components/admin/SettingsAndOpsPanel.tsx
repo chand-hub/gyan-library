@@ -9,7 +9,12 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import {
+  CheckCircle2,
   Database,
+  Edit2,
+  Eye,
+  EyeOff,
+  Plus,
   Trash2,
   UserPlus,
   X,
@@ -23,6 +28,7 @@ import {
   DEFAULT_FACILITIES,
   DEFAULT_GYAN_ADDA_SETTINGS,
   EnquiryRecord,
+  FacilityItem,
   GalleryItem,
   LibrarySettings,
   StaffRecord,
@@ -30,7 +36,15 @@ import {
 } from '../../types/library';
 
 interface SettingsAndOpsPanelProps {
-  activeSection: 'staff' | 'enquiries' | 'gallery' | 'announcements' | 'notifications' | 'audit' | 'settings';
+  activeSection:
+    | 'staff'
+    | 'enquiries'
+    | 'gallery'
+    | 'facilities'
+    | 'announcements'
+    | 'notifications'
+    | 'audit'
+    | 'settings';
   staffList: StaffRecord[];
   enquiries: EnquiryRecord[];
   gallery: GalleryItem[];
@@ -42,6 +56,7 @@ interface SettingsAndOpsPanelProps {
   actorRole: string;
   isAdmin: boolean;
   isManagerOrAdmin: boolean;
+  hasFirebaseSession?: boolean;
   getIdToken: () => Promise<string | null>;
   onNotify: (type: 'ok' | 'err', msg: string) => void;
 }
@@ -51,6 +66,18 @@ interface ProviderInfo {
   email: { configured: boolean; label: string };
   sms: { configured: boolean; label: string };
 }
+
+const FACILITY_ICONS = [
+  'Clock',
+  'Wind',
+  'Wifi',
+  'LampDesk',
+  'Droplets',
+  'ShieldCheck',
+  'BookOpen',
+  'BatteryCharging',
+  'Sparkles',
+];
 
 export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
   activeSection,
@@ -65,6 +92,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
   actorRole,
   isAdmin,
   isManagerOrAdmin,
+  hasFirebaseSession = true,
   getIdToken,
   onNotify,
 }) => {
@@ -80,11 +108,25 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
   const [stfSalary, setStfSalary] = useState(18000);
   const [stfPerms, setStfPerms] = useState<string[]>(['view_students', 'mark_attendance']);
 
-  // Gallery Form State
+  // Gallery Form & Edit State
   const [galTitle, setGalTitle] = useState('');
   const [galCat, setGalCat] = useState('Reading Hall');
   const [galUrl, setGalUrl] = useState('');
   const [galCaption, setGalCaption] = useState('');
+  const [galApproved, setGalApproved] = useState(true);
+  const [editingGallery, setEditingGallery] = useState<GalleryItem | null>(null);
+
+  // Server Public Content mirror (for Mobile+Password admins and persistent CMS)
+  const [serverGallery, setServerGallery] = useState<GalleryItem[]>([]);
+  const [serverEnquiries, setServerEnquiries] = useState<EnquiryRecord[]>([]);
+  const [serverSettings, setServerSettings] = useState<LibrarySettings | null>(null);
+
+  // Facility Items State
+  const [facilityItems, setFacilityItems] = useState<FacilityItem[]>([]);
+  const [facName, setFacName] = useState('');
+  const [facDesc, setFacDesc] = useState('');
+  const [facIcon, setFacIcon] = useState('Sparkles');
+  const [editingFacilityId, setEditingFacilityId] = useState<string | null>(null);
 
   // Announcement Form State
   const [annTitle, setAnnTitle] = useState('');
@@ -101,6 +143,9 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
   const [libName, setLibName] = useState(settings?.libraryName || DEFAULT_GYAN_ADDA_SETTINGS.libraryName);
   const [tagline, setTagline] = useState(settings?.tagline || DEFAULT_GYAN_ADDA_SETTINGS.tagline);
   const [address, setAddress] = useState(settings?.address || DEFAULT_GYAN_ADDA_SETTINGS.address);
+  const [nearbyLandmarks, setNearbyLandmarks] = useState(
+    settings?.nearbyLandmarks || DEFAULT_GYAN_ADDA_SETTINGS.nearbyLandmarks || ''
+  );
   const [phone, setPhone] = useState(settings?.phone || DEFAULT_GYAN_ADDA_SETTINGS.phone);
   const [whatsapp, setWhatsapp] = useState(settings?.whatsapp || DEFAULT_GYAN_ADDA_SETTINGS.whatsapp);
   const [email, setEmail] = useState(settings?.email || DEFAULT_GYAN_ADDA_SETTINGS.email);
@@ -108,6 +153,8 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
   const [is24Hour, setIs24Hour] = useState(settings?.is24HourAccess ?? true);
   const [mapLat, setMapLat] = useState(settings?.mapLat ?? DEFAULT_GYAN_ADDA_SETTINGS.mapLat);
   const [mapLng, setMapLng] = useState(settings?.mapLng ?? DEFAULT_GYAN_ADDA_SETTINGS.mapLng);
+  const [mapUrl, setMapUrl] = useState(settings?.mapUrl || DEFAULT_GYAN_ADDA_SETTINGS.mapUrl || '');
+  const [ratingText, setRatingText] = useState(settings?.ratingText || DEFAULT_GYAN_ADDA_SETTINGS.ratingText || '');
   const [facilities, setFacilities] = useState<string[]>(settings?.facilities || DEFAULT_FACILITIES);
   const [newFacility, setNewFacility] = useState('');
   const [termsText, setTermsText] = useState<string>(
@@ -118,23 +165,64 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
   );
   const [seedingDemo, setSeedingDemo] = useState(false);
 
-  useEffect(() => {
-    if (settings) {
-      setLibName(settings.libraryName);
-      setTagline(settings.tagline);
-      setAddress(settings.address);
-      setPhone(settings.phone);
-      setWhatsapp(settings.whatsapp);
-      setEmail(settings.email);
-      setOpeningHours(settings.openingHours);
-      setIs24Hour(Boolean(settings.is24HourAccess));
-      setMapLat(settings.mapLat);
-      setMapLng(settings.mapLng);
-      setFacilities(settings.facilities || DEFAULT_FACILITIES);
-      setTermsText(settings.termsText || '');
-      setPrivacyText(settings.privacyText || '');
+  const loadServerPublicContent = async () => {
+    try {
+      const token = await getIdToken();
+      if (!token) return;
+      const res = await fetch('/api/admin/public-content', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const d = await res.json();
+        if (d.settings) {
+          setServerSettings(d.settings);
+          if (Array.isArray(d.settings.facilityItems)) {
+            setFacilityItems(d.settings.facilityItems);
+          }
+        }
+        if (Array.isArray(d.gallery)) setServerGallery(d.gallery);
+        if (Array.isArray(d.enquiries)) setServerEnquiries(d.enquiries);
+      }
+    } catch {
+      // Ignore network errors
     }
-  }, [settings]);
+  };
+
+  useEffect(() => {
+    if (
+      activeSection === 'settings' ||
+      activeSection === 'facilities' ||
+      activeSection === 'gallery' ||
+      activeSection === 'enquiries'
+    ) {
+      loadServerPublicContent();
+    }
+  }, [activeSection]);
+
+  useEffect(() => {
+    const src = settings || serverSettings;
+    if (src) {
+      setLibName(src.libraryName);
+      setTagline(src.tagline);
+      setAddress(src.address);
+      setNearbyLandmarks(src.nearbyLandmarks || DEFAULT_GYAN_ADDA_SETTINGS.nearbyLandmarks || '');
+      setPhone(src.phone);
+      setWhatsapp(src.whatsapp);
+      setEmail(src.email);
+      setOpeningHours(src.openingHours);
+      setIs24Hour(Boolean(src.is24HourAccess));
+      setMapLat(src.mapLat);
+      setMapLng(src.mapLng);
+      setMapUrl(src.mapUrl || '');
+      setRatingText(src.ratingText || '');
+      setFacilities(src.facilities || DEFAULT_FACILITIES);
+      if (Array.isArray(src.facilityItems) && src.facilityItems.length > 0) {
+        setFacilityItems(src.facilityItems);
+      }
+      setTermsText(src.termsText || '');
+      setPrivacyText(src.privacyText || '');
+    }
+  }, [settings, serverSettings]);
 
   useEffect(() => {
     if (activeSection !== 'notifications') return;
@@ -263,27 +351,195 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
   };
 
   const handleEnquiryStatus = async (enq: EnquiryRecord, status: EnquiryRecord['status']) => {
-    await updateDoc(doc(db, 'enquiries', enq.id), {
-      status,
-      updatedAt: serverTimestamp(),
-    });
-    onNotify('ok', `Enquiry from ${enq.name} marked ${status}.`);
+    try {
+      const token = await getIdToken();
+      if (token) {
+        await fetch(`/api/admin/enquiries/${encodeURIComponent(enq.id)}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status }),
+        }).catch(() => {});
+      }
+      if (hasFirebaseSession && !enq.id.startsWith('enq_')) {
+        await updateDoc(doc(db, 'enquiries', enq.id), {
+          status,
+          updatedAt: serverTimestamp(),
+        }).catch(() => {});
+      }
+      await loadServerPublicContent();
+      onNotify('ok', `Enquiry from ${enq.name} marked ${status}.`);
+    } catch (err: any) {
+      onNotify('err', err?.message || 'Unable to update enquiry.');
+    }
   };
 
-  const handleAddGallery = async (e: React.FormEvent) => {
+  const handleSaveGalleryItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addDoc(collection(db, 'gallery'), {
-      title: galTitle.trim(),
-      category: galCat.trim(),
-      imageUrl: galUrl.trim(),
-      caption: galCaption.trim(),
-      sortOrder: gallery.length + 1,
-      createdAt: serverTimestamp(),
-    });
-    setGalTitle('');
-    setGalUrl('');
-    setGalCaption('');
-    onNotify('ok', 'Gallery image published.');
+    try {
+      const token = await getIdToken();
+      const payload = {
+        id: editingGallery?.id,
+        title: galTitle.trim(),
+        category: galCat.trim(),
+        imageUrl: galUrl.trim(),
+        caption: galCaption.trim(),
+        sortOrder: editingGallery?.sortOrder || serverGallery.length + gallery.length + 1,
+        approved: galApproved,
+      };
+      let savedId = editingGallery?.id || '';
+      if (token) {
+        const res = await fetch('/api/admin/gallery', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || 'Failed saving gallery item.');
+        savedId = d.item?.id || savedId;
+      }
+      if (hasFirebaseSession) {
+        if (editingGallery && !editingGallery.id.startsWith('gal_')) {
+          await updateDoc(doc(db, 'gallery', editingGallery.id), {
+            title: payload.title,
+            category: payload.category,
+            imageUrl: payload.imageUrl,
+            caption: payload.caption,
+            approved: payload.approved,
+          }).catch(() => {});
+        } else {
+          await addDoc(collection(db, 'gallery'), {
+            title: payload.title,
+            category: payload.category,
+            imageUrl: payload.imageUrl,
+            caption: payload.caption,
+            sortOrder: payload.sortOrder,
+            approved: payload.approved,
+            createdAt: serverTimestamp(),
+          }).catch(() => {});
+        }
+      }
+      setEditingGallery(null);
+      setGalTitle('');
+      setGalUrl('');
+      setGalCaption('');
+      setGalApproved(true);
+      await loadServerPublicContent();
+      onNotify('ok', editingGallery ? 'Gallery photo updated.' : `Gallery photo saved (${savedId || 'published'}).`);
+    } catch (err: any) {
+      onNotify('err', err?.message || 'Unable to save gallery photo.');
+    }
+  };
+
+  const handleToggleGalleryApproval = async (item: GalleryItem) => {
+    const nextApproved = item.approved === false;
+    try {
+      const token = await getIdToken();
+      if (token) {
+        await fetch('/api/admin/gallery', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ ...item, approved: nextApproved }),
+        });
+      }
+      if (hasFirebaseSession && !item.id.startsWith('gal_')) {
+        await updateDoc(doc(db, 'gallery', item.id), { approved: nextApproved }).catch(() => {});
+      }
+      await loadServerPublicContent();
+      onNotify('ok', `${item.title} ${nextApproved ? 'approved for public website' : 'hidden from public gallery'}.`);
+    } catch (err: any) {
+      onNotify('err', err?.message || 'Unable to toggle approval.');
+    }
+  };
+
+  const handleDeleteGalleryItem = async (item: GalleryItem) => {
+    try {
+      const token = await getIdToken();
+      if (token) {
+        await fetch(`/api/admin/gallery/${encodeURIComponent(item.id)}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+      if (hasFirebaseSession && !item.id.startsWith('gal_')) {
+        await deleteDoc(doc(db, 'gallery', item.id)).catch(() => {});
+      }
+      await loadServerPublicContent();
+      onNotify('ok', 'Gallery photo deleted.');
+    } catch (err: any) {
+      onNotify('err', err?.message || 'Unable to delete photo.');
+    }
+  };
+
+  const persistFacilitiesList = async (nextItems: FacilityItem[]) => {
+    const token = await getIdToken();
+    const availableNames = nextItems.filter((f) => f.available).map((f) => f.name);
+    if (token) {
+      const res = await fetch('/api/admin/public-settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          facilityItems: nextItems,
+          facilities: availableNames,
+        }),
+      });
+      if (!res.ok) throw new Error('Unable to update facilities.');
+    }
+    if (hasFirebaseSession) {
+      await setDoc(
+        doc(db, 'library_settings', 'main'),
+        {
+          facilities: availableNames.slice(0, 20),
+          facilityItems: nextItems,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      ).catch(() => {});
+    }
+    setFacilityItems(nextItems);
+    setFacilities(availableNames);
+  };
+
+  const handleAddOrUpdateFacility = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!facName.trim()) return;
+    try {
+      const nextItems = editingFacilityId
+        ? facilityItems.map((f) =>
+            f.id === editingFacilityId
+              ? { ...f, name: facName.trim(), description: facDesc.trim(), icon: facIcon }
+              : f
+          )
+        : [
+            ...facilityItems,
+            {
+              id: `fac_${Date.now()}`,
+              name: facName.trim(),
+              description: facDesc.trim(),
+              icon: facIcon,
+              available: true,
+            },
+          ];
+      await persistFacilitiesList(nextItems);
+      setFacName('');
+      setFacDesc('');
+      setFacIcon('Sparkles');
+      setEditingFacilityId(null);
+      onNotify('ok', editingFacilityId ? 'Facility updated.' : 'Facility added to public website.');
+    } catch (err: any) {
+      onNotify('err', err?.message || 'Unable to save facility.');
+    }
   };
 
   const handleAddAnnouncement = async (e: React.FormEvent) => {
@@ -318,28 +574,59 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    await setDoc(doc(db, 'library_settings', 'main'), {
-      libraryName: libName.trim(),
-      tagline: tagline.trim(),
-      address: address.trim(),
-      phone: phone.trim(),
-      whatsapp: whatsapp.trim(),
-      email: email.trim(),
-      openingHours: openingHours.trim(),
-      is24HourAccess: is24Hour,
-      mapLat: Number(mapLat),
-      mapLng: Number(mapLng),
-      facilities: facilities.slice(0, 20),
-      termsText: termsText.trim(),
-      privacyText: privacyText.trim(),
-      razorpayEnabled: settings?.razorpayEnabled ?? true,
-      whatsappConfigured: Boolean(providers?.whatsapp.configured),
-      emailConfigured: Boolean(providers?.email.configured),
-      smsConfigured: Boolean(providers?.sms.configured),
-      updatedAt: serverTimestamp(),
-    });
-    await logAuditEvent('SETTINGS_UPDATED', 'library_settings', 'main', 'Updated library profile & facilities', actorRole);
-    onNotify('ok', 'Library settings and facilities saved.');
+    try {
+      const payload = {
+        libraryName: libName.trim(),
+        tagline: tagline.trim(),
+        address: address.trim(),
+        nearbyLandmarks: nearbyLandmarks.trim(),
+        phone: phone.trim(),
+        whatsapp: whatsapp.trim(),
+        email: email.trim(),
+        openingHours: openingHours.trim(),
+        is24HourAccess: is24Hour,
+        mapLat: Number(mapLat),
+        mapLng: Number(mapLng),
+        mapUrl: mapUrl.trim(),
+        ratingText: ratingText.trim(),
+        facilities: facilities.slice(0, 20),
+        facilityItems,
+        termsText: termsText.trim(),
+        privacyText: privacyText.trim(),
+      };
+      const token = await getIdToken();
+      if (token) {
+        const res = await fetch('/api/admin/public-settings', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Unable to save public website settings.');
+      }
+      if (hasFirebaseSession) {
+        await setDoc(doc(db, 'library_settings', 'main'), {
+          ...payload,
+          razorpayEnabled: settings?.razorpayEnabled ?? true,
+          whatsappConfigured: Boolean(providers?.whatsapp.configured),
+          emailConfigured: Boolean(providers?.email.configured),
+          smsConfigured: Boolean(providers?.sms.configured),
+          updatedAt: serverTimestamp(),
+        }).catch(() => {});
+        await logAuditEvent(
+          'SETTINGS_UPDATED',
+          'library_settings',
+          'main',
+          'Updated library profile & facilities',
+          actorRole
+        ).catch(() => {});
+      }
+      onNotify('ok', 'GYAN ADDA LIBRARY public website settings saved.');
+    } catch (err: any) {
+      onNotify('err', err?.message || 'Failed saving settings.');
+    }
   };
 
   const handleSeedDemo = async () => {
@@ -532,18 +819,25 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
   }
 
   if (activeSection === 'enquiries') {
+    const mergedEnquiries = [...enquiries];
+    serverEnquiries.forEach((se) => {
+      if (!mergedEnquiries.some((e) => e.id === se.id)) {
+        mergedEnquiries.push(se);
+      }
+    });
+
     return (
       <div className="space-y-6 text-on-surface dark:text-slate-100">
         <div>
           <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
-            Public Website Enquiries ({enquiries.length})
+            Public Website Enquiries ({mergedEnquiries.length})
           </h2>
           <p className="text-xs text-on-surface-variant dark:text-slate-400">
-            Inquiries submitted via the Contact Us page are stored here for follow-up.
+            Admission and helpline enquiries submitted on GYAN ADDA LIBRARY are stored here for follow-up.
           </p>
         </div>
         <div className="space-y-3">
-          {enquiries.map((e) => (
+          {mergedEnquiries.map((e) => (
             <div
               key={e.id}
               className={`${cardCls} p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4`}
@@ -578,7 +872,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
                     Resolve
                   </button>
                 )}
-                {isAdmin && (
+                {isAdmin && hasFirebaseSession && !e.id.startsWith('enq_') && (
                   <button
                     type="button"
                     onClick={() => deleteDoc(doc(db, 'enquiries', e.id))}
@@ -591,7 +885,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
               </div>
             </div>
           ))}
-          {enquiries.length === 0 && (
+          {mergedEnquiries.length === 0 && (
             <div className={`${cardCls} p-8 text-center text-xs text-on-surface-variant dark:text-slate-400`}>
               No public contact enquiries received yet.
             </div>
@@ -601,24 +895,168 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
     );
   }
 
-  if (activeSection === 'gallery') {
+  if (activeSection === 'facilities') {
     return (
       <div className="space-y-6 text-on-surface dark:text-slate-100">
         <div>
-          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">Gallery Management</h2>
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
+            Library Facilities Manager ({facilityItems.length})
+          </h2>
           <p className="text-xs text-on-surface-variant dark:text-slate-400">
-            Add or remove library interior photographs displayed on the public homepage.
+            Configure only genuinely available facilities. Disabled facilities are hidden automatically from the public website.
+          </p>
+        </div>
+
+        <form onSubmit={handleAddOrUpdateFacility} className={`${cardCls} p-4 sm:p-5 space-y-3`}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-semibold mb-1">Facility Name</label>
+              <input
+                type="text"
+                required
+                value={facName}
+                onChange={(e) => setFacName(e.target.value)}
+                placeholder="e.g. Personal Storage Lockers"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1">Icon</label>
+              <select value={facIcon} onChange={(e) => setFacIcon(e.target.value)} className={inputCls}>
+                {FACILITY_ICONS.map((ic) => (
+                  <option key={ic} value={ic}>
+                    {ic}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end gap-2">
+              <button
+                type="submit"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-4 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> {editingFacilityId ? 'Update Facility' : 'Add Facility'}
+              </button>
+              {editingFacilityId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingFacilityId(null);
+                    setFacName('');
+                    setFacDesc('');
+                  }}
+                  className="py-2 px-3 rounded border border-outline-variant text-xs font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1">Description</label>
+            <input
+              type="text"
+              required
+              value={facDesc}
+              onChange={(e) => setFacDesc(e.target.value)}
+              placeholder="Short description shown on the public facility card"
+              className={inputCls}
+            />
+          </div>
+        </form>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {facilityItems.map((fac) => (
+            <div key={fac.id} className={`${cardCls} p-4 flex flex-col justify-between gap-3`}>
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="px-2 py-0.5 rounded bg-secondary/10 text-secondary dark:text-blue-400 font-mono text-[11px] font-semibold">
+                    {fac.icon}
+                  </span>
+                  <span className={`text-[11px] font-bold uppercase ${fac.available ? 'text-success' : 'text-error'}`}>
+                    {fac.available ? 'Available (Visible)' : 'Unavailable (Hidden)'}
+                  </span>
+                </div>
+                <h4 className="font-semibold text-sm text-primary dark:text-white mt-2 break-words">{fac.name}</h4>
+                <p className="text-xs text-on-surface-variant dark:text-slate-400 mt-1 break-words">{fac.description}</p>
+              </div>
+              <div className="pt-2.5 border-t border-outline-variant/60 dark:border-slate-800 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    persistFacilitiesList(
+                      facilityItems.map((f) => (f.id === fac.id ? { ...f, available: !f.available } : f))
+                    )
+                  }
+                  className="text-xs font-semibold text-secondary hover:underline cursor-pointer"
+                >
+                  {fac.available ? 'Mark Unavailable' : 'Mark Available'}
+                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingFacilityId(fac.id);
+                      setFacName(fac.name);
+                      setFacDesc(fac.description);
+                      setFacIcon(fac.icon || 'Sparkles');
+                    }}
+                    className="p-1.5 rounded text-on-surface-variant hover:text-primary cursor-pointer"
+                    aria-label={`Edit ${fac.name}`}
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => persistFacilitiesList(facilityItems.filter((f) => f.id !== fac.id))}
+                    className="p-1.5 rounded text-error hover:bg-error-container cursor-pointer"
+                    aria-label={`Delete ${fac.name}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (activeSection === 'gallery') {
+    const mergedGallery = [...gallery];
+    serverGallery.forEach((sg) => {
+      if (!mergedGallery.some((g) => g.id === sg.id)) {
+        mergedGallery.push(sg);
+      }
+    });
+
+    return (
+      <div className="space-y-6 text-on-surface dark:text-slate-100">
+        <div>
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
+            Photo Gallery Management ({mergedGallery.length})
+          </h2>
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
+            Upload, edit, delete, and approve campus photographs. Only admin-approved photos appear on the public website.
           </p>
         </div>
 
         {isManagerOrAdmin && (
           <form
-            onSubmit={handleAddGallery}
+            onSubmit={handleSaveGalleryItem}
             className={`${cardCls} p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 items-end`}
           >
             <div>
               <label className="block text-xs font-semibold mb-1">Photo Title</label>
-              <input type="text" required value={galTitle} onChange={(e) => setGalTitle(e.target.value)} placeholder="Silent Hall Wing B" className={inputCls} />
+              <input
+                type="text"
+                required
+                value={galTitle}
+                onChange={(e) => setGalTitle(e.target.value)}
+                placeholder="Silent Hall Wing B"
+                className={inputCls}
+              />
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1">Category</label>
@@ -626,40 +1064,100 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1">Image URL</label>
-              <input type="text" required value={galUrl} onChange={(e) => setGalUrl(e.target.value)} placeholder="https://... or /assets/..." className={inputCls} />
+              <input
+                type="text"
+                required
+                value={galUrl}
+                onChange={(e) => setGalUrl(e.target.value)}
+                placeholder="https://... or /assets/..."
+                className={inputCls}
+              />
             </div>
             <button type="submit" className="py-2 px-4 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer">
-              Add Photo
+              {editingGallery ? 'Update Photo' : 'Add Photo'}
             </button>
-            <div className="sm:col-span-2 xl:col-span-4">
-              <input type="text" value={galCaption} onChange={(e) => setGalCaption(e.target.value)} placeholder="Short architectural / desk caption" className={inputCls} />
+            <div className="sm:col-span-2 xl:col-span-3">
+              <input
+                type="text"
+                value={galCaption}
+                onChange={(e) => setGalCaption(e.target.value)}
+                placeholder="Short architectural / study hall caption"
+                className={inputCls}
+              />
             </div>
+            <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer py-2">
+              <input type="checkbox" checked={galApproved} onChange={(e) => setGalApproved(e.target.checked)} />
+              <span>Approved for Public Gallery</span>
+            </label>
           </form>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {gallery.map((g) => (
-            <div key={g.id} className={`${cardCls} overflow-hidden min-w-0`}>
-              <img src={g.imageUrl} alt={g.title} className="w-full aspect-4/3 object-cover" />
-              <div className="p-4 flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase text-secondary dark:text-blue-400">{g.category}</p>
-                  <p className="font-semibold text-sm text-on-surface dark:text-white break-words">{g.title}</p>
-                  <p className="text-xs text-on-surface-variant dark:text-slate-400 mt-0.5 break-words">{g.caption}</p>
+          {mergedGallery.map((g) => {
+            const isApproved = g.approved !== false;
+            return (
+              <div key={g.id} className={`${cardCls} overflow-hidden min-w-0 flex flex-col justify-between`}>
+                <div>
+                  <div className="relative">
+                    <img src={g.imageUrl} alt={g.title} className="w-full aspect-4/3 object-cover" />
+                    <span
+                      className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        isApproved
+                          ? 'bg-success text-on-success'
+                          : 'bg-warning-container text-on-warning-container'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-3 h-3" /> {isApproved ? 'Approved' : 'Hidden'}
+                    </span>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[11px] font-semibold uppercase text-secondary dark:text-blue-400">{g.category}</p>
+                    <p className="font-semibold text-sm text-on-surface dark:text-white break-words">{g.title}</p>
+                    <p className="text-xs text-on-surface-variant dark:text-slate-400 mt-0.5 break-words">{g.caption}</p>
+                  </div>
                 </div>
-                {isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => deleteDoc(doc(db, 'gallery', g.id))}
-                    className="p-1.5 text-error hover:bg-error-container rounded cursor-pointer"
-                    aria-label="Delete photo"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                {isManagerOrAdmin && (
+                  <div className="px-4 py-2.5 border-t border-outline-variant/60 dark:border-slate-800 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleGalleryApproval(g)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:underline cursor-pointer"
+                    >
+                      {isApproved ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {isApproved ? 'Hide Publicly' : 'Approve Publicly'}
+                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingGallery(g);
+                          setGalTitle(g.title);
+                          setGalCat(g.category);
+                          setGalUrl(g.imageUrl);
+                          setGalCaption(g.caption);
+                          setGalApproved(isApproved);
+                        }}
+                        className="p-1.5 rounded text-on-surface-variant hover:text-primary cursor-pointer"
+                        aria-label={`Edit ${g.title}`}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteGalleryItem(g)}
+                          className="p-1.5 text-error hover:bg-error-container rounded cursor-pointer"
+                          aria-label="Delete photo"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -863,13 +1361,13 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
-            Library Profile, Facilities &amp; Demo Seed
+            Public Website Settings &amp; Location
           </h2>
           <p className="text-xs text-on-surface-variant dark:text-slate-400">
-            Changes sync immediately to the public homepage, Google Maps pin, and receipts.
+            Changes sync immediately to GYAN ADDA LIBRARY public sections, Google Maps directions, and helpline links.
           </p>
         </div>
-        {isAdmin && (
+        {isAdmin && hasFirebaseSession && (
           <button
             type="button"
             disabled={seedingDemo}
@@ -877,7 +1375,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded border border-secondary text-secondary text-xs font-semibold hover:bg-secondary hover:text-on-secondary disabled:opacity-50 cursor-pointer"
           >
             <Database className="w-4 h-4" />
-            {seedingDemo ? 'Populating Demo Data...' : 'Seed 175-Record Demonstration Dataset'}
+            {seedingDemo ? 'Populating Demo Data...' : 'Seed Demonstration Dataset'}
           </button>
         )}
       </div>
@@ -893,11 +1391,11 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
             <input type="text" required value={tagline} onChange={(e) => setTagline(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Phone</label>
+            <label className="block text-xs font-semibold mb-1">Help Line Phone(s)</label>
             <input type="text" required value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">WhatsApp</label>
+            <label className="block text-xs font-semibold mb-1">WhatsApp Help Line</label>
             <input type="text" required value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className={inputCls} />
           </div>
           <div>
@@ -911,6 +1409,24 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
           <div className="md:col-span-2">
             <label className="block text-xs font-semibold mb-1">Full Street Address</label>
             <input type="text" required value={address} onChange={(e) => setAddress(e.target.value)} className={inputCls} />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs font-semibold mb-1">Nearby Landmarks</label>
+            <input
+              type="text"
+              value={nearbyLandmarks}
+              onChange={(e) => setNearbyLandmarks(e.target.value)}
+              placeholder="e.g. In front of Poor Home Road · 350m from Darbhanga Junction"
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1">Google Maps Share / Directions URL</label>
+            <input type="url" value={mapUrl} onChange={(e) => setMapUrl(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1">Google Reviews / Rating Badge</label>
+            <input type="text" value={ratingText} onChange={(e) => setRatingText(e.target.value)} className={inputCls} />
           </div>
           <div>
             <label className="block text-xs font-semibold mb-1">Google Maps Latitude</label>

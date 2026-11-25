@@ -85,8 +85,16 @@ interface RegistrationDetails {
   idDocumentUrl?: string;
 }
 
+export interface AdminSessionInfo {
+  adminId: string;
+  displayName: string;
+  mobile: string;
+  updatedAt: string;
+}
+
 interface AuthContextValue {
   firebaseUser: User | null;
+  adminSession: AdminSessionInfo | null;
   profile: UserProfile | null;
   studentRecord: StudentRecord | null;
   effectiveRole: UserRole;
@@ -106,6 +114,14 @@ interface AuthContextValue {
   registerStudentWithEmail: (details: RegistrationDetails) => Promise<void>;
   completeStudentProfile: (details: Omit<RegistrationDetails, 'password'>) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
+  loginAdminWithMobile: (mobile: string, password: string) => Promise<void>;
+  setupAdminCredentials: (input: {
+    mobile: string;
+    password: string;
+    displayName?: string;
+  }) => Promise<void>;
+  updateAdminSessionMobile: (mobile: string, displayName?: string) => void;
+  logoutAdminSession: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   getIdToken: () => Promise<string | null>;
@@ -115,6 +131,9 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  // Strictly in-memory session token for Mobile + Password Admin authentication (never persisted in Web Storage)
+  const [adminToken, setAdminToken] = useState<string | null>(null);
+  const [adminSession, setAdminSession] = useState<AdminSessionInfo | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [studentRecord, setStudentRecord] = useState<StudentRecord | null>(null);
   const [actualRole, setActualRole] = useState<UserRole>('student');
@@ -231,7 +250,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!userSnap.exists()) {
           const payload = {
             uid: user.uid,
-            email: user.email || `${user.uid}@vidhyalibrary.in`,
+            email: user.email || `${user.uid}@gyanaddalibrary.in`,
             displayName: user.displayName || email.split('@')[0] || 'Library Member',
             role: resolvedRole,
             status: 'active' as const,
@@ -265,7 +284,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             loadedProfile = {
               id: user.uid,
               uid: user.uid,
-              email: user.email || `${user.uid}@vidhyalibrary.in`,
+              email: user.email || `${user.uid}@gyanaddalibrary.in`,
               displayName: user.displayName || email.split('@')[0] || 'Library Member',
               role: resolvedRole,
               status: 'active',
@@ -510,27 +529,103 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await sendPasswordResetEmail(auth, email.trim());
   };
 
-  const signOut = async () => {
+  const loginAdminWithMobile = async (mobile: string, password: string) => {
+    setAuthError(null);
+    const res = await fetch('/api/admin/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mobile, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = data?.error || 'Invalid mobile number or password.';
+      setAuthError(msg);
+      throw new Error(msg);
+    }
+    setAdminToken(data.token);
+    setAdminSession(data.admin);
+  };
+
+  const setupAdminCredentials = async (input: {
+    mobile: string;
+    password: string;
+    displayName?: string;
+  }) => {
+    setAuthError(null);
+    const res = await fetch('/api/admin/auth/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = data?.error || 'Unable to set up admin credentials.';
+      setAuthError(msg);
+      throw new Error(msg);
+    }
+    setAdminToken(data.token);
+    setAdminSession(data.admin);
+  };
+
+  const updateAdminSessionMobile = (mobile: string, displayName?: string) => {
+    setAdminSession((prev) =>
+      prev
+        ? {
+            ...prev,
+            mobile,
+            displayName: displayName || prev.displayName,
+            updatedAt: new Date().toISOString(),
+          }
+        : prev
+    );
+  };
+
+  const logoutAdminSession = async () => {
+    if (adminToken) {
+      try {
+        await fetch('/api/admin/auth/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${adminToken}` },
+        });
+      } catch {
+        // ignore network errors during logout
+      }
+    }
+    setAdminToken(null);
+    setAdminSession(null);
     setPreviewRole(null);
-    await firebaseSignOut(auth);
+  };
+
+  const signOut = async () => {
+    await logoutAdminSession();
+    if (firebaseUser) {
+      await firebaseSignOut(auth);
+    }
   };
 
   const getIdToken = async () => {
-    if (!firebaseUser) return null;
-    return firebaseUser.getIdToken();
+    if (firebaseUser) {
+      return firebaseUser.getIdToken();
+    }
+    if (adminToken) {
+      return adminToken;
+    }
+    return null;
   };
 
+  const resolvedActualRole: UserRole = adminSession ? 'admin' : actualRole;
   const effectiveRole: UserRole =
-    actualRole === 'admin' && previewRole ? previewRole : actualRole;
+    resolvedActualRole === 'admin' && previewRole ? previewRole : resolvedActualRole;
 
   return (
     <AuthContext.Provider
       value={{
         firebaseUser,
+        adminSession,
         profile,
         studentRecord,
         effectiveRole,
-        actualRole,
+        actualRole: resolvedActualRole,
         staffPermissions,
         loading,
         authError,
@@ -546,6 +641,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         registerStudentWithEmail,
         completeStudentProfile,
         sendPasswordReset,
+        loginAdminWithMobile,
+        setupAdminCredentials,
+        updateAdminSessionMobile,
+        logoutAdminSession,
         signOut,
         refreshProfile,
         getIdToken,

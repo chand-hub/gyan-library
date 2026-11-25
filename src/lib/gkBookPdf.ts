@@ -48,7 +48,7 @@ export async function downloadGKBookAsPdf(book: DigitalGKBook): Promise<void> {
     height: 97,
     color: rgb(0, 0.125, 0.275), // #002046
   });
-  page.drawText('VIDHYA LIBRARY · DIGITAL GK ARCHIVE', {
+  page.drawText('GYAN ADDA LIBRARY · DIGITAL GK ARCHIVE', {
     x: marginX,
     y: 808,
     size: 10,
@@ -132,7 +132,7 @@ export async function downloadGKBookAsPdf(book: DigitalGKBook): Promise<void> {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${book.subject.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-vidhya-library.pdf`;
+  a.download = `${book.subject.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-gyan-adda-library.pdf`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

@@ -101,7 +101,7 @@ service cloud.firestore {
 
     function isValidStudent(data) {
       return data.keys().hasAll(['uid', 'studentCode', 'fullName', 'mobile', 'email', 'fatherName', 'address', 'emergencyContact', 'membershipStatus', 'status', 'isDemo', 'createdAt', 'updatedAt'])
-        && data.keys().hasOnly(['uid', 'studentCode', 'fullName', 'mobile', 'email', 'fatherName', 'address', 'emergencyContact', 'profilePhotoUrl', 'idDocumentUrl', 'seatId', 'seatCode', 'membershipId', 'membershipPlanName', 'membershipStatus', 'membershipExpiry', 'status', 'isDemo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'studentCode', 'fullName', 'mobile', 'email', 'fatherName', 'address', 'emergencyContact', 'profilePhotoUrl', 'idDocumentUrl', 'seatId', 'seatCode', 'shiftId', 'shiftName', 'shiftTiming', 'membershipId', 'membershipPlanName', 'membershipStatus', 'membershipExpiry', 'status', 'isDemo', 'createdAt', 'updatedAt'])
         && isNonEmptyString(data.uid, 1, 128)
         && isNonEmptyString(data.studentCode, 4, 24)
         && data.studentCode.matches('^VL[0-9]{4,12}$')
@@ -115,6 +115,9 @@ service cloud.firestore {
         && (!('idDocumentUrl' in data) || isOptionalString(data.idDocumentUrl, 1000))
         && (!('seatId' in data) || isOptionalString(data.seatId, 128))
         && (!('seatCode' in data) || isOptionalString(data.seatCode, 16))
+        && (!('shiftId' in data) || isOptionalString(data.shiftId, 128))
+        && (!('shiftName' in data) || isOptionalString(data.shiftName, 80))
+        && (!('shiftTiming' in data) || isOptionalString(data.shiftTiming, 60))
         && (!('membershipId' in data) || isOptionalString(data.membershipId, 128))
         && (!('membershipPlanName' in data) || isOptionalString(data.membershipPlanName, 100))
         && data.membershipStatus in ['active', 'expired', 'pending', 'none']
@@ -215,7 +218,7 @@ service cloud.firestore {
 
     function isValidAttendance(data) {
       return data.keys().hasAll(['studentDocId', 'studentUid', 'studentCode', 'studentName', 'date', 'checkInTime', 'durationMinutes', 'method', 'isLate', 'isDemo', 'createdAt', 'updatedAt'])
-        && data.keys().hasOnly(['studentDocId', 'studentUid', 'studentCode', 'studentName', 'date', 'checkInTime', 'checkOutTime', 'durationMinutes', 'method', 'isLate', 'markedBy', 'isDemo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['studentDocId', 'studentUid', 'studentCode', 'studentName', 'date', 'checkInTime', 'checkOutTime', 'recordedAtIst', 'recordedByLabel', 'durationMinutes', 'method', 'isLate', 'markedBy', 'status', 'customStatusLabel', 'leaveType', 'leaveReason', 'remarks', 'entryDate', 'shiftId', 'shiftName', 'isDemo', 'createdAt', 'updatedAt'])
         && isNonEmptyString(data.studentDocId, 1, 128)
         && isNonEmptyString(data.studentUid, 1, 128)
         && isNonEmptyString(data.studentCode, 4, 24)
@@ -223,10 +226,20 @@ service cloud.firestore {
         && isNonEmptyString(data.date, 8, 20)
         && isNonEmptyString(data.checkInTime, 4, 40)
         && (!('checkOutTime' in data) || isOptionalString(data.checkOutTime, 40))
+        && (!('recordedAtIst' in data) || isOptionalString(data.recordedAtIst, 40))
+        && (!('recordedByLabel' in data) || isOptionalString(data.recordedByLabel, 120))
         && data.durationMinutes is int && data.durationMinutes >= 0 && data.durationMinutes <= 1440
         && data.method in ['qr', 'manual', 'id']
         && data.isLate is bool
         && (!('markedBy' in data) || isOptionalString(data.markedBy, 128))
+        && (!('status' in data) || data.status in ['PRESENT', 'LEAVE', 'ABSENT', 'HALF_DAY', 'HOLIDAY', 'OTHER'])
+        && (!('customStatusLabel' in data) || isOptionalString(data.customStatusLabel, 60))
+        && (!('leaveType' in data) || isOptionalString(data.leaveType, 80))
+        && (!('leaveReason' in data) || isOptionalString(data.leaveReason, 300))
+        && (!('remarks' in data) || isOptionalString(data.remarks, 300))
+        && (!('entryDate' in data) || isOptionalString(data.entryDate, 20))
+        && (!('shiftId' in data) || isOptionalString(data.shiftId, 128))
+        && (!('shiftName' in data) || isOptionalString(data.shiftName, 80))
         && data.isDemo is bool
         && data.createdAt is timestamp
         && data.updatedAt is timestamp;
@@ -350,23 +363,75 @@ service cloud.firestore {
         && data.createdAt is timestamp;
     }
 
+    function isValidFaqItem(data) {
+      return data.keys().hasAll(['section', 'category', 'question', 'answer', 'sortOrder', 'published', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['section', 'category', 'question', 'answer', 'sortOrder', 'published', 'createdAt', 'updatedAt'])
+        && data.section in ['faq', 'important']
+        && isNonEmptyString(data.category, 1, 60)
+        && isNonEmptyString(data.question, 3, 300)
+        && isNonEmptyString(data.answer, 3, 2000)
+        && data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 1000
+        && data.published is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidLibraryShift(data) {
+      return data.keys().hasAll(['name', 'startTime', 'endTime', 'active', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'startTime', 'endTime', 'description', 'active', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.name, 2, 80)
+        && isNonEmptyString(data.startTime, 2, 20)
+        && isNonEmptyString(data.endTime, 2, 20)
+        && (!('description' in data) || isOptionalString(data.description, 240))
+        && data.active is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCustomAttendanceStatus(data) {
+      return data.keys().hasAll(['label', 'color', 'createdAt'])
+        && data.keys().hasOnly(['label', 'color', 'createdAt'])
+        && isNonEmptyString(data.label, 1, 60)
+        && isNonEmptyString(data.color, 2, 24)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidAttendanceAuditEntry(data) {
+      return data.keys().hasAll(['attendanceId', 'studentDocId', 'studentCode', 'studentName', 'date', 'previousStatus', 'newStatus', 'reason', 'editedBy', 'editedAtIst'])
+        && data.keys().hasOnly(['attendanceId', 'studentDocId', 'studentCode', 'studentName', 'date', 'previousStatus', 'newStatus', 'previousTimeIst', 'newTimeIst', 'reason', 'editedBy', 'editedAtIst'])
+        && isNonEmptyString(data.attendanceId, 1, 128)
+        && isNonEmptyString(data.studentDocId, 1, 128)
+        && isNonEmptyString(data.studentCode, 2, 24)
+        && isNonEmptyString(data.studentName, 2, 120)
+        && isNonEmptyString(data.date, 8, 20)
+        && isNonEmptyString(data.previousStatus, 1, 80)
+        && isNonEmptyString(data.newStatus, 1, 80)
+        && (!('previousTimeIst' in data) || isOptionalString(data.previousTimeIst, 40))
+        && (!('newTimeIst' in data) || isOptionalString(data.newTimeIst, 40))
+        && isNonEmptyString(data.reason, 2, 300)
+        && isNonEmptyString(data.editedBy, 1, 120)
+        && isNonEmptyString(data.editedAtIst, 4, 60);
+    }
+
     function isValidGalleryItem(data) {
       return data.keys().hasAll(['title', 'category', 'imageUrl', 'caption', 'sortOrder', 'createdAt'])
-        && data.keys().hasOnly(['title', 'category', 'imageUrl', 'caption', 'sortOrder', 'createdAt'])
+        && data.keys().hasOnly(['title', 'category', 'imageUrl', 'caption', 'sortOrder', 'approved', 'createdAt'])
         && isNonEmptyString(data.title, 2, 120)
         && isNonEmptyString(data.category, 2, 60)
         && isNonEmptyString(data.imageUrl, 3, 1000)
         && isOptionalString(data.caption, 300)
         && data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 1000
+        && (!('approved' in data) || data.approved is bool)
         && data.createdAt is timestamp;
     }
 
     function isValidLibrarySettings(data) {
       return data.keys().hasAll(['libraryName', 'tagline', 'address', 'phone', 'whatsapp', 'email', 'openingHours', 'is24HourAccess', 'mapLat', 'mapLng', 'facilities', 'updatedAt'])
-        && data.keys().hasOnly(['libraryName', 'tagline', 'address', 'phone', 'whatsapp', 'email', 'openingHours', 'is24HourAccess', 'mapLat', 'mapLng', 'mapUrl', 'ratingText', 'facilities', 'termsText', 'privacyText', 'razorpayEnabled', 'whatsappConfigured', 'emailConfigured', 'smsConfigured', 'updatedAt'])
+        && data.keys().hasOnly(['libraryName', 'tagline', 'address', 'nearbyLandmarks', 'phone', 'whatsapp', 'email', 'openingHours', 'is24HourAccess', 'mapLat', 'mapLng', 'mapUrl', 'ratingText', 'facilities', 'facilityItems', 'termsText', 'privacyText', 'razorpayEnabled', 'whatsappConfigured', 'emailConfigured', 'smsConfigured', 'updatedAt'])
         && isNonEmptyString(data.libraryName, 2, 120)
         && isNonEmptyString(data.tagline, 2, 200)
         && isNonEmptyString(data.address, 3, 300)
+        && (!('nearbyLandmarks' in data) || isOptionalString(data.nearbyLandmarks, 300))
         && isNonEmptyString(data.phone, 5, 40)
         && isNonEmptyString(data.whatsapp, 5, 30)
         && isNonEmptyString(data.email, 3, 200)
@@ -377,6 +442,7 @@ service cloud.firestore {
         && (!('ratingText' in data) || isOptionalString(data.ratingText, 100))
         && data.facilities is list && data.facilities.size() <= 20
         && (data.facilities.size() == 0 || (data.facilities[0] is string && data.facilities[0].size() <= 120))
+        && (!('facilityItems' in data) || (data.facilityItems is list && data.facilityItems.size() <= 25 && (data.facilityItems.size() == 0 || data.facilityItems[0] is map)))
         && (!('termsText' in data) || isOptionalString(data.termsText, 4000))
         && (!('privacyText' in data) || isOptionalString(data.privacyText, 4000))
         && (!('razorpayEnabled' in data) || data.razorpayEnabled is bool)
@@ -852,8 +918,8 @@ service cloud.firestore {
     }
 
     match /seats/{seatId} {
-      allow get: if isValidId(seatId);
-      allow list: if true;
+      allow get: if isValidId(seatId) && isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isValidId(seatId) && isManagerOrAdmin() && isValidSeat(incoming())
         && incoming().updatedAt == request.time;
       allow update: if isValidId(seatId) && isVerifiedEmail() && isValidSeat(incoming())
@@ -1013,13 +1079,48 @@ service cloud.firestore {
     }
 
     match /gallery/{galleryId} {
-      allow get: if isValidId(galleryId);
-      allow list: if true;
+      allow get: if isValidId(galleryId) && (isStaffOrAbove() || !('approved' in existing()) || existing().approved == true);
+      allow list: if isStaffOrAbove() || !('approved' in existing()) || existing().approved == true;
       allow create: if isValidId(galleryId) && isManagerOrAdmin() && isValidGalleryItem(incoming())
         && incoming().createdAt == request.time;
       allow update: if isValidId(galleryId) && isManagerOrAdmin() && isValidGalleryItem(incoming())
         && incoming().createdAt == existing().createdAt;
       allow delete: if isValidId(galleryId) && isAdmin();
+    }
+
+    match /faqs/{faqId} {
+      allow get: if isValidId(faqId) && (isStaffOrAbove() || existing().published == true);
+      allow list: if isStaffOrAbove() || existing().published == true;
+      allow create: if isValidId(faqId) && isManagerOrAdmin() && isValidFaqItem(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(faqId) && isManagerOrAdmin() && isValidFaqItem(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(faqId) && isAdmin();
+    }
+
+    match /shifts/{shiftId} {
+      allow get: if isValidId(shiftId) && isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isValidId(shiftId) && isManagerOrAdmin() && isValidLibraryShift(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(shiftId) && isManagerOrAdmin() && isValidLibraryShift(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(shiftId) && isAdmin();
+    }
+
+    match /attendance_statuses/{statusId} {
+      allow get: if isValidId(statusId) && isStaffOrAbove();
+      allow list: if isStaffOrAbove();
+      allow create: if isValidId(statusId) && isManagerOrAdmin() && isValidCustomAttendanceStatus(incoming())
+        && incoming().createdAt == request.time;
+      allow update, delete: if isValidId(statusId) && isAdmin();
+    }
+
+    match /attendance_audit/{logId} {
+      allow get: if isValidId(logId) && isStaffOrAbove();
+      allow list: if isStaffOrAbove();
+      allow create: if isValidId(logId) && isStaffOrAbove() && isValidAttendanceAuditEntry(incoming());
+      allow update, delete: if false;
     }
 
     match /library_settings/{settingId} {

@@ -1344,7 +1344,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 type="button"
                 onClick={() =>
                   downloadCsv(
-                    `vidhya-question-bank-${new Date().toISOString().slice(0, 10)}.csv`,
+                    `gyan-adda-question-bank-${new Date().toISOString().slice(0, 10)}.csv`,
                     ['Code', 'Exam', 'Subject', 'Chapter', 'Topic', 'Year', 'Difficulty', 'Source', 'Status', 'Published', 'Attempts'],
                     filteredQuestions.map((q) => [
                       q.questionCode,

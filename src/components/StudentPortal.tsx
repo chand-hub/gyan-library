@@ -708,7 +708,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             key: orderData.keyId,
             amount: orderData.amountPaise,
             currency: orderData.currency,
-            name: settings?.libraryName || 'VIDHYA LIBRARY',
+            name: settings?.libraryName || 'GYAN ADDA LIBRARY',
             description: checkoutPlan.name,
             order_id: orderData.orderId,
             prefill: {
@@ -2007,7 +2007,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             <div className="flex flex-wrap items-start justify-between gap-2 border-b border-outline-variant pb-4">
               <div className="min-w-0">
                 <h3 className="font-headline text-xl font-bold text-primary">
-                  {settings?.libraryName || 'VIDHYA LIBRARY'}
+                  {settings?.libraryName || 'GYAN ADDA LIBRARY'}
                 </h3>
                 <p className="text-xs text-on-surface-variant">Official Payment Receipt</p>
               </div>

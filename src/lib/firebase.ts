@@ -347,7 +347,7 @@ export async function logAuditEvent(
   try {
     await addDoc(collection(db, 'audit_logs'), {
       actorUid: auth.currentUser.uid,
-      actorEmail: auth.currentUser.email || 'unknown@vidhyalibrary.in',
+      actorEmail: auth.currentUser.email || 'unknown@gyanaddalibrary.in',
       actorRole,
       action: action.slice(0, 120),
       targetType: targetType.slice(0, 80),

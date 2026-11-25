@@ -61,7 +61,7 @@ export const DEFAULT_FEE_SYSTEM_SETTINGS: FeeSystemSettings = {
   templateName: 'vidhya_fee_reminder',
   languageCode: 'en',
   messageTemplatePreview:
-    'Hello, this is a fee reminder from VIDHYA LIBRARY for {{student_name}} ({{class_name}}). Monthly Fee: Rs.{{monthly_fee}}, Paid: Rs.{{total_paid}}, Pending Balance: Rs.{{due_amount}}, Due Date: {{due_date}}. Please clear your balance at the desk or online. Reply STOP to opt out.',
+    'Hello, this is a fee reminder from GYAN ADDA LIBRARY for {{student_name}} ({{class_name}}). Monthly Fee: Rs.{{monthly_fee}}, Paid: Rs.{{total_paid}}, Pending Balance: Rs.{{due_amount}}, Due Date: {{due_date}}. Please clear your balance at the desk or online. Reply STOP to opt out.',
   updatedAt: null,
 };
 

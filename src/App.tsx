@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import {
@@ -11,6 +11,7 @@ import {
 import { PublicWebsite } from './components/PublicWebsite';
 import { StudentPortal } from './components/StudentPortal';
 import { AdminDashboard } from './components/AdminDashboard';
+import { AdminLoginPage } from './components/AdminLoginPage';
 import { AuthModal } from './components/AuthModal';
 import {
   AnnouncementRecord,
@@ -19,6 +20,7 @@ import {
   DigitalGKBook,
   ExamCategory,
   ExamQuestion,
+  FaqItem,
   GalleryItem,
   LibrarySettings,
   MembershipPlan,
@@ -74,6 +76,7 @@ class AppErrorBoundary extends React.Component<
 const MainRouter: React.FC = () => {
   const {
     firebaseUser,
+    adminSession,
     studentRecord,
     effectiveRole,
     actualRole,
@@ -84,7 +87,12 @@ const MainRouter: React.FC = () => {
     clearBootstrapWarning,
   } = useAuth();
 
-  const [viewMode, setViewMode] = useState<'public' | 'portal'>('public');
+  const [viewMode, setViewMode] = useState<'public' | 'admin_login' | 'portal'>(() => {
+    if (typeof window !== 'undefined' && window.location.pathname === '/admin/login') {
+      return 'admin_login';
+    }
+    return 'public';
+  });
   const [portalInitialTab, setPortalInitialTab] = useState<string>('overview');
   const [darkMode, setDarkMode] = useState(false);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
@@ -95,20 +103,47 @@ const MainRouter: React.FC = () => {
     'login' | 'register' | 'reset' | 'complete_profile'
   >('login');
 
-  // Public real-time Firestore state
+  // Public content state (sanitized server API + public Firestore rules)
   const [settings, setSettings] = useState<LibrarySettings | null>(null);
+  const [gallery, setGallery] = useState<GalleryItem[]>([]);
+  const [faqs, setFaqs] = useState<FaqItem[]>([]);
+  const [importantQuestions, setImportantQuestions] = useState<FaqItem[]>([]);
+
+  // Authenticated-only library & exam collections
   const [plans, setPlans] = useState<MembershipPlan[]>([]);
   const [seats, setSeats] = useState<SeatRecord[]>([]);
-  const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [announcements, setAnnouncements] = useState<AnnouncementRecord[]>([]);
   const [books, setBooks] = useState<BookRecord[]>([]);
-
-  // Competitive Exam & Knowledge Platform collections
   const [exams, setExams] = useState<ExamCategory[]>([]);
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [mockTests, setMockTests] = useState<MockTestRecord[]>([]);
   const [currentAffairs, setCurrentAffairs] = useState<CurrentAffairsItem[]>([]);
   const [gkBooks, setGkBooks] = useState<DigitalGKBook[]>([]);
+
+  const syncRouteUrl = useCallback((mode: 'public' | 'admin_login' | 'portal') => {
+    setViewMode(mode);
+    if (typeof window === 'undefined') return;
+    try {
+      const targetPath = mode === 'admin_login' ? '/admin/login' : '/';
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ viewMode: mode }, '', targetPath);
+      }
+    } catch {
+      // Ignore history errors in sandboxed iframes
+    }
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => {
+      if (window.location.pathname === '/admin/login') {
+        setViewMode('admin_login');
+      } else {
+        setViewMode('public');
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   useEffect(() => {
     const onQuota = () => setQuotaExceeded(true);
@@ -122,16 +157,39 @@ const MainRouter: React.FC = () => {
     else root.classList.remove('dark');
   }, [darkMode]);
 
-  // Redirect signed-in staff/admin automatically on login
+  // Redirect signed-in Admin / Staff automatically into portal
   useEffect(() => {
-    if (firebaseUser && !loading) {
-      if (actualRole !== 'student') {
-        setViewMode('portal');
-      }
+    if (adminSession) {
+      setViewMode('portal');
+      return;
     }
-  }, [firebaseUser, actualRole, loading]);
+    if (firebaseUser && !loading && actualRole !== 'student') {
+      setViewMode('portal');
+    }
+  }, [adminSession, firebaseUser, actualRole, loading]);
 
-  // 1. Public catalog & website listeners (never require auth)
+  // Fetch sanitized public GYAN ADDA LIBRARY info from server API
+  const refreshPublicLibraryInfo = useCallback(async () => {
+    try {
+      const res = await fetch('/api/public/library-info');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.settings) setSettings(data.settings);
+      if (Array.isArray(data.faqs)) setFaqs(data.faqs);
+      if (Array.isArray(data.importantQuestions)) setImportantQuestions(data.importantQuestions);
+      if (Array.isArray(data.gallery)) setGallery(data.gallery);
+    } catch {
+      // Fallback to Firestore public listeners or defaults
+    }
+  }, []);
+
+  useEffect(() => {
+    if (viewMode === 'public') {
+      refreshPublicLibraryInfo();
+    }
+  }, [viewMode, refreshPublicLibraryInfo]);
+
+  // 1. Strict Public Firestore listeners (ONLY library_settings, approved gallery, published faqs)
   useEffect(() => {
     const unsubs: Array<() => void> = [];
     const onListenerError = (op: OperationType, path: string) => (err: unknown) => {
@@ -147,12 +205,76 @@ const MainRouter: React.FC = () => {
         (snap) => {
           markFirestoreConnected();
           if (snap.exists()) {
-            setSettings({ id: snap.id, ...(snap.data() as Omit<LibrarySettings, 'id'>) });
+            setSettings((prev) => ({
+              ...(prev || {}),
+              id: snap.id,
+              ...(snap.data() as Omit<LibrarySettings, 'id'>),
+            }));
           }
         },
         onListenerError(OperationType.GET, 'library_settings/main')
       )
     );
+
+    unsubs.push(
+      onSnapshot(
+        query(collection(db, 'gallery'), where('approved', '==', true)),
+        (snap) => {
+          markFirestoreConnected();
+          if (!snap.empty) {
+            setGallery(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
+          }
+        },
+        () => {
+          // Sanitized server /api/public/library-info provides approved gallery cleanly
+        }
+      )
+    );
+
+    unsubs.push(
+      onSnapshot(
+        query(collection(db, 'faqs'), where('published', '==', true)),
+        (snap) => {
+          markFirestoreConnected();
+          if (!snap.empty) {
+            const all = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as FaqItem[];
+            setFaqs(all.filter((f) => f.section === 'faq'));
+            setImportantQuestions(all.filter((f) => f.section === 'important'));
+          }
+        },
+        () => {
+          // Sanitized server /api/public/library-info provides published FAQs cleanly
+        }
+      )
+    );
+
+    return () => unsubs.forEach((u) => u());
+  }, []);
+
+  // 2. Authenticated-only operational & educational collections (never exposed on unauthenticated public homepage)
+  useEffect(() => {
+    if (loading || !firebaseUser) {
+      setPlans([]);
+      setSeats([]);
+      setAnnouncements([]);
+      setBooks([]);
+      setExams([]);
+      setGkBooks([]);
+      setCurrentAffairs([]);
+      setQuestions([]);
+      setMockTests([]);
+      return;
+    }
+
+    setFirestoreError(null);
+    const isStaff = actualRole !== 'student';
+    const unsubs: Array<() => void> = [];
+    const onListenerError = (op: OperationType, path: string) => (err: unknown) => {
+      const msg = reportFirestoreError(err, op, path);
+      if (!isTransientFirestoreError(err)) {
+        setFirestoreError(msg);
+      }
+    };
 
     unsubs.push(
       onSnapshot(
@@ -173,17 +295,6 @@ const MainRouter: React.FC = () => {
           setSeats(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
         },
         onListenerError(OperationType.LIST, 'seats')
-      )
-    );
-
-    unsubs.push(
-      onSnapshot(
-        collection(db, 'gallery'),
-        (snap) => {
-          markFirestoreConnected();
-          setGallery(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
-        },
-        onListenerError(OperationType.LIST, 'gallery')
       )
     );
 
@@ -231,80 +342,49 @@ const MainRouter: React.FC = () => {
       )
     );
 
-    return () => unsubs.forEach((u) => u());
-  }, []);
-
-  // 2. Role-scoped Current Affairs listener (waits until auth state initialization finishes)
-  useEffect(() => {
-    if (loading) return;
-
-    const isStaff = Boolean(firebaseUser && actualRole !== 'student');
     const caRef = isStaff
       ? collection(db, 'current_affairs')
       : query(collection(db, 'current_affairs'), where('status', '==', 'published'));
-
-    const unsub = onSnapshot(
-      caRef,
-      (snap) => {
-        markFirestoreConnected();
-        setCurrentAffairs(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
-      },
-      (err) => {
-        const msg = reportFirestoreError(err, OperationType.LIST, 'current_affairs');
-        if (!isTransientFirestoreError(err)) setFirestoreError(msg);
-      }
+    unsubs.push(
+      onSnapshot(
+        caRef,
+        (snap) => {
+          markFirestoreConnected();
+          setCurrentAffairs(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
+        },
+        onListenerError(OperationType.LIST, 'current_affairs')
+      )
     );
-
-    return () => unsub();
-  }, [loading, firebaseUser?.uid, actualRole]);
-
-  // 3. Authenticated-only Examination collections (questions & mock_tests)
-  useEffect(() => {
-    if (loading || !firebaseUser) {
-      setQuestions([]);
-      setMockTests([]);
-      return;
-    }
-
-    setFirestoreError(null);
-    const isStaff = actualRole !== 'student';
 
     const questionsQuery = isStaff
       ? collection(db, 'questions')
       : query(collection(db, 'questions'), where('published', '==', true));
+    unsubs.push(
+      onSnapshot(
+        questionsQuery,
+        (snap) => {
+          markFirestoreConnected();
+          setQuestions(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
+        },
+        onListenerError(OperationType.LIST, 'questions')
+      )
+    );
 
     const mockTestsQuery = isStaff
       ? collection(db, 'mock_tests')
       : query(collection(db, 'mock_tests'), where('active', '==', true));
-
-    const unsubQuestions = onSnapshot(
-      questionsQuery,
-      (snap) => {
-        markFirestoreConnected();
-        setQuestions(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
-      },
-      (err) => {
-        const msg = reportFirestoreError(err, OperationType.LIST, 'questions');
-        if (!isTransientFirestoreError(err)) setFirestoreError(msg);
-      }
+    unsubs.push(
+      onSnapshot(
+        mockTestsQuery,
+        (snap) => {
+          markFirestoreConnected();
+          setMockTests(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
+        },
+        onListenerError(OperationType.LIST, 'mock_tests')
+      )
     );
 
-    const unsubMockTests = onSnapshot(
-      mockTestsQuery,
-      (snap) => {
-        markFirestoreConnected();
-        setMockTests(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
-      },
-      (err) => {
-        const msg = reportFirestoreError(err, OperationType.LIST, 'mock_tests');
-        if (!isTransientFirestoreError(err)) setFirestoreError(msg);
-      }
-    );
-
-    return () => {
-      unsubQuestions();
-      unsubMockTests();
-    };
+    return () => unsubs.forEach((u) => u());
   }, [loading, firebaseUser?.uid, actualRole]);
 
   const openAuth = (tab: 'login' | 'register' | 'reset' | 'complete_profile') => {
@@ -312,9 +392,10 @@ const MainRouter: React.FC = () => {
     setAuthModalOpen(true);
   };
 
+  const hasAdminOrStaffAccess = Boolean(adminSession) || (Boolean(firebaseUser) && effectiveRole !== 'student');
+
   return (
     <>
-      {/* Mandatory Google Maps Case A Quota Warning Banner */}
       {quotaExceeded && (
         <div
           role="alert"
@@ -334,7 +415,7 @@ const MainRouter: React.FC = () => {
         </div>
       )}
 
-      {(connectionStatus.state === 'offline' || connectionStatus.state === 'reconnecting') && (
+      {firebaseUser && (connectionStatus.state === 'offline' || connectionStatus.state === 'reconnecting') && (
         <div
           role="status"
           className="sticky top-0 z-40 bg-warning-container text-on-warning-container px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-3 border-b border-warning/30"
@@ -373,35 +454,22 @@ const MainRouter: React.FC = () => {
         </div>
       )}
 
-      {loading ? (
+      {loading && !adminSession ? (
         <div className="min-h-screen flex items-center justify-center bg-surface text-on-surface">
           <div className="text-center space-y-3">
             <div className="w-8 h-8 border-2 border-secondary border-t-transparent rounded-full animate-spin mx-auto" />
             <p className="text-xs font-semibold tracking-wider uppercase text-on-surface-variant">
-              Loading VIDHYA LIBRARY · Gyan Adda...
+              Loading GYAN ADDA LIBRARY...
             </p>
           </div>
         </div>
-      ) : viewMode === 'portal' && firebaseUser ? (
-        effectiveRole === 'student' ? (
-          <StudentPortal
-            settings={settings}
-            plans={plans}
-            seats={seats}
-            books={books}
-            announcements={announcements}
-            exams={exams}
-            questions={questions}
-            mockTests={mockTests}
-            currentAffairs={currentAffairs}
-            gkBooks={gkBooks}
-            initialTab={portalInitialTab}
-            darkMode={darkMode}
-            onToggleDarkMode={() => setDarkMode((v) => !v)}
-            onGoPublic={() => setViewMode('public')}
-            onOpenCompleteProfile={() => openAuth('complete_profile')}
-          />
-        ) : (
+      ) : viewMode === 'admin_login' && !hasAdminOrStaffAccess ? (
+        <AdminLoginPage
+          onBackToPublic={() => syncRouteUrl('public')}
+          onSuccess={() => syncRouteUrl('portal')}
+        />
+      ) : viewMode === 'portal' && (hasAdminOrStaffAccess || firebaseUser) ? (
+        hasAdminOrStaffAccess ? (
           <AdminDashboard
             settings={settings}
             plans={plans}
@@ -416,32 +484,47 @@ const MainRouter: React.FC = () => {
             gkBooks={gkBooks}
             darkMode={darkMode}
             onToggleDarkMode={() => setDarkMode((v) => !v)}
-            onGoPublic={() => setViewMode('public')}
+            onGoPublic={() => syncRouteUrl('public')}
+          />
+        ) : (
+          <StudentPortal
+            settings={settings}
+            plans={plans}
+            seats={seats}
+            books={books}
+            announcements={announcements}
+            exams={exams}
+            questions={questions}
+            mockTests={mockTests}
+            currentAffairs={currentAffairs}
+            gkBooks={gkBooks}
+            initialTab={portalInitialTab}
+            darkMode={darkMode}
+            onToggleDarkMode={() => setDarkMode((v) => !v)}
+            onGoPublic={() => syncRouteUrl('public')}
+            onOpenCompleteProfile={() => openAuth('complete_profile')}
           />
         )
       ) : (
         <PublicWebsite
           settings={settings}
-          plans={plans}
-          seats={seats}
+          faqs={faqs}
+          importantQuestions={importantQuestions}
           gallery={gallery}
-          announcements={announcements}
-          exams={exams}
-          currentAffairs={currentAffairs}
-          gkBooks={gkBooks}
-          totalBooksCount={books.length}
-          totalQuestionsCount={questions.length}
-          isSignedIn={Boolean(firebaseUser)}
+          isSignedIn={Boolean(firebaseUser || adminSession)}
           darkMode={darkMode}
           onToggleDarkMode={() => setDarkMode((v) => !v)}
-          onOpenAuth={(tab) => openAuth(tab)}
-          onOpenPortal={(initialTab) => {
-            if (initialTab) setPortalInitialTab(initialTab);
-            if (!firebaseUser) {
+          onOpenAdminLogin={() =>
+            hasAdminOrStaffAccess ? syncRouteUrl('portal') : syncRouteUrl('admin_login')
+          }
+          onOpenStudentAuth={(tab) => openAuth(tab)}
+          onOpenPortal={() => {
+            setPortalInitialTab('overview');
+            if (!firebaseUser && !adminSession) {
               openAuth('login');
             } else {
-              setViewMode('portal');
-              if (effectiveRole === 'student' && !studentRecord && initialTab !== 'exams') {
+              syncRouteUrl('portal');
+              if (effectiveRole === 'student' && !studentRecord) {
                 openAuth('complete_profile');
               }
             }
@@ -457,7 +540,7 @@ const MainRouter: React.FC = () => {
           onClose={() => setAuthModalOpen(false)}
           onSuccess={() => {
             setAuthModalOpen(false);
-            setViewMode('portal');
+            syncRouteUrl('portal');
           }}
         />
       )}

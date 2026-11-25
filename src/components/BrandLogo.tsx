@@ -40,7 +40,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         <span
           className={`font-headline text-sm sm:text-base font-extrabold tracking-tight leading-none ${titleColor}`}
         >
-          {compact ? 'VIDHYA' : 'VIDHYA LIBRARY'}
+          {compact ? 'GYAN ADDA' : 'GYAN ADDA LIBRARY'}
         </span>
         {subtitle && (
           <span className={`font-label text-[10px] sm:text-[11px] font-semibold mt-0.5 leading-none truncate ${subColor}`}>

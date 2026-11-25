@@ -1,0 +1,309 @@
+{
+  "admin": null,
+  "revokedJtis": {},
+  "loginActivity": [],
+  "settings": {
+    "libraryName": "GYAN ADDA LIBRARY",
+    "tagline": "Your Knowledge, Your Future.",
+    "address": "2nd Floor, Station Rd, in front of Poor Home Road, Mirzapur Chowk, Darbhanga, Bihar 846004",
+    "nearbyLandmarks": "In front of Poor Home Road · 350m from Darbhanga Junction",
+    "phone": "+91 87976 40034 / +91 87897 02011",
+    "whatsapp": "+91 87976 40034",
+    "email": "desk@gyanaddalibrary.in",
+    "openingHours": "Open 24 hours (Monday–Sunday)",
+    "is24HourAccess": true,
+    "mapLat": 26.1542,
+    "mapLng": 85.8918,
+    "mapUrl": "https://maps.app.goo.gl/7vA6BPUQgZ5xJz6R9",
+    "ratingText": "4.9/5 (116 Google Reviews)",
+    "facilities": [
+      "Open 24 Hours Self-Study Access (Monday–Sunday)",
+      "Full Centralized Air Conditioning",
+      "RO Chilled Drinking Water",
+      "Quiet Self-Study Seating with Comfortable Chairs",
+      "Spacious Individual Study Tables & LED Lighting",
+      "High-Speed Dual-Band Fiber Wi-Fi",
+      "Dedicated Desk Charging Points",
+      "24/7 HD CCTV Surveillance",
+      "Sanitized Clean Washrooms",
+      "AI Competitive Examination & PYQ Portal",
+      "Digital GK Books & Daily Current Affairs"
+    ],
+    "termsText": "Members must maintain pin-drop silence inside study halls. Desk assignments are personal and non-transferable. Student ID / QR pass is required for 24-hour entry and examination hall access.",
+    "privacyText": "Student records, attendance logs, and test performance data are stored securely for academic mentoring, library billing, and emergency contact compliance.",
+    "razorpayEnabled": true,
+    "whatsappConfigured": false,
+    "emailConfigured": false,
+    "smsConfigured": false,
+    "updatedAt": "2026-11-25T08:20:30.695Z",
+    "facilityItems": [
+      {
+        "id": "fac_24h",
+        "name": "Open 24 Hours Self-Study Access",
+        "description": "Continuous quiet study environment accessible day and night across all 7 days.",
+        "icon": "Clock",
+        "available": true
+      },
+      {
+        "id": "fac_ac",
+        "name": "Full Centralized Air Conditioning",
+        "description": "Climate-controlled silent study halls calibrated for long, comfortable study hours.",
+        "icon": "Wind",
+        "available": true
+      },
+      {
+        "id": "fac_wifi",
+        "name": "High-Speed Dual-Band Fiber Wi-Fi",
+        "description": "Uninterrupted dual-ISP fiber internet for video lectures, online tests, and research.",
+        "icon": "Wifi",
+        "available": true
+      },
+      {
+        "id": "fac_desk",
+        "name": "Individual Partitioned Study Desks",
+        "description": "Spacious partitioned desks with personal LED study lamps, comfortable chairs, and charging sockets.",
+        "icon": "LampDesk",
+        "available": true
+      },
+      {
+        "id": "fac_water",
+        "name": "RO Chilled Drinking Water",
+        "description": "Hygienic purified chilled & normal drinking water dispensers on the floor.",
+        "icon": "Droplets",
+        "available": true
+      },
+      {
+        "id": "fac_cctv",
+        "name": "24/7 HD CCTV Surveillance & Discipline",
+        "description": "Round-the-clock monitored campus security, clean washrooms, and dedicated staff assistance.",
+        "icon": "ShieldCheck",
+        "available": true
+      }
+    ]
+  },
+  "faqs": [
+    {
+      "id": "faq_1",
+      "section": "faq",
+      "category": "Timings",
+      "question": "What are the opening and closing times of GYAN ADDA LIBRARY?",
+      "answer": "GYAN ADDA LIBRARY is open 24 hours a day, Monday through Sunday, including holidays. Members can choose Morning, Afternoon, Evening, Full-Day, or 24-Hour access shifts.",
+      "sortOrder": 1,
+      "published": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "faq_2",
+      "section": "faq",
+      "category": "Fees",
+      "question": "What is the monthly fee structure and how do I enquire about current plans?",
+      "answer": "Monthly self-study charges depend on your selected shift duration (single shift, double shift, full day, or 24-hour locker access). Contact our helpline at +91 87976 40034 or submit an admission enquiry for the exact current fee card.",
+      "sortOrder": 2,
+      "published": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "faq_3",
+      "section": "faq",
+      "category": "Admission",
+      "question": "What is the admission procedure at GYAN ADDA LIBRARY?",
+      "answer": "Visit our study center at 2nd Floor, Station Rd, Mirzapur Chowk, Darbhanga or submit an online Admission Enquiry. Select your preferred study shift, verify your identity documents at the front desk, and complete registration.",
+      "sortOrder": 3,
+      "published": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "faq_4",
+      "section": "faq",
+      "category": "Documents",
+      "question": "Which documents are required for new admission?",
+      "answer": "Applicants should carry one valid Government Photo ID (Aadhaar Card / Voter ID / Driving License / Student ID), two recent passport-size photographs, and an active mobile number & emergency guardian contact.",
+      "sortOrder": 4,
+      "published": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "faq_5",
+      "section": "faq",
+      "category": "Facilities",
+      "question": "What study facilities are provided inside the reading hall?",
+      "answer": "Every desk features comfortable ergonomic seating, individual LED desk lighting, dedicated power charging sockets, centralized air conditioning, RO chilled drinking water, clean sanitized washrooms, and 24/7 CCTV surveillance.",
+      "sortOrder": 5,
+      "published": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "faq_6",
+      "section": "faq",
+      "category": "Wi-Fi",
+      "question": "Is high-speed Wi-Fi available for online classes and mock tests?",
+      "answer": "Yes. We provide dual-band high-speed fiber Wi-Fi across all study halls so students preparing for UPSC, BPSC, SSC, NEET, JEE, and Banking exams can attend online lectures without buffering.",
+      "sortOrder": 6,
+      "published": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "faq_7",
+      "section": "faq",
+      "category": "Attendance",
+      "question": "How do library attendance and shift check-ins work?",
+      "answer": "Daily attendance is verified and recorded at the study hall desk according to your assigned shift. Accurate check-in timestamps and leave records help maintain seat discipline and safety.",
+      "sortOrder": 7,
+      "published": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "faq_8",
+      "section": "faq",
+      "category": "Contact",
+      "question": "How can parents or students reach the library help line?",
+      "answer": "You can call us directly on +91 87976 40034 / +91 87897 02011, message on WhatsApp at +91 87976 40034, or use the Help Line Enquiry form on this website.",
+      "sortOrder": 8,
+      "published": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "imp_1",
+      "section": "important",
+      "category": "Membership",
+      "question": "Is membership transferable between students?",
+      "answer": "No. Every GYAN ADDA LIBRARY membership and assigned seat is strictly personal and non-transferable. Sharing ID cards or seat access with unregistered visitors leads to immediate cancellation.",
+      "sortOrder": 1,
+      "published": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "imp_2",
+      "section": "important",
+      "category": "Seat Reservation",
+      "question": "How does seat reservation and shift allocation work?",
+      "answer": "Seats are allocated strictly against your chosen study shift. Fixed full-day reserved seats remain held for you during active membership; shift-based members must vacate cleanly at the end of their shift window.",
+      "sortOrder": 2,
+      "published": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "imp_3",
+      "section": "important",
+      "category": "Discipline & Rules",
+      "question": "What are the key library discipline rules inside the reading hall?",
+      "answer": "Pin-drop silence must be maintained at all times. Mobile phones must remain on silent mode, phone calls must be taken outside the hall, eatables are not allowed on study desks, and headphones must be kept at zero external sound leakage.",
+      "sortOrder": 3,
+      "published": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "imp_4",
+      "section": "important",
+      "category": "Renewal Policy",
+      "question": "When should monthly membership be renewed to keep my reserved seat?",
+      "answer": "Renewals should be completed on or before your billing due date to retain the same desk number. If you plan to be away on leave, please inform the desk administrator in advance so your seat reservation status can be updated.",
+      "sortOrder": 4,
+      "published": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "imp_5",
+      "section": "important",
+      "category": "Support",
+      "question": "Who do I contact for locker issues, Wi-Fi support, or emergency help?",
+      "answer": "Contact the on-duty floor supervisor at the reception desk or reach our 24-hour help line at +91 87976 40034 / desk@gyanaddalibrary.in.",
+      "sortOrder": 5,
+      "published": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "gallery": [
+    {
+      "id": "gal_1",
+      "title": "GYAN ADDA LIBRARY · Main Reading Hall",
+      "category": "Reading Hall",
+      "imageUrl": "/assets/aistudio/image_06146a49.png",
+      "caption": "Partitioned study desks with ergonomic chairs, warm desk lighting, and quiet academic atmosphere.",
+      "sortOrder": 1,
+      "approved": true,
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "gal_2",
+      "title": "Silent AC Study Cubicles · Mirzapur Chowk",
+      "category": "Silent Zone",
+      "imageUrl": "/assets/aistudio/image_0b08f282.png",
+      "caption": "Climate-controlled individual study cubicles with power points and zero-distraction layout.",
+      "sortOrder": 2,
+      "approved": true,
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "enquiries": [],
+  "shifts": [
+    {
+      "id": "shift_morning",
+      "name": "Morning Shift",
+      "startTime": "06:00",
+      "endTime": "12:00",
+      "description": "Early morning quiet study batch (06:00 AM – 12:00 PM)",
+      "active": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "shift_afternoon",
+      "name": "Afternoon Shift",
+      "startTime": "12:00",
+      "endTime": "18:00",
+      "description": "Midday focus batch (12:00 PM – 06:00 PM)",
+      "active": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "shift_evening",
+      "name": "Evening Shift",
+      "startTime": "16:00",
+      "endTime": "22:00",
+      "description": "Evening batch for college & coaching students (04:00 PM – 10:00 PM)",
+      "active": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "shift_fullday",
+      "name": "Full Day",
+      "startTime": "06:00",
+      "endTime": "22:00",
+      "description": "Full-day uninterrupted desk access (06:00 AM – 10:00 PM)",
+      "active": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "shift_night",
+      "name": "Night / 24h Access",
+      "startTime": "22:00",
+      "endTime": "06:00",
+      "description": "Late-night & 24-hour self-study shift",
+      "active": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "studentShiftAssignments": {},
+  "studentsDirectory": [],
+  "customAttendanceStatuses": [],
+  "attendance": [],
+  "attendanceAuditLogs": []
+}
