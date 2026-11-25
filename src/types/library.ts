@@ -659,3 +659,132 @@ export const DEFAULT_GYAN_ADDA_SETTINGS: LibrarySettings = {
   smsConfigured: false,
   updatedAt: null,
 };
+
+// =========================================================================
+// AUTOMATED FEE MANAGEMENT & WHATSAPP REMINDER SYSTEM TYPES
+// =========================================================================
+
+export type FeePaymentStatus = 'paid' | 'partially_paid' | 'unpaid' | 'overdue';
+export type FeeReminderStatus =
+  | 'active'
+  | 'paused'
+  | 'stopped'
+  | 'opted_out'
+  | 'invalid_number';
+export type WhatsAppDeliveryStatus =
+  | 'queued'
+  | 'sent'
+  | 'delivered'
+  | 'read'
+  | 'failed';
+
+export interface StudentFeeRecord {
+  id: string;
+  studentDocId: string;
+  studentUid: string;
+  studentCode: string;
+  studentName: string;
+  className: string; // e.g., Full-Day AC / Batch / Course
+  parentName: string;
+  parentWhatsapp: string;
+  studentWhatsapp?: string;
+  monthlyFee: number;
+  previousBalance: number;
+  currentMonthFee: number;
+  totalPayable: number;
+  totalPaid: number;
+  remainingBalance: number;
+  dueDate: string; // YYYY-MM-DD
+  paymentStatus: FeePaymentStatus;
+  reminderStatus: FeeReminderStatus;
+  autoReminderEnabled: boolean;
+  whatsappConsent: boolean;
+  optedOut: boolean;
+  lastReminderAt?: string | null;
+  nextReminderAt?: string | null;
+  lastReminderError?: string | null;
+  reminderCount: number;
+  isDemo: boolean;
+  createdAt: any;
+  updatedAt: any;
+}
+
+export interface FeePaymentRecord {
+  id: string;
+  studentFeeId: string;
+  studentDocId: string;
+  studentUid: string;
+  studentCode: string;
+  studentName: string;
+  amountReceived: number;
+  paymentDate: string; // YYYY-MM-DD
+  paymentMethod: 'Cash' | 'UPI' | 'Bank Transfer' | 'Other';
+  transactionRef?: string;
+  notes?: string;
+  recordedByUid: string;
+  recordedByEmail?: string;
+  balanceAfterPayment: number;
+  createdAt: any;
+}
+
+export interface FeeReminderRecord {
+  id: string;
+  studentFeeId: string;
+  studentDocId: string;
+  studentUid: string;
+  studentCode: string;
+  studentName: string;
+  recipientWhatsapp: string;
+  dueAmountAtSend: number;
+  dueDate: string;
+  templateName: string;
+  languageCode: string;
+  messagePreview: string;
+  triggerType: 'scheduled' | 'manual' | 'bulk';
+  idempotencyKey: string;
+  status: WhatsAppDeliveryStatus | 'cancelled' | 'skipped';
+  wamid?: string | null;
+  errorMessage?: string | null;
+  retryCount: number;
+  scheduledFor: string;
+  sentAt?: string | null;
+  deliveredAt?: string | null;
+  readAt?: string | null;
+  createdAt: any;
+  updatedAt: any;
+}
+
+export interface WhatsAppMessageLog {
+  id: string;
+  reminderId: string;
+  studentFeeId: string;
+  studentCode: string;
+  studentName: string;
+  recipientWhatsapp: string;
+  wamid?: string | null;
+  status: WhatsAppDeliveryStatus;
+  templateName: string;
+  messagePreview: string;
+  dueAmountAtSend: number;
+  errorMessage?: string | null;
+  httpStatus?: number | null;
+  webhookPayloadSummary?: string | null;
+  createdAt: any;
+  updatedAt: any;
+}
+
+export interface FeeSystemSettings {
+  id?: string;
+  autoReminderEnabled: boolean;
+  globalPaused: boolean;
+  reminderIntervalHours: number;
+  timezone: string;
+  sendWindowStartHour: number;
+  sendWindowEndHour: number;
+  triggerOnDueOrOverdueOnly: boolean;
+  templateName: string;
+  languageCode: string;
+  messageTemplatePreview: string;
+  updatedAt: any;
+}
+

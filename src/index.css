@@ -1,33 +1,78 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --color-primary: #002046;
+  --color-on-primary: #FFFFFF;
+  --color-primary-container: #1B365D;
+  --color-on-primary-container: #D6E3FF;
+  --color-secondary: #0051D5;
+  --color-on-secondary: #FFFFFF;
+  --color-secondary-container: #DBE1FF;
+  --color-on-secondary-container: #00174B;
+  --color-tertiary: #004B73;
+  --color-on-tertiary: #FFFFFF;
+  --color-tertiary-container: #CCE5FF;
+  --color-on-tertiary-container: #001D31;
+  --color-background: #F8F9FF;
+  --color-on-background: #0B1C30;
+  --color-surface: #F8F9FF;
+  --color-surface-dim: #CBDBF5;
+  --color-surface-bright: #F8F9FF;
+  --color-surface-container-lowest: #FFFFFF;
+  --color-surface-container-low: #EFF4FF;
+  --color-surface-container: #E5EEFF;
+  --color-surface-container-high: #DCE9FF;
+  --color-surface-container-highest: #D3E4FE;
+  --color-on-surface: #0B1C30;
+  --color-surface-variant: #E0E2EC;
+  --color-on-surface-variant: #44474E;
+  --color-outline: #74777F;
+  --color-outline-variant: #C4C6CF;
+  --color-inverse-surface: #213145;
+  --color-inverse-on-surface: #EAF1FF;
+  --color-inverse-primary: #AEC7F7;
+  --color-error: #BF0715;
+  --color-on-error: #FFFFFF;
+  --color-error-container: #FFDAD6;
+  --color-on-error-container: #93000B;
+  --color-success: #006D30;
+  --color-on-success: #FFFFFF;
+  --color-success-container: #95F8A7;
+  --color-on-success-container: #00210A;
+  --color-warning: #9B4500;
+  --color-on-warning: #FFFFFF;
+  --color-warning-container: #FFDBCA;
+  --color-on-warning-container: #331200;
+
+  --font-display: "Mulish", system-ui, -apple-system, sans-serif;
+  --font-headline: "Mulish", system-ui, -apple-system, sans-serif;
+  --font-title: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --font-body: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --font-label: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "Spline Sans Mono", ui-monospace, monospace;
+}
+
 @layer base {
   :root {
-    --font-display: 'Fraunces', Georgia, serif;
-    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-
-    /* Core Dark Purple & Lavender Design Tokens */
-    --vl-bg-main: #1C0E29;
-    --vl-bg-nav: #0E0713;
-    --vl-bg-secondary: #3D2C56;
-    --vl-bg-primary: #514871;
-    --vl-bg-card: #675D85;
-    --vl-bg-light-purple: #7C7397;
-    --vl-bg-hover: #9993AC;
-    --vl-accent-lavender: #B5ADC6;
-    --vl-text-light: #CFCEDD;
-    --vl-text-white: #FFFFFF;
+    --font-display: "Mulish", system-ui, -apple-system, sans-serif;
+    --font-sans: "Instrument Sans", system-ui, -apple-system, sans-serif;
+    --font-mono: "Spline Sans Mono", ui-monospace, monospace;
   }
 
   html {
     font-family: var(--font-sans);
     scroll-behavior: smooth;
-    background-color: #1C0E29;
-    color: #FFFFFF;
+    background-color: #F8F9FF;
+    color: #0B1C30;
   }
 
-  h1, h2, .font-display {
+  html.dark {
+    background-color: #071324;
+    color: #EAF1FF;
+  }
+
+  h1, h2, .font-display, .font-headline {
     font-family: var(--font-display);
   }
 

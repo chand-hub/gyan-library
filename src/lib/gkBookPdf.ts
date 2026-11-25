@@ -40,20 +40,20 @@ export async function downloadGKBookAsPdf(book: DigitalGKBook): Promise<void> {
     }
   };
 
-  // Cover Header Band
+  // Cover Header Band (Stitch Navy #002046)
   page.drawRectangle({
     x: 0,
     y: 745,
     width: 595.28,
     height: 97,
-    color: rgb(0.11, 0.055, 0.16), // #1C0E29
+    color: rgb(0, 0.125, 0.275), // #002046
   });
   page.drawText('VIDHYA LIBRARY · DIGITAL GK ARCHIVE', {
     x: marginX,
     y: 808,
     size: 10,
     font: fontBold,
-    color: rgb(0.71, 0.68, 0.78),
+    color: rgb(0.84, 0.89, 1), // #D6E3FF
   });
   page.drawText(sanitizeWinAnsi(book.title), {
     x: marginX,
@@ -67,14 +67,14 @@ export async function downloadGKBookAsPdf(book: DigitalGKBook): Promise<void> {
     y: 760,
     size: 11,
     font: fontRegular,
-    color: rgb(0.81, 0.81, 0.87),
+    color: rgb(0.84, 0.89, 1),
   });
 
   y = 715;
   const descLines = wrapLines(book.description, 82);
   for (const line of descLines) {
     ensureSpace(18);
-    page.drawText(line, { x: marginX, y, size: 11, font: fontRegular, color: rgb(0.25, 0.22, 0.32) });
+    page.drawText(line, { x: marginX, y, size: 11, font: fontRegular, color: rgb(0.27, 0.28, 0.31) });
     y -= 16;
   }
   y -= 12;
@@ -87,20 +87,20 @@ export async function downloadGKBookAsPdf(book: DigitalGKBook): Promise<void> {
       y,
       size: 14,
       font: fontBold,
-      color: rgb(0.24, 0.17, 0.34),
+      color: rgb(0, 0.125, 0.275),
     });
     y -= 20;
 
     for (const line of wrapLines(ch.summary, 84)) {
       ensureSpace(16);
-      page.drawText(line, { x: marginX, y, size: 10, font: fontBold, color: rgb(0.32, 0.28, 0.44) });
+      page.drawText(line, { x: marginX, y, size: 10, font: fontBold, color: rgb(0, 0.318, 0.835) });
       y -= 15;
     }
     y -= 6;
 
     for (const line of wrapLines(ch.contentText, 86)) {
       ensureSpace(16);
-      page.drawText(line, { x: marginX, y, size: 10, font: fontRegular, color: rgb(0.15, 0.15, 0.18) });
+      page.drawText(line, { x: marginX, y, size: 10, font: fontRegular, color: rgb(0.043, 0.11, 0.188) });
       y -= 15;
     }
     y -= 8;
@@ -112,7 +112,7 @@ export async function downloadGKBookAsPdf(book: DigitalGKBook): Promise<void> {
         y,
         size: 10,
         font: fontBold,
-        color: rgb(0.24, 0.17, 0.34),
+        color: rgb(0, 0.125, 0.275),
       });
       y -= 15;
       for (const fact of ch.keyFacts) {

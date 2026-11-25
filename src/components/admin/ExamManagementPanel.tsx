@@ -43,6 +43,14 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db, logAuditEvent } from '../../lib/firebase';
+import {
+  fetchServerAiStatus,
+  formatCooldownRemaining,
+  generateAiRequestId,
+  readStoredAiCooldown,
+  saveStoredAiCooldown,
+  SharedAiCooldownState,
+} from '../../lib/aiClient';
 
 interface ExamManagementPanelProps {
   exams: ExamCategory[];
@@ -194,6 +202,23 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
   const [collectingCa, setCollectingCa] = useState(false);
   const [caPaused, setCaPaused] = useState(false);
   const [caDate, setCaDate] = useState(new Date().toISOString().slice(0, 10));
+  const [aiCooldown, setAiCooldown] = useState<SharedAiCooldownState>(() => readStoredAiCooldown());
+
+  React.useEffect(() => {
+    if (!actorUid) return;
+    let cancelled = false;
+    (async () => {
+      const token = await getIdToken();
+      if (!token || cancelled) return;
+      const s = await fetchServerAiStatus(token);
+      if (s && !cancelled) setAiCooldown(s);
+    })();
+    const t = setInterval(() => setAiCooldown(readStoredAiCooldown()), 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [actorUid, getIdToken]);
 
   const usageCounts = useMemo(() => computeQuestionUsageCounts(attempts), [attempts]);
 
@@ -652,17 +677,21 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
   };
 
   const handleGenerateAdminBatch = async () => {
+    if (aiGenerating || aiCooldown.active) return;
     setAiGenerating(true);
     try {
       const token = await getIdToken();
       if (!token) throw new Error('Authentication required.');
+      const requestId = generateAiRequestId('admin_mcq');
       const res = await fetch('/api/exams/ai-generate-questions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': requestId,
         },
         body: JSON.stringify({
+          requestId,
           examName: aiExam,
           subject: aiSubject,
           chapter: aiChapter,
@@ -675,7 +704,19 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'AI generation failed.');
+      if (!res.ok) {
+        if (data?.cooldownActive) {
+          setAiCooldown(
+            saveStoredAiCooldown({
+              cooldownUntil: data.cooldownUntil,
+              cooldownRemainingSeconds: data.cooldownRemainingSeconds,
+              reason: data.error,
+              category: data.errorCategory,
+            })
+          );
+        }
+        throw new Error(data.error || 'AI generation failed.');
+      }
       const existingFps = new Set(questions.map((q) => q.fingerprint));
       const drafts: DraftAiItem[] = (data.questions || []).filter(
         (q: any) => !existingFps.has(q.fingerprint)
@@ -774,20 +815,35 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
   };
 
   const handleCollectCurrentAffairsNow = async () => {
+    if (collectingCa || aiCooldown.active) return;
     setCollectingCa(true);
     try {
       const token = await getIdToken();
       if (!token) throw new Error('Authentication required.');
+      const requestId = generateAiRequestId('ca');
       const res = await fetch('/api/current-affairs/collect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-idempotency-key': requestId,
         },
-        body: JSON.stringify({ date: caDate }),
+        body: JSON.stringify({ date: caDate, requestId }),
       });
       const bundle = await res.json();
-      if (!res.ok) throw new Error(bundle.error || 'Current affairs collection failed.');
+      if (!res.ok) {
+        if (bundle?.cooldownActive) {
+          setAiCooldown(
+            saveStoredAiCooldown({
+              cooldownUntil: bundle.cooldownUntil,
+              cooldownRemainingSeconds: bundle.cooldownRemainingSeconds,
+              reason: bundle.error,
+              category: bundle.errorCategory,
+            })
+          );
+        }
+        throw new Error(bundle.error || 'Current affairs collection failed.');
+      }
 
       const items: any[] = bundle.items || [];
       if (items.length === 0) throw new Error('No grounded news items returned for this date.');
@@ -874,8 +930,8 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold text-[#B5ADC6]">AI Examination Platform Control</p>
-          <h2 className="font-display text-2xl font-bold text-white">
+          <p className="text-xs font-semibold text-secondary uppercase tracking-wider">AI Examination Platform Control</p>
+          <h2 className="font-headline text-2xl font-bold text-on-surface mt-0.5">
             Exams, Question Bank, Current Affairs &amp; GK Books
           </h2>
         </div>
@@ -885,7 +941,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
             type="button"
             disabled={backfilling}
             onClick={handleBackfillPublished}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-[#3D2C56] border border-[#7C7397] text-white text-xs font-semibold hover:bg-[#514871]"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary text-xs font-semibold hover:bg-surface-container-low"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${backfilling ? 'animate-spin' : ''}`} />
             {backfilling ? 'Syncing Flags...' : 'Sync Published Flags'}
@@ -895,7 +951,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
             type="button"
             disabled={seeding}
             onClick={handleSeedExamSystem}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary transition-colors"
           >
             <Database className="w-4 h-4" />
             {seeding ? 'Syncing Platform Data...' : 'Initialize / Sync 15 Exams & 11 GK Books'}
@@ -903,8 +959,16 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
         </div>
       </div>
 
+      {aiCooldown.active && (
+        <div className="p-3.5 rounded-lg bg-warning-container border border-warning/30 text-xs text-on-warning-container">
+          Shared Gemini AI Cooldown Active · Next request available in{' '}
+          <strong className="tabular-nums">{formatCooldownRemaining(aiCooldown.remainingSeconds)}</strong>.{' '}
+          {aiCooldown.reason || ''}
+        </div>
+      )}
+
       {/* Sub-navigation */}
-      <div className="flex flex-wrap gap-1.5 p-1.5 rounded-xl bg-[#0E0713] border border-[#514871]">
+      <div className="flex flex-wrap gap-1.5 p-1.5 rounded-xl bg-surface-container-low border border-outline-variant">
         {[
           ['questions', `Question Bank (${questions.length})`],
           ['coverage', 'Coverage & Usage Stats'],
@@ -919,7 +983,9 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
             type="button"
             onClick={() => setSubTab(id as any)}
             className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors ${
-              subTab === id ? 'bg-[#B5ADC6] text-[#0E0713]' : 'text-[#CFCEDD] hover:bg-[#3D2C56]'
+              subTab === id
+                ? 'bg-primary text-on-primary shadow-sm'
+                : 'text-on-surface-variant hover:bg-surface-container-lowest hover:text-primary'
             }`}
           >
             {label}
@@ -943,8 +1009,8 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 onClick={() => setQuestionTool(questionTool === id ? 'none' : id)}
                 className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border text-xs font-semibold transition-colors ${
                   questionTool === id
-                    ? 'bg-[#B5ADC6] border-[#B5ADC6] text-[#0E0713]'
-                    : 'bg-[#3D2C56] border-[#7C7397] text-white hover:bg-[#514871]'
+                    ? 'bg-secondary border-secondary text-on-secondary'
+                    : 'bg-surface-container-lowest border-outline-variant text-primary hover:bg-surface-container-low'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -956,16 +1022,16 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
           {questionTool === 'add' && (
             <form
               onSubmit={handleCreateQuestion}
-              className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-4"
+              className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4"
             >
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Plus className="w-4 h-4 text-[#B5ADC6]" /> Add Verified Question
+              <h3 className="text-sm font-bold text-on-surface flex items-center gap-2">
+                <Plus className="w-4 h-4 text-secondary" /> Add Verified Question
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 <select
                   value={qExam}
                   onChange={(e) => setQExam(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 >
                   {exams.map((ex) => (
                     <option key={ex.id} value={ex.name}>
@@ -979,7 +1045,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                   value={qSubject}
                   onChange={(e) => setQSubject(e.target.value)}
                   placeholder="Subject"
-                  className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 />
                 <input
                   type="text"
@@ -987,7 +1053,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                   value={qChapter}
                   onChange={(e) => setQChapter(e.target.value)}
                   placeholder="Chapter"
-                  className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 />
                 <input
                   type="text"
@@ -995,13 +1061,13 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                   value={qTopic}
                   onChange={(e) => setQTopic(e.target.value)}
                   placeholder="Topic"
-                  className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 />
                 <div className="flex gap-2">
                   <select
                     value={qDifficulty}
                     onChange={(e) => setQDifficulty(e.target.value as any)}
-                    className="flex-1 px-2 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                    className="flex-1 px-2 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                   >
                     <option value="easy">Easy</option>
                     <option value="medium">Moderate</option>
@@ -1011,7 +1077,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                     type="number"
                     value={qYear}
                     onChange={(e) => setQYear(Number(e.target.value))}
-                    className="w-20 px-2 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white tabular-nums"
+                    className="w-20 px-2 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface tabular-nums"
                   />
                 </div>
               </div>
@@ -1022,21 +1088,21 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 value={qText}
                 onChange={(e) => setQText(e.target.value)}
                 placeholder="Enter complete MCQ question text (supports Hindi & Unicode math symbols)..."
-                className="w-full px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <input required value={optA} onChange={(e) => setOptA(e.target.value)} placeholder="Option A" className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white" />
-                <input required value={optB} onChange={(e) => setOptB(e.target.value)} placeholder="Option B" className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white" />
-                <input required value={optC} onChange={(e) => setOptC(e.target.value)} placeholder="Option C" className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white" />
-                <input required value={optD} onChange={(e) => setOptD(e.target.value)} placeholder="Option D" className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white" />
+                <input required value={optA} onChange={(e) => setOptA(e.target.value)} placeholder="Option A" className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface" />
+                <input required value={optB} onChange={(e) => setOptB(e.target.value)} placeholder="Option B" className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface" />
+                <input required value={optC} onChange={(e) => setOptC(e.target.value)} placeholder="Option C" className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface" />
+                <input required value={optD} onChange={(e) => setOptD(e.target.value)} placeholder="Option D" className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                 <select
                   value={qCorrectIdx}
                   onChange={(e) => setQCorrectIdx(Number(e.target.value))}
-                  className="sm:col-span-3 px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="sm:col-span-3 px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 >
                   <option value={0}>Correct: Option A</option>
                   <option value={1}>Correct: Option B</option>
@@ -1048,11 +1114,11 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                   value={qExplanation}
                   onChange={(e) => setQExplanation(e.target.value)}
                   placeholder="Solution explanation..."
-                  className="sm:col-span-7 px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="sm:col-span-7 px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 />
                 <button
                   type="submit"
-                  className="sm:col-span-2 py-2 px-3 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white"
+                  className="sm:col-span-2 py-2 px-3 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary"
                 >
                   Save &amp; Seal
                 </button>
@@ -1061,16 +1127,16 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
           )}
 
           {questionTool === 'bulk' && (
-            <div className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-4">
+            <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <FileSpreadsheet className="w-4 h-4 text-[#B5ADC6]" /> Bulk JSON / CSV Question Importer
+                <h3 className="text-sm font-bold text-on-surface flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4 text-secondary" /> Bulk JSON / CSV Question Importer
                 </h3>
                 <div className="flex items-center gap-2">
                   <select
                     value={bulkExam}
                     onChange={(e) => setBulkExam(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                    className="px-2.5 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                   >
                     {exams.map((ex) => (
                       <option key={ex.id} value={ex.name}>
@@ -1081,14 +1147,14 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                   <select
                     value={bulkFormat}
                     onChange={(e) => setBulkFormat(e.target.value as 'json' | 'csv')}
-                    className="px-2.5 py-1.5 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                    className="px-2.5 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                   >
                     <option value="json">JSON Array</option>
                     <option value="csv">CSV Rows</option>
                   </select>
                 </div>
               </div>
-              <p className="text-xs text-[#CFCEDD]">
+              <p className="text-xs text-on-surface-variant">
                 {bulkFormat === 'json'
                   ? 'Paste a JSON array of objects with { questionText, options: [A,B,C,D], correctIndex (0-3), explanation, subject, chapter, topic, difficulty, examYear }.'
                   : 'CSV Columns: questionText,optionA,optionB,optionC,optionD,correctIndex(0-3),explanation,examName,subject,chapter,topic,difficulty,examYear'}
@@ -1102,14 +1168,14 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                     ? '[{"questionText":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"...","subject":"Indian Polity","chapter":"Parliament","topic":"Bills","difficulty":"medium"}]'
                     : 'questionText,optionA,optionB,optionC,optionD,correctIndex,explanation,examName,subject,chapter,topic,difficulty,examYear'
                 }
-                className="w-full px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs font-mono text-white"
+                className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs font-mono text-on-surface"
               />
               <div className="flex justify-end">
                 <button
                   type="button"
                   disabled={bulkImporting || !bulkPayload.trim()}
                   onClick={handleBulkImport}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary disabled:opacity-50"
                 >
                   {bulkImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                   {bulkImporting ? 'Sealing & Importing...' : 'Seal & Publish Bulk Batch'}
@@ -1119,17 +1185,17 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
           )}
 
           {questionTool === 'ai_batch' && (
-            <div className="p-5 rounded-xl bg-[#3D2C56] border border-[#B5ADC6]/50 space-y-4">
+            <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#B5ADC6]" /> Admin Batch AI Question Generator (Up to 100 Questions)
+                <h3 className="text-sm font-bold text-on-surface flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-secondary" /> Admin Batch AI Question Generator (Up to 100 Questions)
                 </h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                 <select
                   value={aiExam}
                   onChange={(e) => setAiExam(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 >
                   {exams.map((ex) => (
                     <option key={ex.id} value={ex.name}>
@@ -1141,24 +1207,24 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                   value={aiSubject}
                   onChange={(e) => setAiSubject(e.target.value)}
                   placeholder="Subject"
-                  className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 />
                 <input
                   value={aiChapter}
                   onChange={(e) => setAiChapter(e.target.value)}
                   placeholder="Chapter"
-                  className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 />
                 <input
                   value={aiTopic}
                   onChange={(e) => setAiTopic(e.target.value)}
                   placeholder="Topic"
-                  className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 />
                 <select
                   value={aiDiff}
                   onChange={(e) => setAiDiff(e.target.value as any)}
-                  className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 >
                   <option value="mixed">Mixed Difficulty</option>
                   <option value="easy">Easy</option>
@@ -1171,19 +1237,23 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                   max={100}
                   value={aiCount}
                   onChange={(e) => setAiCount(Math.min(100, Math.max(1, Number(e.target.value) || 10)))}
-                  className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white tabular-nums"
+                  className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface tabular-nums"
                 />
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <button
                   type="button"
-                  disabled={aiGenerating}
+                  disabled={aiGenerating || aiCooldown.active}
                   onClick={handleGenerateAdminBatch}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#675D85] border border-[#B5ADC6] text-white text-xs font-semibold hover:bg-[#7C7397]"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary disabled:opacity-50"
                 >
                   {aiGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                  {aiGenerating ? `Generating ${aiCount} MCQs...` : `Generate ${aiCount} Draft Questions`}
+                  {aiCooldown.active
+                    ? `Cooldown: ${formatCooldownRemaining(aiCooldown.remainingSeconds)}`
+                    : aiGenerating
+                      ? `Generating ${aiCount} MCQs...`
+                      : `Generate ${aiCount} Draft Questions`}
                 </button>
 
                 {aiDrafts.length > 0 && (
@@ -1191,7 +1261,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                     type="button"
                     disabled={publishingDrafts}
                     onClick={handlePublishAiDrafts}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-success text-on-success text-xs font-semibold hover:opacity-90"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     {publishingDrafts ? 'Publishing...' : `Verify & Publish All (${aiDrafts.length}) to Bank`}
@@ -1204,18 +1274,18 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                   {aiDrafts.map((d, idx) => (
                     <div
                       key={d.id}
-                      className="p-3 rounded-lg bg-[#1C0E29] border border-[#514871] flex items-start justify-between gap-3 text-xs"
+                      className="p-3 rounded-lg bg-surface-container-low border border-outline-variant flex items-start justify-between gap-3 text-xs"
                     >
                       <div className="space-y-1">
-                        <p className="text-[#B5ADC6]">
+                        <p className="text-secondary font-medium">
                           Draft #{idx + 1} · {d.subject} · {d.difficulty} · Answer: {['A', 'B', 'C', 'D'][d.correctIndex]}
                         </p>
-                        <p className="text-white font-medium">{d.questionText}</p>
+                        <p className="text-on-surface font-medium">{d.questionText}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setAiDrafts((prev) => prev.filter((x) => x.id !== d.id))}
-                        className="p-1 text-rose-300 hover:text-rose-200 shrink-0"
+                        className="p-1 text-error hover:opacity-80 shrink-0"
                         title="Discard draft"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1228,13 +1298,13 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
           )}
 
           {/* Question List */}
-          <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 p-5 space-y-4">
+          <div className="rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm p-5 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap gap-2">
                 <select
                   value={examFilter}
                   onChange={(e) => setExamFilter(e.target.value)}
-                  className="px-3 py-1.5 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 >
                   <option value="ALL">All Exams</option>
                   {exams.map((ex) => (
@@ -1246,7 +1316,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as any)}
-                  className="px-3 py-1.5 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 >
                   <option value="ALL">All Statuses</option>
                   <option value="verified">Verified</option>
@@ -1256,7 +1326,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 <select
                   value={publishFilter}
                   onChange={(e) => setPublishFilter(e.target.value as any)}
-                  className="px-3 py-1.5 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 >
                   <option value="ALL">All Visibility</option>
                   <option value="published">Published Only</option>
@@ -1267,7 +1337,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                   placeholder="Search question, subject, chapter..."
-                  className="px-3 py-1.5 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-1.5 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 />
               </div>
               <button
@@ -1291,7 +1361,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                     ])
                   )
                 }
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant text-xs font-semibold text-primary hover:bg-surface-container-low"
               >
                 <Download className="w-3.5 h-3.5" /> Export CSV
               </button>
@@ -1304,18 +1374,18 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 return (
                   <div
                     key={q.id}
-                    className="p-3.5 rounded-lg bg-[#1C0E29]/80 border border-[#514871] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                    className="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                   >
                     <div className="space-y-1 min-w-0">
-                      <p className="text-[#B5ADC6]">
-                        <span className="font-mono font-bold text-white">{q.questionCode}</span> · {q.examName} · {q.subject} · {q.chapter} ·{' '}
+                      <p className="text-on-surface-variant">
+                        <span className="font-mono font-bold text-primary">{q.questionCode}</span> · {q.examName} · {q.subject} · {q.chapter} ·{' '}
                         <span className="uppercase">{q.difficulty}</span> ·{' '}
-                        <span className={q.verificationStatus === 'verified' ? 'text-emerald-400' : 'text-amber-300'}>
+                        <span className={q.verificationStatus === 'verified' ? 'text-success font-semibold' : 'text-warning font-semibold'}>
                           {q.verificationStatus}
                         </span>{' '}
-                        · <span className="text-[#CFCEDD] tabular-nums">Used {usedCount}x</span>
+                        · <span className="tabular-nums">Used {usedCount}x</span>
                       </p>
-                      <p className="text-sm text-white font-medium line-clamp-2">{q.questionText}</p>
+                      <p className="text-sm text-on-surface font-medium line-clamp-2">{q.questionText}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                       <button
@@ -1323,8 +1393,8 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                         onClick={() => handleTogglePublished(q)}
                         className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md font-semibold ${
                           isPub
-                            ? 'bg-emerald-950/70 border border-emerald-500/60 text-emerald-200'
-                            : 'bg-[#3D2C56] border border-[#7C7397] text-[#CFCEDD]'
+                            ? 'bg-success-container text-on-success-container'
+                            : 'bg-surface-container-lowest border border-outline-variant text-on-surface-variant'
                         }`}
                       >
                         {isPub ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -1335,7 +1405,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                         <button
                           type="button"
                           onClick={() => handleVerifyQuestion(q.id)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-emerald-600 text-white font-semibold"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-success text-on-success font-semibold"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" /> Verify
                         </button>
@@ -1344,7 +1414,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                       <button
                         type="button"
                         onClick={() => openEditQuestion(q)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-[#675D85] text-white font-semibold hover:bg-[#7C7397]"
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-primary text-on-primary font-semibold hover:bg-primary-container"
                       >
                         <Edit3 className="w-3.5 h-3.5" /> Edit
                       </button>
@@ -1353,7 +1423,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                         type="button"
                         onClick={() => deleteDoc(doc(db, 'questions', q.id))}
                         aria-label="Delete question"
-                        className="p-1.5 rounded-md bg-rose-950/70 text-rose-300 hover:bg-rose-800"
+                        className="p-1.5 rounded-md bg-error-container text-on-error-container hover:opacity-85"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1369,42 +1439,42 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
       {/* Sub-tab: Coverage & Usage Statistics */}
       {subTab === 'coverage' && (
         <div className="space-y-4">
-          <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#514871] flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-[#B5ADC6]" /> Question Bank Coverage &amp; Student Attempt Usage Matrix
+          <div className="rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-outline-variant flex items-center justify-between">
+              <h3 className="text-sm font-bold text-on-surface flex items-center gap-2">
+                <Layers className="w-4 h-4 text-secondary" /> Question Bank Coverage &amp; Student Attempt Usage Matrix
               </h3>
-              <span className="text-xs text-[#CFCEDD] tabular-nums">
+              <span className="text-xs text-on-surface-variant tabular-nums">
                 {questions.length} Total Questions · {attempts.length} Total Attempts
               </span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs sm:text-sm">
-                <thead className="bg-[#0E0713]/60 text-[#B5ADC6]">
+                <thead className="bg-surface-container-low text-on-surface-variant border-b border-outline-variant">
                   <tr>
-                    <th className="text-left px-4 py-3">Exam</th>
-                    <th className="text-right px-4 py-3">Total Qs</th>
-                    <th className="text-right px-4 py-3">Published</th>
-                    <th className="text-right px-4 py-3">Subjects</th>
-                    <th className="text-right px-4 py-3">Chapters</th>
-                    <th className="text-right px-4 py-3">Easy</th>
-                    <th className="text-right px-4 py-3">Moderate</th>
-                    <th className="text-right px-4 py-3">Hard</th>
-                    <th className="text-right px-4 py-3">Attempt Usage</th>
+                    <th className="text-left px-4 py-3 font-semibold">Exam</th>
+                    <th className="text-right px-4 py-3 font-semibold">Total Qs</th>
+                    <th className="text-right px-4 py-3 font-semibold">Published</th>
+                    <th className="text-right px-4 py-3 font-semibold">Subjects</th>
+                    <th className="text-right px-4 py-3 font-semibold">Chapters</th>
+                    <th className="text-right px-4 py-3 font-semibold">Easy</th>
+                    <th className="text-right px-4 py-3 font-semibold">Moderate</th>
+                    <th className="text-right px-4 py-3 font-semibold">Hard</th>
+                    <th className="text-right px-4 py-3 font-semibold">Attempt Usage</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#514871]">
+                <tbody className="divide-y divide-outline-variant">
                   {coverageSummary.map((row) => (
-                    <tr key={row.examName}>
-                      <td className="px-4 py-3 font-bold text-white">{row.examName}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-[#CFCEDD]">{row.total}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-emerald-300">{row.published}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-[#CFCEDD]">{row.subjectCount}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-[#CFCEDD]">{row.chapterCount}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-emerald-200">{row.easy}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-[#B5ADC6]">{row.medium}</td>
-                      <td className="px-4 py-3 text-right tabular-nums text-rose-300">{row.hard}</td>
-                      <td className="px-4 py-3 text-right tabular-nums font-bold text-white">{row.attempts}</td>
+                    <tr key={row.examName} className="hover:bg-surface-container-low">
+                      <td className="px-4 py-3 font-bold text-on-surface">{row.examName}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-on-surface-variant">{row.total}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-success font-semibold">{row.published}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-on-surface-variant">{row.subjectCount}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-on-surface-variant">{row.chapterCount}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-success">{row.easy}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-secondary">{row.medium}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-error">{row.hard}</td>
+                      <td className="px-4 py-3 text-right tabular-nums font-bold text-on-surface">{row.attempts}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1419,58 +1489,58 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
         <div className="space-y-6">
           <form
             onSubmit={handleCreateExam}
-            className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 grid grid-cols-1 sm:grid-cols-6 gap-3 items-end"
+            className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm grid grid-cols-1 sm:grid-cols-6 gap-3 items-end"
           >
             <div className="sm:col-span-2">
-              <label className="block text-[11px] text-[#CFCEDD] mb-1">Exam Name</label>
+              <label className="block text-[11px] font-semibold text-on-surface-variant mb-1">Exam Name</label>
               <input
                 required
                 value={newExamName}
                 onChange={(e) => setNewExamName(e.target.value)}
                 placeholder="e.g. CTET / BPSC Teacher"
-                className="w-full px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-[#CFCEDD] mb-1">Group</label>
+              <label className="block text-[11px] font-semibold text-on-surface-variant mb-1">Group</label>
               <input
                 required
                 value={newExamGroup}
                 onChange={(e) => setNewExamGroup(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-[#CFCEDD] mb-1">Duration (m)</label>
+              <label className="block text-[11px] font-semibold text-on-surface-variant mb-1">Duration (m)</label>
               <input
                 type="number"
                 value={newDuration}
                 onChange={(e) => setNewDuration(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-[#CFCEDD] mb-1">+Marks / −Neg</label>
+              <label className="block text-[11px] font-semibold text-on-surface-variant mb-1">+Marks / −Neg</label>
               <div className="flex gap-1">
                 <input
                   type="number"
                   step="0.5"
                   value={newPosMarks}
                   onChange={(e) => setNewPosMarks(Number(e.target.value))}
-                  className="w-1/2 px-2 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="w-1/2 px-2 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 />
                 <input
                   type="number"
                   step="0.25"
                   value={newNegMarks}
                   onChange={(e) => setNewNegMarks(Number(e.target.value))}
-                  className="w-1/2 px-2 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="w-1/2 px-2 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 />
               </div>
             </div>
             <button
               type="submit"
-              className="py-2 px-3 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white"
+              className="py-2 px-3 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary"
             >
               Add Exam
             </button>
@@ -1480,24 +1550,26 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
             {exams.map((ex) => (
               <div
                 key={ex.id}
-                className="p-4 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 flex flex-col justify-between gap-2"
+                className="p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col justify-between gap-2"
               >
                 <div>
-                  <p className="text-[11px] text-[#B5ADC6]">{ex.categoryGroup} · {ex.code}</p>
-                  <h4 className="font-display text-base font-bold text-white">{ex.name}</h4>
-                  <p className="text-xs text-[#CFCEDD] mt-1 tabular-nums">
+                  <p className="text-[11px] font-semibold text-secondary">{ex.categoryGroup} · {ex.code}</p>
+                  <h4 className="font-headline text-base font-bold text-on-surface">{ex.name}</h4>
+                  <p className="text-xs text-on-surface-variant mt-1 tabular-nums">
                     +{ex.marksPerCorrect} / −{ex.negativeMarks} · {ex.defaultDurationMinutes} mins
                   </p>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-[#514871] text-xs">
-                  <span className="text-[#CFCEDD]">
+                <div className="flex justify-between items-center pt-2 border-t border-outline-variant text-xs">
+                  <span className="text-on-surface-variant">
                     {questions.filter((q) => q.examName === ex.name && q.published !== false).length} Qs published
                   </span>
                   <button
                     type="button"
                     onClick={() => updateDoc(doc(db, 'exams', ex.id), { active: !ex.active })}
-                    className={`px-2.5 py-1 rounded-md font-semibold ${
-                      ex.active ? 'bg-emerald-600 text-white' : 'bg-[#1C0E29] text-[#9993AC]'
+                    className={`px-2.5 py-1 rounded-full font-semibold ${
+                      ex.active
+                        ? 'bg-success-container text-on-success-container'
+                        : 'bg-surface-container-low text-on-surface-variant'
                     }`}
                   >
                     {ex.active ? 'Active' : 'Hidden'}
@@ -1514,24 +1586,24 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
         <div className="space-y-6">
           <form
             onSubmit={handleCreateMockTest}
-            className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 grid grid-cols-1 sm:grid-cols-5 gap-3 items-end"
+            className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm grid grid-cols-1 sm:grid-cols-5 gap-3 items-end"
           >
             <div className="sm:col-span-2">
-              <label className="block text-[11px] text-[#CFCEDD] mb-1">Mock Test Title</label>
+              <label className="block text-[11px] font-semibold text-on-surface-variant mb-1">Mock Test Title</label>
               <input
                 required
                 value={mockTitle}
                 onChange={(e) => setMockTitle(e.target.value)}
                 placeholder="e.g. BPSC 71st Prelims Mock"
-                className="w-full px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-[#CFCEDD] mb-1">Exam</label>
+              <label className="block text-[11px] font-semibold text-on-surface-variant mb-1">Exam</label>
               <select
                 value={mockExam}
                 onChange={(e) => setMockExam(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               >
                 {exams.map((ex) => (
                   <option key={ex.id} value={ex.name}>
@@ -1541,19 +1613,19 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-[11px] text-[#CFCEDD] mb-1">Max Questions</label>
+              <label className="block text-[11px] font-semibold text-on-surface-variant mb-1">Max Questions</label>
               <input
                 type="number"
                 min={1}
                 max={200}
                 value={mockCount}
                 onChange={(e) => setMockCount(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               />
             </div>
             <button
               type="submit"
-              className="py-2 px-3 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white"
+              className="py-2 px-3 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary"
             >
               Publish Mock Test
             </button>
@@ -1561,21 +1633,23 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {mockTests.map((mt) => (
-              <div key={mt.id} className="p-4 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-2">
-                <p className="text-[11px] text-[#B5ADC6]">{mt.examName} · {mt.questionIds.length} Questions</p>
-                <h4 className="font-display text-base font-bold text-white">{mt.title}</h4>
-                <div className="flex justify-between pt-2">
+              <div key={mt.id} className="p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-2">
+                <p className="text-[11px] font-semibold text-secondary">{mt.examName} · {mt.questionIds.length} Questions</p>
+                <h4 className="font-headline text-base font-bold text-on-surface">{mt.title}</h4>
+                <div className="flex justify-between pt-2 border-t border-outline-variant">
                   <button
                     type="button"
                     onClick={() => updateDoc(doc(db, 'mock_tests', mt.id), { active: !mt.active })}
-                    className="px-2.5 py-1 rounded-md bg-[#1C0E29] text-xs text-white"
+                    className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      mt.active ? 'bg-success-container text-on-success-container' : 'bg-surface-container-low text-on-surface-variant'
+                    }`}
                   >
                     {mt.active ? 'Published' : 'Unpublished'}
                   </button>
                   <button
                     type="button"
                     onClick={() => deleteDoc(doc(db, 'mock_tests', mt.id))}
-                    className="text-rose-300 text-xs hover:underline"
+                    className="text-error text-xs font-semibold hover:underline"
                   >
                     Remove
                   </button>
@@ -1589,12 +1663,12 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
       {/* Sub-tab: Current Affairs Collector & Moderation */}
       {subTab === 'news' && (
         <div className="space-y-5">
-          <div className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 flex flex-wrap items-center justify-between gap-4">
+          <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Newspaper className="w-4 h-4 text-[#B5ADC6]" /> Automated Daily Current Affairs Pipeline
+              <h3 className="text-sm font-bold text-on-surface flex items-center gap-2">
+                <Newspaper className="w-4 h-4 text-secondary" /> Automated Daily Current Affairs Pipeline
               </h3>
-              <p className="text-xs text-[#CFCEDD] mt-1">
+              <p className="text-xs text-on-surface-variant mt-1">
                 Collects grounded National, International, Economy, Science &amp; Bihar Current Affairs with bilingual summaries &amp; MCQs.
               </p>
             </div>
@@ -1603,21 +1677,25 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 type="date"
                 value={caDate}
                 onChange={(e) => setCaDate(e.target.value)}
-                className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               />
               <button
                 type="button"
-                disabled={collectingCa}
+                disabled={collectingCa || aiCooldown.active}
                 onClick={handleCollectCurrentAffairsNow}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${collectingCa ? 'animate-spin' : ''}`} />
-                {collectingCa ? 'Collecting...' : 'Collect Now (AI Search)'}
+                {aiCooldown.active
+                  ? `Wait ${formatCooldownRemaining(aiCooldown.remainingSeconds)}`
+                  : collectingCa
+                    ? 'Collecting...'
+                    : 'Collect Now (AI Search)'}
               </button>
               <button
                 type="button"
                 onClick={handleToggleCaPause}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest border border-outline-variant text-xs font-semibold text-primary hover:bg-surface-container-low"
               >
                 {caPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
                 {caPaused ? 'Resume Daily Job' : 'Pause Daily Job'}
@@ -1627,21 +1705,27 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {currentAffairs.map((ca) => (
-              <div key={ca.id} className="p-4 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-2">
-                <div className="flex items-center justify-between text-xs text-[#B5ADC6]">
+              <div key={ca.id} className="p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-2">
+                <div className="flex items-center justify-between text-xs text-on-surface-variant">
                   <span>{ca.category} · {ca.date}</span>
-                  <span className={ca.status === 'published' ? 'text-emerald-400 font-bold' : 'text-amber-300 font-bold'}>
+                  <span
+                    className={`px-2 py-0.5 rounded-full font-semibold ${
+                      ca.status === 'published'
+                        ? 'bg-success-container text-on-success-container'
+                        : 'bg-warning-container text-on-warning-container'
+                    }`}
+                  >
                     {ca.status}
                   </span>
                 </div>
-                <h4 className="font-bold text-white text-sm">{ca.titleEn}</h4>
-                <p className="text-xs text-[#CFCEDD] line-clamp-2">{ca.summaryEn}</p>
+                <h4 className="font-bold text-on-surface text-sm">{ca.titleEn}</h4>
+                <p className="text-xs text-on-surface-variant line-clamp-2">{ca.summaryEn}</p>
                 <div className="flex items-center gap-2 pt-2">
                   {ca.status !== 'published' && (
                     <button
                       type="button"
                       onClick={() => updateDoc(doc(db, 'current_affairs', ca.id), { status: 'published' })}
-                      className="px-3 py-1 rounded-md bg-emerald-600 text-white text-xs font-semibold"
+                      className="px-3 py-1 rounded-md bg-success text-on-success text-xs font-semibold"
                     >
                       Approve &amp; Publish
                     </button>
@@ -1650,7 +1734,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                     <button
                       type="button"
                       onClick={() => updateDoc(doc(db, 'current_affairs', ca.id), { status: 'archived' })}
-                      className="px-3 py-1 rounded-md bg-[#1C0E29] text-[#CFCEDD] text-xs"
+                      className="px-3 py-1 rounded-md bg-surface-container-low text-on-surface-variant text-xs font-semibold"
                     >
                       Archive
                     </button>
@@ -1666,12 +1750,12 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
       {subTab === 'books' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {gkBooks.map((book) => (
-            <div key={book.id} className="p-4 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-2">
-              <p className="text-xs font-semibold text-[#B5ADC6]">{book.subject}</p>
-              <h4 className="font-display text-base font-bold text-white">{book.title}</h4>
-              <p className="text-xs text-[#CFCEDD]">{book.chapters.length} Chapters</p>
-              <div className="pt-2 flex items-center justify-between">
-                <span className="text-xs text-[#CFCEDD]">PDF Download:</span>
+            <div key={book.id} className="p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-2">
+              <p className="text-xs font-semibold text-secondary">{book.subject}</p>
+              <h4 className="font-headline text-base font-bold text-on-surface">{book.title}</h4>
+              <p className="text-xs text-on-surface-variant">{book.chapters.length} Chapters</p>
+              <div className="pt-2 flex items-center justify-between border-t border-outline-variant">
+                <span className="text-xs text-on-surface-variant">PDF Download:</span>
                 <button
                   type="button"
                   onClick={() =>
@@ -1679,8 +1763,10 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                       pdfDownloadAllowed: !book.pdfDownloadAllowed,
                     })
                   }
-                  className={`px-3 py-1 rounded-md text-xs font-bold ${
-                    book.pdfDownloadAllowed ? 'bg-emerald-600 text-white' : 'bg-[#1C0E29] text-[#9993AC]'
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    book.pdfDownloadAllowed
+                      ? 'bg-success-container text-on-success-container'
+                      : 'bg-surface-container-low text-on-surface-variant'
                   }`}
                 >
                   {book.pdfDownloadAllowed ? 'Authorized' : 'Online Read Only'}
@@ -1693,32 +1779,32 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
 
       {/* Sub-tab: Student Attempts Audit */}
       {subTab === 'attempts' && (
-        <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 overflow-hidden">
+        <div className="rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs sm:text-sm">
-              <thead className="bg-[#0E0713]/60 text-[#B5ADC6]">
+              <thead className="bg-surface-container-low text-on-surface-variant border-b border-outline-variant">
                 <tr>
-                  <th className="text-left px-4 py-3">Student</th>
-                  <th className="text-left px-4 py-3">Exam</th>
-                  <th className="text-right px-4 py-3">Questions</th>
-                  <th className="text-right px-4 py-3">Marks</th>
-                  <th className="text-right px-4 py-3">Accuracy</th>
-                  <th className="text-left px-4 py-3">Status</th>
+                  <th className="text-left px-4 py-3 font-semibold">Student</th>
+                  <th className="text-left px-4 py-3 font-semibold">Exam</th>
+                  <th className="text-right px-4 py-3 font-semibold">Questions</th>
+                  <th className="text-right px-4 py-3 font-semibold">Marks</th>
+                  <th className="text-right px-4 py-3 font-semibold">Accuracy</th>
+                  <th className="text-left px-4 py-3 font-semibold">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#514871]">
+              <tbody className="divide-y divide-outline-variant">
                 {attempts.map((a) => (
-                  <tr key={a.id}>
-                    <td className="px-4 py-3 text-white font-medium">
-                      {a.studentName} <span className="text-[#B5ADC6] font-mono">({a.studentCode})</span>
+                  <tr key={a.id} className="hover:bg-surface-container-low">
+                    <td className="px-4 py-3 text-on-surface font-medium">
+                      {a.studentName} <span className="text-on-surface-variant font-mono">({a.studentCode})</span>
                     </td>
-                    <td className="px-4 py-3 text-[#CFCEDD]">{a.examName}</td>
-                    <td className="px-4 py-3 text-right text-[#CFCEDD] tabular-nums">{a.totalQuestions}</td>
-                    <td className="px-4 py-3 text-right text-white tabular-nums">
+                    <td className="px-4 py-3 text-on-surface-variant">{a.examName}</td>
+                    <td className="px-4 py-3 text-right text-on-surface-variant tabular-nums">{a.totalQuestions}</td>
+                    <td className="px-4 py-3 text-right text-on-surface tabular-nums font-medium">
                       {a.totalMarks}/{a.maxMarks}
                     </td>
-                    <td className="px-4 py-3 text-right text-emerald-300 tabular-nums">{a.accuracy}%</td>
-                    <td className="px-4 py-3 text-[#CFCEDD] capitalize">{a.status}</td>
+                    <td className="px-4 py-3 text-right text-success font-semibold tabular-nums">{a.accuracy}%</td>
+                    <td className="px-4 py-3 text-on-surface-variant capitalize">{a.status}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1729,19 +1815,19 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
 
       {/* Edit Question Modal */}
       {editingQ && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/40 backdrop-blur-xs p-4 overflow-y-auto">
           <form
             onSubmit={handleSaveEditedQuestion}
-            className="w-full max-w-2xl rounded-xl bg-[#3D2C56] border border-[#B5ADC6]/40 p-6 space-y-4 text-white"
+            className="w-full max-w-2xl rounded-xl bg-surface-container-lowest border border-outline-variant shadow-xl p-6 space-y-4 text-on-surface"
           >
-            <div className="flex items-center justify-between border-b border-[#514871] pb-3">
-              <h3 className="font-display text-lg font-bold">
+            <div className="flex items-center justify-between border-b border-outline-variant pb-3">
+              <h3 className="font-headline text-lg font-bold text-primary">
                 Edit Question · {editingQ.questionCode}
               </h3>
               <button
                 type="button"
                 onClick={() => setEditingQ(null)}
-                className="p-1 text-[#CFCEDD] hover:text-white"
+                className="p-1 text-on-surface-variant hover:text-primary"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1751,7 +1837,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
               <select
                 value={editExam}
                 onChange={(e) => setEditExam(e.target.value)}
-                className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               >
                 {exams.map((ex) => (
                   <option key={ex.id} value={ex.name}>
@@ -1764,26 +1850,26 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 value={editSubject}
                 onChange={(e) => setEditSubject(e.target.value)}
                 placeholder="Subject"
-                className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               />
               <input
                 required
                 value={editChapter}
                 onChange={(e) => setEditChapter(e.target.value)}
                 placeholder="Chapter"
-                className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               />
               <input
                 required
                 value={editTopic}
                 onChange={(e) => setEditTopic(e.target.value)}
                 placeholder="Topic"
-                className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               />
               <select
                 value={editDifficulty}
                 onChange={(e) => setEditDifficulty(e.target.value as any)}
-                className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               >
                 <option value="easy">Easy</option>
                 <option value="medium">Moderate</option>
@@ -1793,7 +1879,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 type="number"
                 value={editYear}
                 onChange={(e) => setEditYear(Number(e.target.value))}
-                className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white tabular-nums"
+                className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface tabular-nums"
               />
             </div>
 
@@ -1802,7 +1888,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
               rows={3}
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+              className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1817,7 +1903,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                     setEditOpts(next);
                   }}
                   placeholder={`Option ${['A', 'B', 'C', 'D'][idx]}`}
-                  className="px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
                 />
               ))}
             </div>
@@ -1826,7 +1912,7 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
               <select
                 value={editCorrectIdx}
                 onChange={(e) => setEditCorrectIdx(Number(e.target.value))}
-                className="sm:col-span-4 px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="sm:col-span-4 px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               >
                 <option value={0}>Correct: Option A</option>
                 <option value={1}>Correct: Option B</option>
@@ -1837,11 +1923,11 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 value={editExplanation}
                 onChange={(e) => setEditExplanation(e.target.value)}
                 placeholder="Solution explanation..."
-                className="sm:col-span-8 px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                className="sm:col-span-8 px-3 py-2 rounded-lg bg-surface border border-outline-variant text-xs text-on-surface"
               />
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-[#514871]">
+            <div className="flex items-center justify-between pt-2 border-t border-outline-variant">
               <label className="inline-flex items-center gap-2 text-xs cursor-pointer">
                 <input
                   type="checkbox"
@@ -1855,14 +1941,14 @@ export const ExamManagementPanel: React.FC<ExamManagementPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setEditingQ(null)}
-                  className="px-4 py-2 rounded-lg border border-[#7C7397] text-xs font-semibold text-white"
+                  className="px-4 py-2 rounded-lg border border-outline-variant text-xs font-semibold text-primary hover:bg-surface-container-low"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingEdit}
-                  className="px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white disabled:opacity-60"
+                  className="px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary disabled:opacity-60"
                 >
                   {savingEdit ? 'Saving...' : 'Save & Re-Seal'}
                 </button>

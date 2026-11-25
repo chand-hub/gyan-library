@@ -84,25 +84,24 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
     if (attempt.accuracy >= 85) {
       return {
         label: 'Merit Top-Tier Readiness',
-        tone: 'bg-emerald-950/60 border-emerald-400/60 text-emerald-100',
+        tone: 'bg-success-container/70 dark:bg-emerald-950/60 border-success/50 text-on-success-container dark:text-emerald-100',
         note: 'High conceptual clarity and disciplined accuracy. Increase test volume and speed.',
       };
     }
     if (attempt.accuracy >= 65) {
       return {
         label: 'Competitive Qualifying Zone',
-        tone: 'bg-[#514871]/80 border-[#B5ADC6]/60 text-white',
+        tone: 'bg-secondary-container/70 dark:bg-blue-950/60 border-secondary/50 text-on-secondary-container dark:text-blue-100',
         note: 'Strong foundation. Target weak chapters and eliminate careless negative marking.',
       };
     }
     return {
       label: 'Focused Revision Required',
-      tone: 'bg-amber-950/60 border-amber-400/60 text-amber-100',
+      tone: 'bg-warning-container/70 dark:bg-amber-950/60 border-warning/50 text-on-warning-container dark:text-amber-100',
       note: 'Prioritize concept revision in your lowest-scoring chapters before timed drills.',
     };
   }, [attempt.accuracy]);
 
-  // Compute difficulty breakdown from attempt record or fall back to question metadata
   const difficultyBreakdown = useMemo<BreakdownMetric[]>(() => {
     if (Array.isArray(attempt.difficultyBreakdown) && attempt.difficultyBreakdown.length > 0) {
       return attempt.difficultyBreakdown;
@@ -142,7 +141,6 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
       });
   }, [attempt, questionsMap]);
 
-  // Identify repeated mistake topics across student's historical attempts
   const repeatedMistakeTopics = useMemo(() => {
     const counts: Record<string, number> = {};
     allAttempts
@@ -288,15 +286,15 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#3D2C56] border border-[#7C7397] text-xs font-semibold text-white hover:bg-[#514871]"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 text-xs font-semibold text-on-surface dark:text-white hover:bg-surface-container-low dark:hover:bg-slate-800 shadow-xs"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Exam Hub
           </button>
           <div>
-            <p className="text-xs text-[#B5ADC6]">
+            <p className="text-xs font-semibold text-secondary dark:text-blue-400 font-mono">
               {attempt.examName} · {attempt.submittedAt?.slice(0, 10) || 'Completed'} · {attempt.totalQuestions} Questions
             </p>
-            <h2 className="font-display text-2xl font-bold text-white">
+            <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
               Detailed Performance Report
             </h2>
           </div>
@@ -306,7 +304,7 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
           type="button"
           onClick={handleGenerateAiRecommendations}
           disabled={loadingAdvice || aiCooldown.active}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs sm:text-sm font-bold hover:bg-white transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-secondary text-on-secondary text-xs sm:text-sm font-bold hover:bg-primary transition-colors disabled:opacity-50 shadow-xs"
         >
           <Sparkles className="w-4 h-4" />
           {loadingAdvice
@@ -335,7 +333,7 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
           <button
             type="button"
             onClick={() => onPracticeWeakTopic(recommendedNextTarget.name, recommendedNextTarget.type)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white shrink-0"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-container shrink-0 shadow-xs"
           >
             <Play className="w-3.5 h-3.5" />
             Practice Recommended: {recommendedNextTarget.name}
@@ -360,22 +358,28 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
         ].map((card) => (
           <div
             key={card.label}
-            className="p-3.5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60"
+            className="p-3.5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-xs"
           >
-            <p className="text-[11px] text-[#CFCEDD]">{card.label}</p>
-            <p className="mt-1 font-display text-lg font-bold text-white tabular-nums">{card.val}</p>
+            <p className="text-[11px] font-medium text-on-surface-variant dark:text-slate-400">
+              {card.label}
+            </p>
+            <p className="mt-1 font-display text-lg font-bold text-primary dark:text-white font-mono tabular-nums">
+              {card.val}
+            </p>
           </div>
         ))}
       </div>
 
       {/* Difficulty-Wise Accuracy Breakdown */}
       {difficultyBreakdown.length > 0 && (
-        <div className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-4">
+        <div className="p-5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#B5ADC6] flex items-center gap-2">
-              <Layers className="w-4 h-4" /> Difficulty-Wise Performance Breakdown
+            <h3 className="text-xs font-bold uppercase tracking-wider text-primary dark:text-blue-300 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-secondary dark:text-blue-400" /> Difficulty-Wise Performance Breakdown
             </h3>
-            <span className="text-xs text-[#CFCEDD]">Balanced across question complexity</span>
+            <span className="text-xs text-on-surface-variant dark:text-slate-400">
+              Balanced across question complexity
+            </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {difficultyBreakdown.map((d) => {
@@ -384,25 +388,27 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
               return (
                 <div
                   key={d.name}
-                  className="p-4 rounded-xl bg-[#1C0E29]/80 border border-[#514871] space-y-2"
+                  className="p-4 rounded-xl bg-surface-container-low dark:bg-slate-800/80 border border-outline-variant/60 dark:border-slate-700 space-y-2"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">{label}</span>
-                    <span className="text-xs font-bold text-[#B5ADC6] tabular-nums">{d.accuracy}% Accuracy</span>
+                    <span className="text-xs font-bold text-on-surface dark:text-white">{label}</span>
+                    <span className="text-xs font-bold text-secondary dark:text-blue-400 font-mono tabular-nums">
+                      {d.accuracy}% Accuracy
+                    </span>
                   </div>
-                  <div className="h-2 rounded-full bg-[#3D2C56] overflow-hidden">
+                  <div className="h-2 rounded-full bg-surface-variant dark:bg-slate-700 overflow-hidden">
                     <div
                       className={`h-full ${
                         d.accuracy >= 70
-                          ? 'bg-emerald-400'
+                          ? 'bg-success'
                           : d.accuracy >= 50
-                            ? 'bg-[#B5ADC6]'
-                            : 'bg-rose-400'
+                            ? 'bg-secondary'
+                            : 'bg-error'
                       }`}
                       style={{ width: `${Math.min(100, d.accuracy)}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-[#CFCEDD] tabular-nums">
+                  <p className="text-[11px] text-on-surface-variant dark:text-slate-300 font-mono tabular-nums">
                     Total {d.total} · Correct {d.correct} · Wrong {d.incorrect} · Avg {d.avgTimeSeconds}s
                   </p>
                 </div>
@@ -414,55 +420,67 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
 
       {/* AI Personalized Recommendations */}
       {(aiAdvice || adviceError) && (
-        <div className="p-6 rounded-xl bg-[#3D2C56] border border-[#B5ADC6]/60 space-y-3">
-          <div className="flex items-center gap-2 text-sm font-bold text-white">
-            <Sparkles className="w-4 h-4 text-[#B5ADC6]" />
+        <div className="p-6 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-secondary/40 space-y-3 shadow-sm">
+          <div className="flex items-center gap-2 text-sm font-bold text-primary dark:text-white">
+            <Sparkles className="w-4 h-4 text-secondary dark:text-blue-400" />
             <span>Personalized AI Study Plan (Grounded in Your Attempt Metrics)</span>
           </div>
           {adviceError ? (
-            <p className="text-xs text-rose-300">{adviceError}</p>
+            <p className="text-xs text-error dark:text-rose-300 font-medium">{adviceError}</p>
           ) : (
-            <div className="text-sm text-[#CFCEDD] leading-relaxed whitespace-pre-line">{aiAdvice}</div>
+            <div className="text-sm text-on-surface-variant dark:text-slate-200 leading-relaxed whitespace-pre-line">
+              {aiAdvice}
+            </div>
           )}
         </div>
       )}
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#B5ADC6] mb-3">
+        <div className="p-5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-primary dark:text-blue-300 mb-3">
             Subject-Wise Accuracy (%)
           </h3>
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={attempt.subjectBreakdown || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#514871" />
-                <XAxis dataKey="name" tick={{ fill: '#CFCEDD', fontSize: 11 }} />
-                <YAxis domain={[0, 100]} tick={{ fill: '#CFCEDD', fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#C4C6CF" />
+                <XAxis dataKey="name" tick={{ fill: '#44474E', fontSize: 11 }} />
+                <YAxis domain={[0, 100]} tick={{ fill: '#44474E', fontSize: 11 }} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#0E0713', borderColor: '#7C7397', color: '#fff' }}
+                  contentStyle={{
+                    backgroundColor: '#FFFFFF',
+                    borderColor: '#C4C6CF',
+                    color: '#0B1C30',
+                    borderRadius: '8px',
+                  }}
                 />
-                <Bar dataKey="accuracy" fill="#B5ADC6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="accuracy" fill="#0051D5" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#B5ADC6] mb-3 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" /> Historical Progress Comparison
+        <div className="p-5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-primary dark:text-blue-300 mb-3 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-secondary dark:text-blue-400" /> Historical Progress Comparison
           </h3>
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={historicalTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#514871" />
-                <XAxis dataKey="label" tick={{ fill: '#CFCEDD', fontSize: 10 }} />
-                <YAxis domain={[0, 100]} tick={{ fill: '#CFCEDD', fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#C4C6CF" />
+                <XAxis dataKey="label" tick={{ fill: '#44474E', fontSize: 10 }} />
+                <YAxis domain={[0, 100]} tick={{ fill: '#44474E', fontSize: 11 }} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#0E0713', borderColor: '#7C7397', color: '#fff' }}
+                  contentStyle={{
+                    backgroundColor: '#FFFFFF',
+                    borderColor: '#C4C6CF',
+                    color: '#0B1C30',
+                    borderRadius: '8px',
+                  }}
                 />
-                <Line type="monotone" dataKey="accuracy" stroke="#B5ADC6" strokeWidth={2} />
-                <Line type="monotone" dataKey="percentage" stroke="#9993AC" strokeWidth={2} />
+                <Line type="monotone" dataKey="accuracy" stroke="#0051D5" strokeWidth={2.5} />
+                <Line type="monotone" dataKey="percentage" stroke="#004B73" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -471,12 +489,14 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
 
       {/* Diagnostic Strengths & Suggested Chapters for Improvement */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-2">
-          <p className="text-xs font-bold text-emerald-300">Strong Subjects</p>
+        <div className="p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-2 shadow-xs">
+          <p className="text-xs font-bold text-success dark:text-emerald-400">Strong Subjects</p>
           {strongSubjects.length === 0 ? (
-            <p className="text-xs text-[#CFCEDD]">Keep practicing to cross 70% accuracy.</p>
+            <p className="text-xs text-on-surface-variant dark:text-slate-400">
+              Keep practicing to cross 70% accuracy.
+            </p>
           ) : (
-            <ul className="space-y-1 text-xs text-white">
+            <ul className="space-y-1 text-xs text-on-surface dark:text-white font-medium">
               {strongSubjects.map((s) => (
                 <li key={s}>· {s}</li>
               ))}
@@ -484,12 +504,14 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
           )}
         </div>
 
-        <div className="p-4 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-2">
-          <p className="text-xs font-bold text-rose-300">Weak Subjects</p>
+        <div className="p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-2 shadow-xs">
+          <p className="text-xs font-bold text-error dark:text-rose-400">Weak Subjects</p>
           {(attempt.weakSubjects || []).length === 0 ? (
-            <p className="text-xs text-[#CFCEDD]">No weak subjects flagged below 60%.</p>
+            <p className="text-xs text-on-surface-variant dark:text-slate-400">
+              No weak subjects flagged below 60%.
+            </p>
           ) : (
-            <ul className="space-y-1 text-xs text-white">
+            <ul className="space-y-1 text-xs text-on-surface dark:text-white font-medium">
               {attempt.weakSubjects.map((s) => (
                 <li key={s}>· {s}</li>
               ))}
@@ -497,21 +519,28 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
           )}
         </div>
 
-        <div className="p-4 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-2">
-          <p className="text-xs font-bold text-amber-300">Suggested Chapters for Improvement</p>
+        <div className="p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-2 shadow-xs">
+          <p className="text-xs font-bold text-warning dark:text-amber-400">
+            Suggested Chapters for Improvement
+          </p>
           {suggestedChapters.length === 0 ? (
-            <p className="text-xs text-[#CFCEDD]">All attempted chapters look balanced.</p>
+            <p className="text-xs text-on-surface-variant dark:text-slate-400">
+              All attempted chapters look balanced.
+            </p>
           ) : (
             <div className="space-y-2">
               {suggestedChapters.map((ch) => (
                 <div key={ch.name} className="flex items-center justify-between gap-2 text-xs">
-                  <span className="text-white truncate">
-                    {ch.name} <span className="text-[#B5ADC6] tabular-nums">({ch.accuracy}%)</span>
+                  <span className="text-on-surface dark:text-white truncate font-medium">
+                    {ch.name}{' '}
+                    <span className="text-secondary dark:text-blue-400 font-mono tabular-nums">
+                      ({ch.accuracy}%)
+                    </span>
                   </span>
                   <button
                     type="button"
                     onClick={() => onPracticeWeakTopic(ch.name, 'chapter')}
-                    className="px-2 py-1 rounded-md bg-[#B5ADC6] text-[#0E0713] font-bold text-[11px] shrink-0"
+                    className="px-2 py-1 rounded-md bg-secondary text-on-secondary font-bold text-[11px] hover:bg-primary shrink-0"
                   >
                     Practice
                   </button>
@@ -521,25 +550,25 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
           )}
         </div>
 
-        <div className="p-4 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-2">
-          <p className="text-xs font-bold text-[#B5ADC6] flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5" /> Repeated Mistakes &amp; Speed
+        <div className="p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-2 shadow-xs">
+          <p className="text-xs font-bold text-primary dark:text-blue-300 flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-secondary dark:text-blue-400" /> Repeated Mistakes &amp; Speed
           </p>
-          <p className="text-xs text-[#CFCEDD]">
+          <p className="text-xs text-on-surface-variant dark:text-slate-300">
             Slow questions (&gt;45s / 1.6x avg):{' '}
-            <span className="font-bold text-white tabular-nums">
+            <span className="font-bold text-on-surface dark:text-white font-mono tabular-nums">
               {(attempt.slowQuestionIds || []).length}
             </span>
           </p>
           {repeatedMistakeTopics.length > 0 && (
             <div className="space-y-1.5 pt-1">
-              <p className="text-xs text-amber-200">
+              <p className="text-xs text-warning dark:text-amber-300 font-medium">
                 Repeated mistakes: {repeatedMistakeTopics.slice(0, 3).join(', ')}
               </p>
               <button
                 type="button"
                 onClick={() => onPracticeWeakTopic(repeatedMistakeTopics[0], 'topic')}
-                className="px-2.5 py-1 rounded-md bg-[#675D85] text-white text-[11px] font-semibold hover:bg-[#7C7397]"
+                className="px-2.5 py-1 rounded-md bg-primary text-on-primary text-[11px] font-semibold hover:bg-primary-container"
               >
                 Drill {repeatedMistakeTopics[0]}
               </button>
@@ -549,39 +578,49 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
       </div>
 
       {/* Chapter & Topic Table */}
-      <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#514871] flex items-center justify-between">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <Target className="w-4 h-4 text-[#B5ADC6]" /> Chapter &amp; Topic Accuracy Breakdown
+      <div className="rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 overflow-hidden shadow-sm">
+        <div className="px-5 py-4 border-b border-outline-variant/60 dark:border-slate-800 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-primary dark:text-white flex items-center gap-2">
+            <Target className="w-4 h-4 text-secondary dark:text-blue-400" /> Chapter &amp; Topic Accuracy Breakdown
           </h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs sm:text-sm">
-            <thead className="bg-[#0E0713]/60 text-[#B5ADC6]">
+            <thead className="bg-surface-container-low dark:bg-slate-800 text-on-surface-variant dark:text-slate-300">
               <tr>
-                <th className="text-left px-4 py-3">Chapter</th>
-                <th className="text-right px-4 py-3">Questions</th>
-                <th className="text-right px-4 py-3">Correct</th>
-                <th className="text-right px-4 py-3">Incorrect</th>
-                <th className="text-right px-4 py-3">Accuracy</th>
-                <th className="text-right px-4 py-3">Avg Time</th>
-                <th className="text-right px-4 py-3">Action</th>
+                <th className="text-left px-4 py-3 font-semibold">Chapter</th>
+                <th className="text-right px-4 py-3 font-semibold">Questions</th>
+                <th className="text-right px-4 py-3 font-semibold">Correct</th>
+                <th className="text-right px-4 py-3 font-semibold">Incorrect</th>
+                <th className="text-right px-4 py-3 font-semibold">Accuracy</th>
+                <th className="text-right px-4 py-3 font-semibold">Avg Time</th>
+                <th className="text-right px-4 py-3 font-semibold">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#514871]">
+            <tbody className="divide-y divide-outline-variant/50 dark:divide-slate-800">
               {(attempt.chapterBreakdown || []).map((row) => (
-                <tr key={row.name}>
-                  <td className="px-4 py-3 font-medium text-white">{row.name}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-[#CFCEDD]">{row.total}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-emerald-300">{row.correct}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-rose-300">{row.incorrect}</td>
-                  <td className="px-4 py-3 text-right tabular-nums font-bold text-white">{row.accuracy}%</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-[#CFCEDD]">{row.avgTimeSeconds}s</td>
+                <tr key={row.name} className="hover:bg-surface-container-low/50 dark:hover:bg-slate-800/40">
+                  <td className="px-4 py-3 font-medium text-on-surface dark:text-white">{row.name}</td>
+                  <td className="px-4 py-3 text-right font-mono tabular-nums text-on-surface-variant dark:text-slate-300">
+                    {row.total}
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono tabular-nums font-semibold text-success dark:text-emerald-400">
+                    {row.correct}
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono tabular-nums font-semibold text-error dark:text-rose-400">
+                    {row.incorrect}
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono tabular-nums font-bold text-on-surface dark:text-white">
+                    {row.accuracy}%
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono tabular-nums text-on-surface-variant dark:text-slate-300">
+                    {row.avgTimeSeconds}s
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <button
                       type="button"
                       onClick={() => onPracticeWeakTopic(row.name, 'chapter')}
-                      className="px-2.5 py-1 rounded-md bg-[#675D85] text-white text-xs font-semibold hover:bg-[#7C7397]"
+                      className="px-2.5 py-1 rounded-md bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary transition-colors"
                     >
                       Retake Chapter
                     </button>
@@ -594,10 +633,12 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
       </div>
 
       {/* Question-by-Question Solution Review */}
-      <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 p-5 space-y-4">
+      <div className="rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 p-5 space-y-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-sm font-bold text-white">Solution Review &amp; Explanations</h3>
-          <div className="flex flex-wrap gap-1 p-1 bg-[#1C0E29] rounded-lg">
+          <h3 className="text-sm font-bold text-primary dark:text-white">
+            Solution Review &amp; Explanations
+          </h3>
+          <div className="flex flex-wrap gap-1 p-1 bg-surface-container-low dark:bg-slate-800 rounded-lg border border-outline-variant dark:border-slate-700">
             {[
               ['all', 'All Questions'],
               ['incorrect', 'Incorrect'],
@@ -608,8 +649,10 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
                 key={id}
                 type="button"
                 onClick={() => setSolutionFilter(id as any)}
-                className={`px-3 py-1 rounded-md text-xs font-medium ${
-                  solutionFilter === id ? 'bg-[#B5ADC6] text-[#0E0713] font-bold' : 'text-[#CFCEDD]'
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  solutionFilter === id
+                    ? 'bg-primary text-on-primary font-bold'
+                    : 'text-on-surface-variant dark:text-slate-300'
                 }`}
               >
                 {label}
@@ -625,29 +668,29 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
             return (
               <div
                 key={item.qId}
-                className="p-4 rounded-xl bg-[#1C0E29]/80 border border-[#514871] space-y-3"
+                className="p-4 rounded-xl bg-surface-container-low/50 dark:bg-slate-800/50 border border-outline-variant dark:border-slate-700 space-y-3"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <span className="font-bold text-[#B5ADC6]">
+                  <span className="font-bold text-secondary dark:text-blue-400">
                     Q{item.idx} · {item.q.subject} · {item.q.topic} ·{' '}
                     <span className="uppercase">{item.q.difficulty === 'medium' ? 'moderate' : item.q.difficulty}</span>
                   </span>
-                  <div className="flex items-center gap-3 tabular-nums">
-                    <span className="text-[#CFCEDD]">Time: {item.timeSec}s</span>
+                  <div className="flex items-center gap-3 font-mono tabular-nums">
+                    <span className="text-on-surface-variant dark:text-slate-300">Time: {item.timeSec}s</span>
                     {item.isCorrect ? (
-                      <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold">
+                      <span className="inline-flex items-center gap-1 text-success dark:text-emerald-400 font-semibold">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Correct
                       </span>
                     ) : item.isIncorrect ? (
-                      <span className="inline-flex items-center gap-1 text-rose-400 font-semibold">
+                      <span className="inline-flex items-center gap-1 text-error dark:text-rose-400 font-semibold">
                         <XCircle className="w-3.5 h-3.5" /> Incorrect
                       </span>
                     ) : (
-                      <span className="text-[#9993AC]">Unanswered</span>
+                      <span className="text-outline dark:text-slate-400">Unanswered</span>
                     )}
                   </div>
                 </div>
-                <p className="text-sm text-white font-medium">{item.q.questionText}</p>
+                <p className="text-sm text-on-surface dark:text-white font-medium">{item.q.questionText}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {item.q.options.map((opt, oi) => {
                     const isRight = oi === item.key!.correctIndex;
@@ -657,10 +700,10 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
                         key={oi}
                         className={`p-2.5 rounded-lg border ${
                           isRight
-                            ? 'bg-emerald-950/60 border-emerald-500 text-emerald-100'
+                            ? 'bg-success-container/70 dark:bg-emerald-950/60 border-success text-on-success-container dark:text-emerald-100 font-medium'
                             : isPicked
-                              ? 'bg-rose-950/60 border-rose-500 text-rose-100'
-                              : 'bg-[#3D2C56]/40 border-[#514871] text-[#CFCEDD]'
+                              ? 'bg-error-container/70 dark:bg-rose-950/60 border-error text-on-error-container dark:text-rose-100 font-medium'
+                              : 'bg-surface-container-lowest dark:bg-slate-900 border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300'
                         }`}
                       >
                         <span className="font-bold mr-1.5">{letters[oi]}.</span>
@@ -669,8 +712,8 @@ export const PerformanceAnalysisView: React.FC<PerformanceAnalysisViewProps> = (
                     );
                   })}
                 </div>
-                <div className="p-3 rounded-lg bg-[#3D2C56]/60 text-xs text-[#CFCEDD] leading-relaxed">
-                  <span className="font-semibold text-white">Explanation: </span>
+                <div className="p-3 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant/60 dark:border-slate-700 text-xs text-on-surface-variant dark:text-slate-300 leading-relaxed">
+                  <span className="font-semibold text-primary dark:text-white">Explanation: </span>
                   {item.key.explanation}
                 </div>
               </div>

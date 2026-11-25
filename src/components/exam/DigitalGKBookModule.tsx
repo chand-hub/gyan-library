@@ -112,10 +112,12 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
 
   if (!activeBook) {
     return (
-      <div className="p-8 rounded-xl bg-[#3D2C56] border border-[#7C7397] text-center space-y-2">
-        <BookOpen className="w-8 h-8 text-[#B5ADC6] mx-auto" />
-        <p className="text-sm font-semibold text-white">Digital GK Books Not Initialized Yet</p>
-        <p className="text-xs text-[#CFCEDD]">
+      <div className="p-8 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 text-center space-y-2 shadow-sm">
+        <BookOpen className="w-8 h-8 text-secondary mx-auto" />
+        <p className="text-sm font-semibold text-on-surface dark:text-white">
+          Digital GK Books Not Initialized Yet
+        </p>
+        <p className="text-xs text-on-surface-variant dark:text-slate-300">
           Once initialized by the administrator, all 11 competitive study books appear here.
         </p>
       </div>
@@ -126,17 +128,19 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold text-[#B5ADC6]">Digital Library Archive</p>
-          <h2 className="font-display text-2xl font-bold text-white">
+          <p className="text-xs font-bold uppercase tracking-wider text-secondary dark:text-blue-400">
+            Digital Library Archive
+          </p>
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
             Digital GK Books &amp; Chapter Notes
           </h2>
-          <p className="text-xs text-[#CFCEDD]">
+          <p className="text-xs text-on-surface-variant dark:text-slate-300">
             11 competitive subject handbooks with instant bookmarks, chapter quizzes, and PDF export.
           </p>
         </div>
 
         <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 text-[#B5ADC6] absolute left-3 top-2.5" />
+          <Search className="w-4 h-4 text-outline dark:text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
             value={search}
@@ -145,7 +149,7 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
               setSelectedChapterIdx(0);
             }}
             placeholder="Search inside book chapters..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg bg-[#0E0713] border border-[#7C7397] text-xs text-white placeholder-[#9993AC]"
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-container-lowest dark:bg-slate-950 border border-outline-variant dark:border-slate-700 text-xs text-on-surface dark:text-white placeholder-outline dark:placeholder-slate-400"
           />
         </div>
       </div>
@@ -164,8 +168,8 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
               }}
               className={`px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${
                 active
-                  ? 'bg-[#B5ADC6] border-[#B5ADC6] text-[#0E0713]'
-                  : 'bg-[#3D2C56] border-[#7C7397]/60 text-white hover:bg-[#514871]'
+                  ? 'bg-primary border-primary text-on-primary shadow-xs'
+                  : 'bg-surface-container-lowest dark:bg-slate-900 border-outline-variant dark:border-slate-700 text-on-surface dark:text-slate-200 hover:bg-surface-container-low dark:hover:bg-slate-800'
               }`}
             >
               {book.subject}
@@ -178,15 +182,19 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Chapter List */}
         <aside className="lg:col-span-4 space-y-4">
-          <div className="p-4 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-3">
-            <h3 className="font-display text-base font-bold text-white">{activeBook.title}</h3>
-            <p className="text-xs text-[#CFCEDD]">{activeBook.description}</p>
+          <div className="p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-3 shadow-sm">
+            <h3 className="font-display text-base font-bold text-primary dark:text-white">
+              {activeBook.title}
+            </h3>
+            <p className="text-xs text-on-surface-variant dark:text-slate-300">
+              {activeBook.description}
+            </p>
             {activeBook.pdfDownloadAllowed && (
               <button
                 type="button"
                 disabled={downloadingPdf}
                 onClick={handleDownloadPdf}
-                className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white"
+                className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-secondary text-on-secondary text-xs font-bold hover:bg-primary transition-colors shadow-xs"
               >
                 <Download className="w-3.5 h-3.5" />
                 {downloadingPdf ? 'Preparing PDF...' : 'Download Authorized PDF'}
@@ -194,8 +202,8 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
             )}
           </div>
 
-          <div className="p-3 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-1.5">
-            <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#B5ADC6]">
+          <div className="p-3 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-1.5 shadow-sm">
+            <p className="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-secondary dark:text-blue-400">
               Chapters ({filteredChapters.length})
             </p>
             {filteredChapters.map((ch, idx) => (
@@ -205,8 +213,8 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
                 onClick={() => setSelectedChapterIdx(idx)}
                 className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-colors ${
                   activeChapter?.id === ch.id
-                    ? 'bg-[#675D85] text-white font-bold'
-                    : 'text-[#CFCEDD] hover:bg-[#514871]'
+                    ? 'bg-secondary-container/70 dark:bg-blue-950/60 text-primary dark:text-white font-bold border border-secondary/30'
+                    : 'text-on-surface-variant dark:text-slate-300 hover:bg-surface-container-low dark:hover:bg-slate-800'
                 }`}
               >
                 {idx + 1}. {ch.title}
@@ -215,15 +223,17 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
           </div>
 
           {bookmarks.length > 0 && (
-            <div className="p-4 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-2">
-              <p className="text-xs font-bold text-[#B5ADC6]">Saved Bookmarks ({bookmarks.length})</p>
+            <div className="p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-2 shadow-sm">
+              <p className="text-xs font-bold text-primary dark:text-blue-300">
+                Saved Bookmarks ({bookmarks.length})
+              </p>
               <div className="space-y-1">
                 {bookmarks.slice(0, 5).map((bm) => (
                   <button
                     key={bm.id}
                     type="button"
                     onClick={() => setSelectedSubject(bm.subject)}
-                    className="block w-full text-left text-xs text-white hover:underline truncate"
+                    className="block w-full text-left text-xs text-secondary dark:text-blue-400 hover:underline truncate font-medium"
                   >
                     · {bm.subject}: {bm.chapterTitle}
                   </button>
@@ -236,13 +246,13 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
         {/* Chapter Reading Pane */}
         <div className="lg:col-span-8">
           {activeChapter ? (
-            <div className="p-6 sm:p-7 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-5">
-              <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-[#514871]">
+            <div className="p-6 sm:p-7 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 space-y-5 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-outline-variant/60 dark:border-slate-800">
                 <div>
-                  <p className="text-xs text-[#B5ADC6] font-semibold">
+                  <p className="text-xs text-secondary dark:text-blue-400 font-semibold">
                     {activeBook.subject} · Linked Topic: {activeChapter.linkedTopic}
                   </p>
-                  <h3 className="font-display text-xl sm:text-2xl font-bold text-white mt-1">
+                  <h3 className="font-display text-xl sm:text-2xl font-bold text-primary dark:text-white mt-1">
                     {activeChapter.title}
                   </h3>
                 </div>
@@ -252,10 +262,10 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
                     <button
                       type="button"
                       onClick={handleToggleBookmark}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold ${
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
                         isBookmarked
-                          ? 'bg-[#B5ADC6] border-[#B5ADC6] text-[#0E0713]'
-                          : 'bg-[#1C0E29] border-[#7C7397] text-white'
+                          ? 'bg-primary border-primary text-on-primary'
+                          : 'bg-surface-container-low dark:bg-slate-800 border-outline-variant dark:border-slate-700 text-on-surface dark:text-white hover:bg-surface-container'
                       }`}
                     >
                       <Bookmark className="w-3.5 h-3.5" />
@@ -281,7 +291,7 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
                           isTimed: false,
                         })
                       }
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-on-secondary text-xs font-bold hover:bg-primary transition-colors shadow-xs"
                     >
                       <Play className="w-3.5 h-3.5" /> Practice MCQs ({linkedQuestions.length})
                     </button>
@@ -289,23 +299,25 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-[#1C0E29]/70 border border-[#514871] text-sm font-medium text-[#CFCEDD]">
+              <div className="p-4 rounded-xl bg-surface-container-low dark:bg-slate-800 border border-outline-variant/60 dark:border-slate-700 text-sm font-medium text-on-surface-variant dark:text-slate-200">
                 {activeChapter.summary}
               </div>
 
-              <div className="text-sm sm:text-base leading-relaxed text-white whitespace-pre-line">
+              <div className="text-sm sm:text-base leading-relaxed text-on-surface dark:text-slate-100 whitespace-pre-line">
                 {activeChapter.contentText}
               </div>
 
               {activeChapter.keyFacts && activeChapter.keyFacts.length > 0 && (
-                <div className="p-5 rounded-xl bg-[#514871]/50 border border-[#7C7397]/60 space-y-2.5">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#B5ADC6]">
+                <div className="p-5 rounded-xl bg-secondary-container/40 dark:bg-slate-800/80 border border-secondary/30 dark:border-slate-700 space-y-2.5">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary dark:text-blue-300">
                     High-Yield Exam Takeaways
                   </h4>
-                  <ul className="space-y-2 text-xs sm:text-sm text-white">
+                  <ul className="space-y-2 text-xs sm:text-sm text-on-surface dark:text-slate-100">
                     {activeChapter.keyFacts.map((fact, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <span className="font-mono text-[#B5ADC6] font-bold">0{idx + 1}.</span>
+                        <span className="font-mono text-secondary dark:text-blue-400 font-bold">
+                          0{idx + 1}.
+                        </span>
                         <span>{fact}</span>
                       </li>
                     ))}
@@ -314,7 +326,7 @@ export const DigitalGKBookModule: React.FC<DigitalGKBookModuleProps> = ({
               )}
             </div>
           ) : (
-            <div className="p-8 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 text-center text-xs text-[#CFCEDD]">
+            <div className="p-8 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 text-center text-xs text-on-surface-variant dark:text-slate-300">
               No chapters match your search keyword.
             </div>
           )}

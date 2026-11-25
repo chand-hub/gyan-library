@@ -7,7 +7,7 @@ import {
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
-import { Download, Plus, Search, Upload, UserCheck, X } from 'lucide-react';
+import { Download, Plus, Search, Upload, X } from 'lucide-react';
 import { db, logAuditEvent } from '../../lib/firebase';
 import { downloadCsv } from '../../lib/receiptPdf';
 import {
@@ -316,14 +316,17 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
     }
   };
 
+  const inputCls =
+    'w-full px-3 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none';
+
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 text-on-surface dark:text-slate-100">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl font-bold text-white">
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
             Student Directory ({filtered.length})
           </h2>
-          <p className="text-xs text-[#CFCEDD]">
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
             Search by VL ID, name, mobile, or email; inspect attendance, dues, and seat allocation.
           </p>
         </div>
@@ -347,7 +350,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
                 ])
               )
             }
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#7C7397]/60 bg-[#3D2C56] text-xs font-semibold text-white hover:bg-[#514871]"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-800 text-xs font-semibold text-primary dark:text-white hover:bg-surface-container-low cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" /> Export CSV
           </button>
@@ -356,14 +359,14 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setShowCsvModal(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#7C7397]/60 bg-[#3D2C56] text-xs font-semibold text-white hover:bg-[#514871]"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-800 text-xs font-semibold text-primary dark:text-white hover:bg-surface-container-low cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5" /> Bulk CSV Import
               </button>
               <button
                 type="button"
                 onClick={openAddModal}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold hover:bg-white"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
               >
                 <Plus className="w-4 h-4" /> Add Student
               </button>
@@ -375,25 +378,25 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-[#9993AC] absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-outline absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search VL2026001, student name, mobile..."
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white placeholder-[#9993AC]"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-900 text-on-surface dark:text-white placeholder:text-outline focus:border-secondary focus:outline-none"
           />
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1 p-1 rounded bg-surface-container-low dark:bg-slate-900 border border-outline-variant dark:border-slate-800">
           {(['ALL', 'active', 'inactive', 'blocked'] as const).map((st) => (
             <button
               key={st}
               type="button"
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold capitalize ${
+              className={`px-3 py-1.5 rounded text-xs font-semibold capitalize cursor-pointer transition-colors ${
                 statusFilter === st
-                  ? 'bg-[#B5ADC6] text-[#0E0713]'
-                  : 'bg-[#3D2C56] text-[#CFCEDD] hover:text-white'
+                  ? 'bg-primary text-on-primary'
+                  : 'text-on-surface-variant dark:text-slate-300 hover:bg-surface-container'
               }`}
             >
               {st === 'ALL' ? 'All' : st}
@@ -403,54 +406,56 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
       </div>
 
       {/* Table */}
-      <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-x-auto">
+      <div className="rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="bg-[#0E0713]/60 text-xs uppercase text-[#CFCEDD]">
+          <thead className="bg-surface-container-low dark:bg-slate-800/80 text-xs uppercase text-on-surface-variant dark:text-slate-300 border-b border-outline-variant dark:border-slate-700">
             <tr>
-              <th className="px-4 py-3">Student ID</th>
-              <th className="px-4 py-3">Name & Contact</th>
-              <th className="px-4 py-3">Seat</th>
-              <th className="px-4 py-3">Membership</th>
-              <th className="px-4 py-3">Account</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th className="px-4 py-3 font-semibold">Student ID</th>
+              <th className="px-4 py-3 font-semibold">Name &amp; Contact</th>
+              <th className="px-4 py-3 font-semibold">Seat</th>
+              <th className="px-4 py-3 font-semibold">Membership</th>
+              <th className="px-4 py-3 font-semibold">Account</th>
+              <th className="px-4 py-3 text-right font-semibold">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#7C7397]/25">
+          <tbody className="divide-y divide-outline-variant/60 dark:divide-slate-800">
             {filtered.map((s) => (
-              <tr key={s.id} className="hover:bg-[#514871]/40">
-                <td className="px-4 py-3 font-mono text-xs font-bold text-[#B5ADC6]">
+              <tr key={s.id} className="hover:bg-surface-container-low/60 dark:hover:bg-slate-800/50">
+                <td className="px-4 py-3 font-mono text-xs font-bold text-secondary dark:text-blue-400">
                   {s.studentCode}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="font-semibold text-xs text-white">{s.fullName}</div>
-                  <div className="text-[11px] text-[#CFCEDD]">
+                  <div className="font-semibold text-xs text-on-surface dark:text-white">{s.fullName}</div>
+                  <div className="text-[11px] text-on-surface-variant dark:text-slate-400">
                     {s.mobile} · {s.email}
                   </div>
                 </td>
-                <td className="px-4 py-3 font-mono text-xs font-semibold text-white">
+                <td className="px-4 py-3 font-mono text-xs font-semibold text-primary dark:text-white">
                   {s.seatCode || '—'}
                 </td>
                 <td className="px-4 py-3 text-xs">
-                  <div className="text-white">{s.membershipPlanName || 'No Active Plan'}</div>
-                  <div className="text-[11px] text-[#CFCEDD] capitalize">
+                  <div className="font-medium text-on-surface dark:text-white">{s.membershipPlanName || 'No Active Plan'}</div>
+                  <div className="text-[11px] text-on-surface-variant dark:text-slate-400 capitalize">
                     {s.membershipStatus}
                     {s.membershipExpiry ? ` · Exp ${s.membershipExpiry}` : ''}
                   </div>
                 </td>
                 <td className="px-4 py-3 text-xs font-semibold capitalize">
                   <span
-                    className={
-                      s.status === 'active' ? 'text-emerald-300' : 'text-red-300'
-                    }
+                    className={`inline-flex px-2 py-0.5 rounded-full text-[11px] ${
+                      s.status === 'active'
+                        ? 'bg-success-container text-on-success-container'
+                        : 'bg-error-container text-on-error-container'
+                    }`}
                   >
                     {s.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                <td className="px-4 py-3 text-right space-x-2.5 whitespace-nowrap">
                   <button
                     type="button"
                     onClick={() => setViewingStudent(s)}
-                    className="text-xs font-semibold text-[#B5ADC6] hover:text-white hover:underline"
+                    className="text-xs font-semibold text-secondary hover:text-primary hover:underline cursor-pointer"
                   >
                     Profile
                   </button>
@@ -459,7 +464,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
                       <button
                         type="button"
                         onClick={() => openEditModal(s)}
-                        className="text-xs font-semibold text-[#CFCEDD] hover:text-white hover:underline"
+                        className="text-xs font-semibold text-on-surface-variant hover:text-primary hover:underline cursor-pointer"
                       >
                         Edit
                       </button>
@@ -468,7 +473,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
                         onClick={() =>
                           handleToggleBlock(s, s.status === 'active' ? 'blocked' : 'active')
                         }
-                        className="text-xs font-semibold text-red-300 hover:underline"
+                        className="text-xs font-semibold text-error hover:underline cursor-pointer"
                       >
                         {s.status === 'active' ? 'Block' : 'Reactivate'}
                       </button>
@@ -483,44 +488,44 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
 
       {/* View Full Student Profile Modal */}
       {viewingStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-          <div className="w-full max-w-2xl bg-[#3D2C56] rounded-xl border border-[#7C7397] p-6 space-y-5 max-h-[90vh] overflow-y-auto text-white">
-            <div className="flex items-start justify-between border-b border-[#7C7397]/40 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-2xl bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-6 space-y-5 max-h-[90vh] overflow-y-auto text-on-surface dark:text-slate-100 shadow-2xl">
+            <div className="flex items-start justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
               <div>
-                <h3 className="font-display text-xl font-bold text-white">
+                <h3 className="font-display text-xl font-bold text-primary dark:text-white">
                   {viewingStudent.fullName}
                 </h3>
-                <p className="font-mono text-xs text-[#CFCEDD]">
+                <p className="font-mono text-xs text-on-surface-variant dark:text-slate-400">
                   {viewingStudent.studentCode} · Seat {viewingStudent.seatCode || 'Unassigned'} ·{' '}
                   {viewingStudent.membershipPlanName || 'No Plan'}
                 </p>
               </div>
-              <button type="button" onClick={() => setViewingStudent(null)}>
-                <X className="w-5 h-5 text-[#CFCEDD] hover:text-white" />
+              <button type="button" onClick={() => setViewingStudent(null)} className="p-1 text-on-surface-variant hover:text-primary cursor-pointer">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs text-[#CFCEDD]">
+            <div className="grid grid-cols-2 gap-3 text-xs text-on-surface dark:text-slate-200">
               <div>
-                <span className="text-[#9993AC]">Mobile:</span> {viewingStudent.mobile}
+                <span className="text-on-surface-variant dark:text-slate-400">Mobile:</span> {viewingStudent.mobile}
               </div>
               <div>
-                <span className="text-[#9993AC]">Email:</span> {viewingStudent.email}
+                <span className="text-on-surface-variant dark:text-slate-400">Email:</span> {viewingStudent.email}
               </div>
               <div>
-                <span className="text-[#9993AC]">Father&apos;s Name:</span> {viewingStudent.fatherName}
+                <span className="text-on-surface-variant dark:text-slate-400">Father&apos;s Name:</span> {viewingStudent.fatherName}
               </div>
               <div>
-                <span className="text-[#9993AC]">Emergency Contact:</span>{' '}
+                <span className="text-on-surface-variant dark:text-slate-400">Emergency Contact:</span>{' '}
                 {viewingStudent.emergencyContact}
               </div>
               <div className="col-span-2">
-                <span className="text-[#9993AC]">Address:</span> {viewingStudent.address}
+                <span className="text-on-surface-variant dark:text-slate-400">Address:</span> {viewingStudent.address}
               </div>
             </div>
 
             <div>
-              <h4 className="text-xs font-semibold uppercase text-[#B5ADC6] mb-2">
+              <h4 className="text-xs font-semibold uppercase text-secondary dark:text-blue-400 mb-2">
                 Recent Attendance ({attendance.filter((a) => a.studentDocId === viewingStudent.id).length})
               </h4>
               <div className="space-y-1 max-h-32 overflow-y-auto text-xs">
@@ -530,7 +535,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
                   .map((a) => (
                     <div
                       key={a.id}
-                      className="flex justify-between py-1 border-b border-[#7C7397]/30"
+                      className="flex justify-between py-1.5 border-b border-outline-variant/50 dark:border-slate-800"
                     >
                       <span className="font-mono">{a.date}</span>
                       <span>
@@ -542,8 +547,8 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
             </div>
 
             <div>
-              <h4 className="text-xs font-semibold uppercase text-[#B5ADC6] mb-2">
-                Payments & Dues ({payments.filter((p) => p.studentDocId === viewingStudent.id).length})
+              <h4 className="text-xs font-semibold uppercase text-secondary dark:text-blue-400 mb-2">
+                Payments &amp; Dues ({payments.filter((p) => p.studentDocId === viewingStudent.id).length})
               </h4>
               <div className="space-y-1 max-h-32 overflow-y-auto text-xs">
                 {payments
@@ -551,7 +556,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
                   .map((p) => (
                     <div
                       key={p.id}
-                      className="flex justify-between py-1 border-b border-[#7C7397]/30"
+                      className="flex justify-between py-1.5 border-b border-outline-variant/50 dark:border-slate-800"
                     >
                       <span className="font-mono">
                         {p.receiptNumber} · {p.planName}
@@ -569,88 +574,88 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
 
       {/* Add / Edit Student Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-          <div className="w-full max-w-lg bg-[#3D2C56] rounded-xl border border-[#7C7397] p-6 space-y-4 max-h-[90vh] overflow-y-auto text-white">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-6 space-y-4 max-h-[90vh] overflow-y-auto text-on-surface dark:text-slate-100 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
+              <h3 className="font-display text-lg font-bold text-primary dark:text-white">
                 {editingStudent ? `Edit ${editingStudent.studentCode}` : 'Register New Student'}
               </h3>
-              <button type="button" onClick={() => setShowAddModal(false)}>
-                <X className="w-5 h-5 text-[#CFCEDD]" />
+              <button type="button" onClick={() => setShowAddModal(false)} className="text-on-surface-variant hover:text-primary cursor-pointer">
+                <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleSaveStudent} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Full Name</label>
+                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Full Name</label>
                   <input
                     type="text"
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className={inputCls}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Mobile</label>
+                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Mobile</label>
                   <input
                     type="tel"
                     required
                     value={mobile}
                     onChange={(e) => setMobile(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className={inputCls}
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Email</label>
+                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Email</label>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className={inputCls}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Father&apos;s Name</label>
+                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Father&apos;s Name</label>
                   <input
                     type="text"
                     required
                     value={fatherName}
                     onChange={(e) => setFatherName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className={inputCls}
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Address</label>
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Address</label>
                 <input
                   type="text"
                   required
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                  className={inputCls}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Emergency Contact</label>
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Emergency Contact</label>
                 <input
                   type="tel"
                   required
                   value={emergencyContact}
                   onChange={(e) => setEmergencyContact(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                  className={inputCls}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Assign Study Seat</label>
+                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Assign Study Seat</label>
                   <select
                     value={assignSeatId}
                     onChange={(e) => setAssignSeatId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className={inputCls}
                   >
                     <option value="">Leave Unassigned</option>
                     {seats
@@ -663,11 +668,11 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Assign / Renew Plan</label>
+                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Assign / Renew Plan</label>
                   <select
                     value={assignPlanId}
                     onChange={(e) => setAssignPlanId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className={inputCls}
                   >
                     <option value="">No Membership Change</option>
                     {plans.filter((p) => p.active).map((p) => (
@@ -680,7 +685,7 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
               </div>
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold hover:bg-white"
+                className="w-full py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
               >
                 {editingStudent ? 'Save Student Changes' : 'Register Student'}
               </button>
@@ -691,17 +696,17 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
 
       {/* Bulk CSV Import Modal */}
       {showCsvModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-          <div className="w-full max-w-lg bg-[#3D2C56] rounded-xl border border-[#7C7397] p-6 space-y-4 text-white">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-6 space-y-4 text-on-surface dark:text-slate-100 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
+              <h3 className="font-display text-lg font-bold text-primary dark:text-white">
                 Bulk Student CSV Import
               </h3>
-              <button type="button" onClick={() => setShowCsvModal(false)}>
-                <X className="w-5 h-5 text-[#CFCEDD]" />
+              <button type="button" onClick={() => setShowCsvModal(false)} className="text-on-surface-variant hover:text-primary cursor-pointer">
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-xs text-[#CFCEDD]">
+            <p className="text-xs text-on-surface-variant dark:text-slate-400">
               Paste up to 50 comma-separated student records per batch. Student IDs (VL2026XXXX) are auto-generated.
             </p>
             <form onSubmit={handleBulkCsvImport} className="space-y-3">
@@ -710,12 +715,12 @@ export const StudentsPanel: React.FC<StudentsPanelProps> = ({
                 required
                 value={csvText}
                 onChange={(e) => setCsvText(e.target.value)}
-                className="w-full p-3 font-mono text-xs rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+                className="w-full p-3 font-mono text-xs rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white"
               />
               <button
                 type="submit"
                 disabled={importingCsv}
-                className="w-full py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold disabled:opacity-50"
+                className="w-full py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary disabled:opacity-50 cursor-pointer"
               >
                 {importingCsv ? 'Importing Batch...' : 'Import Student CSV'}
               </button>

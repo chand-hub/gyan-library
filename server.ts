@@ -27,6 +27,10 @@ import {
   saveJobCheckpoint,
   serializeJobSnapshot,
 } from './server/pdfImportEngine.ts';
+import {
+  FeeWhatsAppEngine,
+  getMetaWhatsAppConfig,
+} from './server/feeWhatsAppEngine.ts';
 
 dotenv.config();
 
@@ -45,10 +49,7 @@ interface AuthenticatedRequest extends Request {
 
 function isHmrEnabled(): boolean {
   if (process.env.DISABLE_HMR === 'true') return false;
-  if (process.env.ENABLE_HMR === 'true') return true;
-  const isCloudRunPreview =
-    Boolean(process.env.K_SERVICE) || String(process.env.APP_URL || '').includes('.run.app');
-  return !isCloudRunPreview;
+  return true;
 }
 
 // =========================================================================
@@ -480,10 +481,8 @@ function getRazorpayStatus() {
 }
 
 function getNotificationProviderStatus() {
-  const whatsappConfigured = Boolean(
-    (process.env.WHATSAPP_API_TOKEN || '').trim() &&
-      (process.env.WHATSAPP_PHONE_NUMBER_ID || '').trim()
-  );
+  const waCfg = getMetaWhatsAppConfig();
+  const whatsappConfigured = waCfg.configured;
   const emailConfigured = Boolean(
     (process.env.SMTP_HOST || '').trim() &&
       (process.env.SMTP_USER || '').trim() &&
@@ -497,6 +496,8 @@ function getNotificationProviderStatus() {
   };
 }
 
+const feeWhatsAppEngine = new FeeWhatsAppEngine();
+
 async function startServer() {
   ensureTmpDir();
   const restoredJobs = loadPersistedImportJobs(JOBS_CHECKPOINT_DIR, importJobs);
@@ -507,7 +508,14 @@ async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
 
   app.set('trust proxy', 1);
-  app.use(express.json({ limit: '2mb' }));
+  app.use(
+    express.json({
+      limit: '2mb',
+      verify: (req: any, _res, buf) => {
+        req.rawBody = buf;
+      },
+    })
+  );
 
   // Basic security headers (compatible with AI Studio iframe)
   app.use((_req, res, next) => {
@@ -839,21 +847,25 @@ ${urls
     }
 
     if (channel === 'whatsapp') {
-      const token = (process.env.WHATSAPP_API_TOKEN || '').trim();
-      const phoneId = (process.env.WHATSAPP_PHONE_NUMBER_ID || '').trim();
-      const waRes = await fetch(`https://graph.facebook.com/v20.0/${encodeURIComponent(phoneId)}/messages`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: recipient.replace(/[^0-9]/g, ''),
-          type: 'text',
-          text: { body: `${title ? title + ': ' : ''}${message}` },
-        }),
-      });
+      const waCfg = getMetaWhatsAppConfig();
+      const waRes = await fetch(
+        `https://graph.facebook.com/${encodeURIComponent(waCfg.apiVersion)}/${encodeURIComponent(
+          waCfg.phoneNumberId
+        )}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${waCfg.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: recipient.replace(/[^0-9]/g, ''),
+            type: 'text',
+            text: { body: `${title ? title + ': ' : ''}${message}` },
+          }),
+        }
+      );
       if (!waRes.ok) {
         return res.status(502).json({ error: 'WhatsApp provider rejected the dispatch request.' });
       }
@@ -864,6 +876,143 @@ ${urls
       queued: true,
       channel,
       note: 'Provider credentials verified; payload handed off to configured gateway.',
+    });
+  });
+
+  // =========================================================================
+  // FEE MANAGEMENT & OFFICIAL META WHATSAPP BUSINESS CLOUD API REMINDERS
+  // =========================================================================
+  app.get('/api/whatsapp/webhook', (req, res) => {
+    const verification = feeWhatsAppEngine.verifyWebhookChallenge(req.query as Record<string, any>);
+    if (verification.verified && verification.challenge) {
+      return res.status(200).type('text/plain').send(verification.challenge);
+    }
+    return res.status(403).json({ error: verification.reason || 'Webhook verification failed.' });
+  });
+
+  app.post('/api/whatsapp/webhook', (req: any, res) => {
+    const sigHeader = String(req.headers['x-hub-signature-256'] || '');
+    if (!feeWhatsAppEngine.verifyWebhookSignature(req.rawBody, sigHeader)) {
+      return res.status(401).json({ error: 'Invalid Meta webhook signature.' });
+    }
+    const result = feeWhatsAppEngine.processWebhookPayload(req.body);
+    return res.status(200).json({ received: true, ...result });
+  });
+
+  app.get('/api/fees/whatsapp-config', requireAuth, requireAdmin, (_req, res) => {
+    return res.json(feeWhatsAppEngine.getSafeConfigSummary());
+  });
+
+  app.get('/api/fees/state', requireAuth, requireAdmin, (_req, res) => {
+    return res.json({
+      ...feeWhatsAppEngine.getState(),
+      whatsappConfig: feeWhatsAppEngine.getSafeConfigSummary(),
+    });
+  });
+
+  app.post('/api/fees/sync', requireAuth, requireAdmin, (req, res) => {
+    const { studentFees, settings } = req.body || {};
+    const state = feeWhatsAppEngine.syncFromFrontend({ studentFees, settings });
+    return res.json({
+      ...state,
+      whatsappConfig: feeWhatsAppEngine.getSafeConfigSummary(),
+    });
+  });
+
+  app.post('/api/fees/upsert-student', requireAuth, requireAdmin, (req, res) => {
+    try {
+      const payload = req.body;
+      if (!payload || typeof payload.id !== 'string' || !payload.id.trim()) {
+        return res.status(400).json({ error: 'Valid student fee record id is required.' });
+      }
+      const saved = feeWhatsAppEngine.upsertStudentFee(payload);
+      return res.json({ studentFee: saved });
+    } catch (err: any) {
+      return res.status(400).json({ error: err?.message || 'Unable to save student fee profile.' });
+    }
+  });
+
+  app.post('/api/fees/record-payment', requireAuth, requireAdmin, (req: AuthenticatedRequest, res) => {
+    try {
+      const { studentFeeId, amountReceived, paymentDate, paymentMethod, transactionRef, notes } =
+        req.body || {};
+      if (typeof studentFeeId !== 'string' || !studentFeeId.trim()) {
+        return res.status(400).json({ error: 'studentFeeId is required.' });
+      }
+      const validMethods = ['Cash', 'UPI', 'Bank Transfer', 'Other'];
+      const method = validMethods.includes(paymentMethod) ? paymentMethod : 'Cash';
+      const result = feeWhatsAppEngine.recordManualPayment({
+        studentFeeId,
+        amountReceived: Number(amountReceived),
+        paymentDate,
+        paymentMethod: method,
+        transactionRef,
+        notes,
+        recordedByUid: req.authUser?.uid || 'admin',
+        recordedByEmail: req.authUser?.email || '',
+      });
+      return res.json({
+        ...result,
+        state: feeWhatsAppEngine.getState(),
+      });
+    } catch (err: any) {
+      return res.status(400).json({ error: err?.message || 'Unable to record fee payment.' });
+    }
+  });
+
+  app.post('/api/fees/student-control', requireAuth, requireAdmin, (req, res) => {
+    try {
+      const { studentFeeId, action } = req.body || {};
+      if (typeof studentFeeId !== 'string' || !studentFeeId.trim()) {
+        return res.status(400).json({ error: 'studentFeeId is required.' });
+      }
+      const allowed = ['pause', 'resume', 'stop', 'opt_out', 'opt_in'];
+      if (!allowed.includes(action)) {
+        return res.status(400).json({ error: 'Unsupported reminder control action.' });
+      }
+      const updated = feeWhatsAppEngine.setStudentReminderControl(studentFeeId, action);
+      return res.json({ studentFee: updated });
+    } catch (err: any) {
+      return res.status(400).json({ error: err?.message || 'Unable to update reminder control.' });
+    }
+  });
+
+  app.post('/api/fees/settings', requireAuth, requireAdmin, (req, res) => {
+    const saved = feeWhatsAppEngine.updateSettings(req.body || {});
+    return res.json({ settings: saved });
+  });
+
+  app.post('/api/fees/send-reminder', requireAuth, requireAdmin, async (req, res) => {
+    const { studentFeeId, idempotencyKey } = req.body || {};
+    if (typeof studentFeeId !== 'string' || !studentFeeId.trim()) {
+      return res.status(400).json({ error: 'studentFeeId is required.' });
+    }
+    const result = await feeWhatsAppEngine.sendWhatsAppReminder({
+      studentFeeId,
+      triggerType: 'manual',
+      idempotencyKey:
+        typeof idempotencyKey === 'string' && idempotencyKey.trim() ? idempotencyKey.trim() : undefined,
+    });
+    const statusCode = result.outcome === 'failed' ? 502 : 200;
+    return res.status(statusCode).json({
+      ...result,
+      state: feeWhatsAppEngine.getState(),
+    });
+  });
+
+  app.post('/api/fees/send-bulk', requireAuth, requireAdmin, async (_req, res) => {
+    const summary = await feeWhatsAppEngine.runScheduledFeeReminders({ triggerType: 'bulk' });
+    return res.json({
+      ...summary,
+      state: feeWhatsAppEngine.getState(),
+    });
+  });
+
+  app.post('/api/fees/run-scheduler', requireAuth, requireAdmin, async (_req, res) => {
+    const summary = await feeWhatsAppEngine.runScheduledFeeReminders({ triggerType: 'scheduled' });
+    return res.json({
+      ...summary,
+      state: feeWhatsAppEngine.getState(),
     });
   });
 
@@ -1767,6 +1916,16 @@ Provide:
     }
   }, DAILY_MS);
 
+  // Independent 24-hour Fee Reminder scheduler loop (evaluates every 5 minutes in Asia/Kolkata without needing browser/admin login)
+  const FEE_SCHEDULER_TICK_MS = 5 * 60 * 1000;
+  setInterval(() => {
+    if (getMetaWhatsAppConfig().configured) {
+      feeWhatsAppEngine
+        .runScheduledFeeReminders({ triggerType: 'scheduled' })
+        .catch((err) => console.error('[FeeScheduler] Periodic evaluation failed:', err));
+    }
+  }, FEE_SCHEDULER_TICK_MS);
+
   // Vite Dev Middleware or Static Production Build
   const httpServer = http.createServer(app);
   const isProd = process.env.NODE_ENV === 'production';
@@ -1776,7 +1935,11 @@ Provide:
     const vite = await createViteServer({
       server: {
         middlewareMode: true,
-        hmr: hmrEnabled ? { server: httpServer } : false,
+        host: '0.0.0.0',
+        port: PORT,
+        allowedHosts: true,
+        ws: { server: httpServer },
+        hmr: hmrEnabled,
         watch: hmrEnabled ? {} : null,
       },
       appType: 'spa',

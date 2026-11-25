@@ -29,12 +29,12 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-6">
-          <div className="max-w-lg w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8">
-            <h2 className="font-display text-2xl font-bold text-[#0F2147] dark:text-white mb-2">
+        <div className="min-h-screen flex items-center justify-center bg-surface dark:bg-slate-950 p-6">
+          <div className="max-w-lg w-full bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 rounded-lg p-8 shadow-sm">
+            <h2 className="font-display text-2xl font-bold text-primary dark:text-white mb-2">
               Unable to load workspace view
             </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mb-6 break-words">
+            <p className="text-sm text-on-surface-variant dark:text-slate-300 mb-6 break-words">
               {friendly}
             </p>
             <button
@@ -43,7 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 this.setState({ hasError: false, message: '' });
                 window.location.reload();
               }}
-              className="px-4 py-2 rounded-lg bg-[#0F2147] text-white text-sm font-medium hover:bg-[#193366] transition-colors"
+              className="px-4 py-2 rounded bg-primary text-on-primary text-sm font-semibold hover:bg-primary-container transition-colors cursor-pointer"
             >
               Reload Application
             </button>

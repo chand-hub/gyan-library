@@ -5,7 +5,6 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
-  setDoc,
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
@@ -62,13 +61,11 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
     const student = studentById[assignStudentId];
     if (!student) return;
 
-    // Prevent two students on the same seat
     if (selectedSeat.status === 'occupied' && selectedSeat.assignedStudentDocId !== student.id) {
       onNotify('err', `Seat ${selectedSeat.seatCode} is already occupied. Release it first.`);
       return;
     }
 
-    // Release student's previous seat if any
     if (student.seatId && student.seatId !== selectedSeat.id) {
       await updateDoc(doc(db, 'seats', student.seatId), {
         status: 'available',
@@ -234,29 +231,32 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
     onNotify('ok', `Booking for ${booking.seatCode} ${decision}.`);
   };
 
+  const inputCls =
+    'w-full px-3 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white';
+
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 text-on-surface dark:text-slate-100">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl font-bold text-white">
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
             Visual Seat Management
           </h2>
-          <p className="text-xs text-[#CFCEDD]">
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
             Click any desk to assign a student, release occupancy, or toggle maintenance.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap gap-1 p-1 bg-[#0E0713] rounded-lg border border-[#7C7397]/40">
+          <div className="flex flex-wrap gap-1 p-1 bg-surface-container-low dark:bg-slate-900 rounded border border-outline-variant dark:border-slate-800">
             {zones.map((z) => (
               <button
                 key={z}
                 type="button"
                 onClick={() => setZoneFilter(z)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded whitespace-nowrap cursor-pointer transition-colors ${
                   zoneFilter === z
-                    ? 'bg-[#B5ADC6] text-[#0E0713] font-semibold'
-                    : 'text-[#CFCEDD] hover:text-white'
+                    ? 'bg-primary text-on-primary'
+                    : 'text-on-surface-variant dark:text-slate-300 hover:bg-surface-container'
                 }`}
               >
                 {z === 'ALL' ? 'All Zones' : z}
@@ -266,7 +266,7 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
           <button
             type="button"
             onClick={() => setShowGenerator((v) => !v)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold hover:bg-white"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" /> Configure Seats
           </button>
@@ -276,31 +276,31 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
       {showGenerator && (
         <form
           onSubmit={handleGenerateRow}
-          className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"
+          className="p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"
         >
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Zone Name</label>
+            <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Zone Name</label>
             <input
               type="text"
               required
               value={genZone}
               onChange={(e) => setGenZone(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+              className={inputCls}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Row Prefix (e.g. E)</label>
+            <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Row Prefix (e.g. E)</label>
             <input
               type="text"
               required
               maxLength={4}
               value={genRow}
               onChange={(e) => setGenRow(e.target.value)}
-              className="w-full px-3 py-2 text-sm font-mono uppercase rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+              className={`${inputCls} font-mono uppercase`}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Seats Count (1–30)</label>
+            <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Seats Count (1–30)</label>
             <input
               type="number"
               min={1}
@@ -308,12 +308,12 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
               required
               value={genCount}
               onChange={(e) => setGenCount(Number(e.target.value))}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+              className={inputCls}
             />
           </div>
           <button
             type="submit"
-            className="py-2 px-4 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold hover:bg-white"
+            className="py-2 px-4 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
           >
             Add Seat Row
           </button>
@@ -321,65 +321,67 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
       )}
 
       {/* Interactive Seat Grid */}
-      <div className="grid grid-cols-4 sm:grid-cols-8 lg:grid-cols-10 gap-2.5">
-        {filteredSeats.map((seat) => {
-          const occupant = seat.assignedStudentDocId ? studentById[seat.assignedStudentDocId] : null;
-          const colors: Record<SeatStatus, string> = {
-            available: 'bg-emerald-950/60 border-emerald-500/70 text-emerald-200',
-            occupied: 'bg-red-950/60 border-red-500/60 text-red-200',
-            reserved: 'bg-amber-950/60 border-amber-500/60 text-amber-200',
-            maintenance: 'bg-[#0E0713]/70 border-[#7C7397]/40 text-[#9993AC]',
-          };
-          return (
-            <button
-              key={seat.id}
-              type="button"
-              onClick={() => {
-                setSelectedSeat(seat);
-                setAssignStudentId(seat.assignedStudentDocId || '');
-              }}
-              className={`p-2.5 rounded-lg border text-left transition-colors hover:opacity-90 ${colors[seat.status]}`}
-            >
-              <div className="font-mono text-xs font-bold tabular-nums">{seat.seatCode}</div>
-              <div className="text-[10px] truncate mt-0.5">
-                {occupant ? occupant.fullName.split(' ')[0] : seat.assignedStudentCode || seat.status}
-              </div>
-            </button>
-          );
-        })}
+      <div className="p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+        <div className="grid grid-cols-4 sm:grid-cols-8 lg:grid-cols-10 gap-2.5">
+          {filteredSeats.map((seat) => {
+            const occupant = seat.assignedStudentDocId ? studentById[seat.assignedStudentDocId] : null;
+            const colors: Record<SeatStatus, string> = {
+              available: 'bg-success-container border-success text-on-success-container',
+              occupied: 'bg-error-container border-error/40 text-on-error-container',
+              reserved: 'bg-warning-container border-warning/40 text-on-warning-container',
+              maintenance: 'bg-surface-variant border-outline-variant text-on-surface-variant',
+            };
+            return (
+              <button
+                key={seat.id}
+                type="button"
+                onClick={() => {
+                  setSelectedSeat(seat);
+                  setAssignStudentId(seat.assignedStudentDocId || '');
+                }}
+                className={`p-2.5 rounded border text-left transition-opacity hover:opacity-85 cursor-pointer ${colors[seat.status]}`}
+              >
+                <div className="font-mono text-xs font-bold tabular-nums">{seat.seatCode}</div>
+                <div className="text-[10px] truncate mt-0.5 font-medium">
+                  {occupant ? occupant.fullName.split(' ')[0] : seat.assignedStudentCode || seat.status}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Pending Seat Booking Requests */}
       {pendingBookings.length > 0 && (
-        <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-[#7C7397]/30">
-            <h3 className="text-sm font-semibold text-white">
+        <div className="rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="px-5 py-3.5 bg-surface-container-low dark:bg-slate-800/80 border-b border-outline-variant dark:border-slate-700">
+            <h3 className="text-sm font-semibold text-primary dark:text-white">
               Pending Student Seat Requests ({pendingBookings.length})
             </h3>
           </div>
-          <div className="divide-y divide-[#7C7397]/25">
+          <div className="divide-y divide-outline-variant/60 dark:divide-slate-800">
             {pendingBookings.map((b) => (
               <div key={b.id} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
                 <div>
-                  <span className="font-mono font-bold text-[#B5ADC6]">{b.seatCode}</span>
-                  <span className="mx-2 text-[#9993AC]">·</span>
-                  <span className="font-medium text-white">{b.studentName}</span>
-                  <span className="mx-2 text-[#9993AC]">·</span>
-                  <span className="font-mono text-xs text-[#CFCEDD]">{b.studentCode}</span>
-                  {b.notes && <p className="text-xs text-[#CFCEDD] mt-0.5">{b.notes}</p>}
+                  <span className="font-mono font-bold text-secondary dark:text-blue-400">{b.seatCode}</span>
+                  <span className="mx-2 text-outline">·</span>
+                  <span className="font-semibold text-on-surface dark:text-white">{b.studentName}</span>
+                  <span className="mx-2 text-outline">·</span>
+                  <span className="font-mono text-xs text-on-surface-variant dark:text-slate-400">{b.studentCode}</span>
+                  {b.notes && <p className="text-xs text-on-surface-variant dark:text-slate-400 mt-0.5">{b.notes}</p>}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => handleBookingDecision(b, 'approved')}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-success text-on-success text-xs font-semibold cursor-pointer"
                   >
                     <Check className="w-3.5 h-3.5" /> Approve
                   </button>
                   <button
                     type="button"
                     onClick={() => handleBookingDecision(b, 'rejected')}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-400/60 text-red-200 text-xs font-semibold"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded border border-error text-error text-xs font-semibold cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" /> Decline
                   </button>
@@ -392,28 +394,28 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
 
       {/* Selected Seat Action Modal */}
       {selectedSeat && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-          <div className="w-full max-w-md bg-[#3D2C56] border border-[#7C7397] rounded-xl p-6 space-y-4 text-white">
-            <div className="flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 rounded-xl p-6 space-y-4 text-on-surface dark:text-slate-100 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
               <div>
-                <h3 className="font-display text-lg font-bold text-white">
+                <h3 className="font-display text-lg font-bold text-primary dark:text-white">
                   Desk {selectedSeat.seatCode}
                 </h3>
-                <p className="text-xs text-[#CFCEDD]">
+                <p className="text-xs text-on-surface-variant dark:text-slate-400">
                   {selectedSeat.zone} · Status: <span className="capitalize font-semibold">{selectedSeat.status}</span>
                 </p>
               </div>
-              <button type="button" onClick={() => setSelectedSeat(null)} className="p-1 text-[#CFCEDD]">
+              <button type="button" onClick={() => setSelectedSeat(null)} className="p-1 text-on-surface-variant hover:text-primary cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {selectedSeat.assignedStudentDocId && studentById[selectedSeat.assignedStudentDocId] && (
-              <div className="p-3 rounded-lg bg-[#1C0E29] border border-[#7C7397]/50 text-xs space-y-1">
-                <p className="font-semibold text-sm text-white">
+              <div className="p-3 rounded bg-surface-container-low dark:bg-slate-800 border border-outline-variant dark:border-slate-700 text-xs space-y-1">
+                <p className="font-semibold text-sm text-primary dark:text-white">
                   {studentById[selectedSeat.assignedStudentDocId].fullName}
                 </p>
-                <p className="font-mono text-[#CFCEDD]">
+                <p className="font-mono text-on-surface-variant dark:text-slate-400">
                   {studentById[selectedSeat.assignedStudentDocId].studentCode} ·{' '}
                   {studentById[selectedSeat.assignedStudentDocId].mobile}
                 </p>
@@ -421,11 +423,11 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
             )}
 
             <div className="space-y-2">
-              <label className="block text-xs font-medium text-[#CFCEDD]">Assign to Student</label>
+              <label className="block text-xs font-semibold text-on-surface dark:text-slate-300">Assign to Student</label>
               <select
                 value={assignStudentId}
                 onChange={(e) => setAssignStudentId(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                className={inputCls}
               >
                 <option value="">Select student...</option>
                 {students
@@ -440,17 +442,17 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
                 type="button"
                 disabled={!assignStudentId}
                 onClick={handleAssignSeat}
-                className="w-full inline-flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold disabled:opacity-50"
+                className="w-full inline-flex items-center justify-center gap-2 py-2 px-4 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary disabled:opacity-50 cursor-pointer"
               >
                 <UserCheck className="w-3.5 h-3.5" /> Assign Seat
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#7C7397]/40">
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-outline-variant dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => handleReleaseSeat(selectedSeat)}
-                className="py-2 px-3 rounded-lg border border-emerald-500/60 text-emerald-200 text-xs font-semibold"
+                className="py-2 px-3 rounded border border-success text-success text-xs font-semibold hover:bg-success-container cursor-pointer"
               >
                 Release Seat
               </button>
@@ -462,7 +464,7 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
                     selectedSeat.status === 'maintenance' ? 'available' : 'maintenance'
                   )
                 }
-                className="inline-flex items-center justify-center gap-1 py-2 px-3 rounded-lg border border-[#7C7397]/60 text-white text-xs font-semibold"
+                className="inline-flex items-center justify-center gap-1 py-2 px-3 rounded border border-outline-variant dark:border-slate-700 text-on-surface dark:text-slate-200 text-xs font-semibold hover:bg-surface-container-low cursor-pointer"
               >
                 <Wrench className="w-3.5 h-3.5" />
                 {selectedSeat.status === 'maintenance' ? 'Mark Available' : 'Maintenance'}
@@ -473,7 +475,7 @@ export const SeatManagementPanel: React.FC<SeatManagementPanelProps> = ({
               <button
                 type="button"
                 onClick={() => handleDeleteSeat(selectedSeat)}
-                className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold text-red-300 hover:bg-red-950/50"
+                className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded text-xs font-semibold text-error hover:bg-error-container cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Delete Seat Permanently
               </button>

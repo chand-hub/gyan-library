@@ -174,24 +174,27 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
     onNotify('ok', `Book returned${fine > 0 ? ` with late fine ₹${fine}` : ''}.`);
   };
 
+  const inputCls =
+    'w-full px-3 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white';
+
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 text-on-surface dark:text-slate-100">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl font-bold text-white">
-            Book Inventory & Circulation
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
+            Book Inventory &amp; Circulation
           </h2>
-          <p className="text-xs text-[#CFCEDD]">
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
             Manage {books.length} titles, track available copies, issue volumes, and calculate overdue fines.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex p-1 bg-[#0E0713] rounded-lg border border-[#7C7397]/40">
+          <div className="flex p-1 bg-surface-container-low dark:bg-slate-900 rounded border border-outline-variant dark:border-slate-800">
             <button
               type="button"
               onClick={() => setSubTab('catalog')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md ${
-                subTab === 'catalog' ? 'bg-[#B5ADC6] text-[#0E0713] font-semibold' : 'text-[#CFCEDD]'
+              className={`px-3 py-1.5 text-xs font-semibold rounded cursor-pointer ${
+                subTab === 'catalog' ? 'bg-primary text-on-primary' : 'text-on-surface-variant dark:text-slate-300'
               }`}
             >
               Inventory ({books.length})
@@ -199,17 +202,17 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
             <button
               type="button"
               onClick={() => setSubTab('issues')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md ${
-                subTab === 'issues' ? 'bg-[#B5ADC6] text-[#0E0713] font-semibold' : 'text-[#CFCEDD]'
+              className={`px-3 py-1.5 text-xs font-semibold rounded cursor-pointer ${
+                subTab === 'issues' ? 'bg-primary text-on-primary' : 'text-on-surface-variant dark:text-slate-300'
               }`}
             >
-              Issues & Returns ({issues.filter((i) => i.status !== 'returned').length})
+              Issues &amp; Returns ({issues.filter((i) => i.status !== 'returned').length})
             </button>
           </div>
           <button
             type="button"
             onClick={() => setShowAddBook((v) => !v)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold hover:bg-white"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" /> Add Book
           </button>
@@ -219,7 +222,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
       {showAddBook && (
         <form
           onSubmit={handleAddBook}
-          className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 grid grid-cols-1 sm:grid-cols-4 gap-3"
+          className="p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-4 gap-3"
         >
           <input
             type="text"
@@ -227,7 +230,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
             placeholder="Book Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="sm:col-span-2 px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+            className={`sm:col-span-2 ${inputCls}`}
           />
           <input
             type="text"
@@ -235,7 +238,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
             placeholder="Author"
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
-            className="px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+            className={inputCls}
           />
           <input
             type="text"
@@ -243,7 +246,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
             placeholder="ISBN"
             value={isbn}
             onChange={(e) => setIsbn(e.target.value)}
-            className="px-3 py-2 text-sm font-mono rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+            className={`${inputCls} font-mono`}
           />
           <input
             type="text"
@@ -251,7 +254,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
             placeholder="Category"
             value={categoryName}
             onChange={(e) => setCategoryName(e.target.value)}
-            className="px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+            className={inputCls}
           />
           <input
             type="text"
@@ -259,7 +262,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
             placeholder="Publisher"
             value={publisher}
             onChange={(e) => setPublisher(e.target.value)}
-            className="px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+            className={inputCls}
           />
           <input
             type="text"
@@ -267,7 +270,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
             placeholder="Shelf (e.g. S-01)"
             value={shelfNumber}
             onChange={(e) => setShelfNumber(e.target.value)}
-            className="px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+            className={inputCls}
           />
           <div className="flex gap-2">
             <input
@@ -277,7 +280,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
               placeholder="Copies"
               value={totalCopies}
               onChange={(e) => setTotalCopies(Number(e.target.value))}
-              className="w-20 px-2 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+              className="w-20 px-2 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white"
             />
             <input
               type="number"
@@ -286,11 +289,11 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
               required
               value={pubYear}
               onChange={(e) => setPubYear(Number(e.target.value))}
-              className="w-24 px-2 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+              className="w-24 px-2 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white"
             />
             <button
               type="submit"
-              className="flex-1 px-3 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold"
+              className="flex-1 px-3 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
             >
               Save
             </button>
@@ -301,39 +304,39 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
       {subTab === 'catalog' && (
         <div className="space-y-4">
           <div className="relative max-w-sm">
-            <Search className="w-4 h-4 text-[#9993AC] absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-outline absolute left-3 top-2.5" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search title, author, ISBN..."
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white placeholder-[#9993AC]"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-900 text-on-surface dark:text-white placeholder:text-outline focus:border-secondary focus:outline-none"
             />
           </div>
 
-          <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-x-auto">
+          <div className="rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[#0E0713]/60 text-xs text-[#CFCEDD]">
+              <thead className="bg-surface-container-low dark:bg-slate-800/80 text-xs uppercase text-on-surface-variant dark:text-slate-300 border-b border-outline-variant dark:border-slate-700">
                 <tr>
-                  <th className="text-left px-4 py-3">Title & Author</th>
-                  <th className="text-left px-4 py-3">Category</th>
-                  <th className="text-left px-4 py-3">ISBN</th>
-                  <th className="text-left px-4 py-3">Shelf</th>
-                  <th className="text-right px-4 py-3">Copies</th>
-                  <th className="text-right px-4 py-3">Actions</th>
+                  <th className="text-left px-4 py-3 font-semibold">Title &amp; Author</th>
+                  <th className="text-left px-4 py-3 font-semibold">Category</th>
+                  <th className="text-left px-4 py-3 font-semibold">ISBN</th>
+                  <th className="text-left px-4 py-3 font-semibold">Shelf</th>
+                  <th className="text-right px-4 py-3 font-semibold">Copies</th>
+                  <th className="text-right px-4 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#7C7397]/25">
+              <tbody className="divide-y divide-outline-variant/60 dark:divide-slate-800">
                 {filteredBooks.map((b) => (
-                  <tr key={b.id} className="hover:bg-[#514871]/40">
+                  <tr key={b.id} className="hover:bg-surface-container-low/50 dark:hover:bg-slate-800/50">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-white">{b.title}</p>
-                      <p className="text-xs text-[#CFCEDD]">{b.author}</p>
+                      <p className="font-semibold text-on-surface dark:text-white">{b.title}</p>
+                      <p className="text-xs text-on-surface-variant dark:text-slate-400">{b.author}</p>
                     </td>
-                    <td className="px-4 py-3 text-xs text-[#CFCEDD]">{b.categoryName}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-[#CFCEDD]">{b.isbn}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-[#B5ADC6]">{b.shelfNumber}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-white">
+                    <td className="px-4 py-3 text-xs text-on-surface-variant dark:text-slate-300">{b.categoryName}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-on-surface-variant dark:text-slate-400">{b.isbn}</td>
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-secondary dark:text-blue-400">{b.shelfNumber}</td>
+                    <td className="px-4 py-3 text-right tabular-nums font-medium text-on-surface dark:text-white">
                       {b.availableCopies} / {b.totalCopies}
                     </td>
                     <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
@@ -341,7 +344,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
                         type="button"
                         disabled={b.availableCopies < 1}
                         onClick={() => setIssueBook(b)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold disabled:opacity-40"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary disabled:opacity-40 cursor-pointer"
                       >
                         <BookOpenCheck className="w-3.5 h-3.5" /> Issue
                       </button>
@@ -349,7 +352,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
                         <button
                           type="button"
                           onClick={() => deleteDoc(doc(db, 'books', b.id)).then(() => onNotify('ok', 'Book removed.'))}
-                          className="p-1.5 text-red-300 hover:bg-red-950/50 rounded-lg"
+                          className="p-1.5 text-error hover:bg-error-container rounded cursor-pointer"
                           aria-label="Delete book"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -365,35 +368,35 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
       )}
 
       {subTab === 'issues' && (
-        <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-x-auto">
+        <div className="rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-[#0E0713]/60 text-xs text-[#CFCEDD]">
+            <thead className="bg-surface-container-low dark:bg-slate-800/80 text-xs uppercase text-on-surface-variant dark:text-slate-300 border-b border-outline-variant dark:border-slate-700">
               <tr>
-                <th className="text-left px-4 py-3">Student</th>
-                <th className="text-left px-4 py-3">Book</th>
-                <th className="text-left px-4 py-3">Due Date</th>
-                <th className="text-right px-4 py-3">Fine</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-right px-4 py-3">Actions</th>
+                <th className="text-left px-4 py-3 font-semibold">Student</th>
+                <th className="text-left px-4 py-3 font-semibold">Book</th>
+                <th className="text-left px-4 py-3 font-semibold">Due Date</th>
+                <th className="text-right px-4 py-3 font-semibold">Fine</th>
+                <th className="text-left px-4 py-3 font-semibold">Status</th>
+                <th className="text-right px-4 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#7C7397]/25">
+            <tbody className="divide-y divide-outline-variant/60 dark:divide-slate-800">
               {issues.map((i) => (
                 <tr key={i.id}>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-white">{i.studentName}</p>
-                    <p className="font-mono text-xs text-[#CFCEDD]">{i.studentCode}</p>
+                    <p className="font-semibold text-on-surface dark:text-white">{i.studentName}</p>
+                    <p className="font-mono text-xs text-on-surface-variant dark:text-slate-400">{i.studentCode}</p>
                   </td>
-                  <td className="px-4 py-3 text-[#CFCEDD]">{i.bookTitle}</td>
-                  <td className="px-4 py-3 tabular-nums text-[#CFCEDD]">{i.dueDate || '—'}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-white">₹{i.fineAmount}</td>
-                  <td className="px-4 py-3 capitalize font-medium text-[#B5ADC6]">{i.status}</td>
+                  <td className="px-4 py-3 text-on-surface dark:text-slate-200">{i.bookTitle}</td>
+                  <td className="px-4 py-3 tabular-nums text-on-surface-variant dark:text-slate-300">{i.dueDate || '—'}</td>
+                  <td className="px-4 py-3 text-right tabular-nums font-medium text-on-surface dark:text-white">₹{i.fineAmount}</td>
+                  <td className="px-4 py-3 capitalize font-semibold text-secondary dark:text-blue-400">{i.status}</td>
                   <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
                     {i.status === 'requested' && (
                       <button
                         type="button"
                         onClick={() => handleApproveRequest(i)}
-                        className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-xs font-semibold"
+                        className="px-2.5 py-1 rounded bg-success text-on-success text-xs font-semibold cursor-pointer"
                       >
                         Approve Issue
                       </button>
@@ -402,7 +405,7 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
                       <button
                         type="button"
                         onClick={() => handleReturnBook(i)}
-                        className="px-2.5 py-1 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold"
+                        className="px-2.5 py-1 rounded bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container cursor-pointer"
                       >
                         Accept Return
                       </button>
@@ -416,25 +419,25 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
       )}
 
       {issueBook && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
           <form
             onSubmit={handleDirectIssue}
-            className="w-full max-w-md bg-[#3D2C56] border border-[#7C7397] rounded-xl p-6 space-y-4 text-white"
+            className="w-full max-w-md bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 rounded-xl p-6 space-y-4 text-on-surface dark:text-slate-100 shadow-2xl"
           >
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-white">Issue Book</h3>
-              <button type="button" onClick={() => setIssueBook(null)}>
-                <X className="w-5 h-5 text-[#CFCEDD]" />
+            <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
+              <h3 className="font-display text-lg font-bold text-primary dark:text-white">Issue Book</h3>
+              <button type="button" onClick={() => setIssueBook(null)} className="text-on-surface-variant hover:text-primary cursor-pointer">
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm font-medium text-[#B5ADC6]">{issueBook.title}</p>
+            <p className="text-sm font-semibold text-secondary dark:text-blue-400">{issueBook.title}</p>
             <div>
-              <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Select Student</label>
+              <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Select Student</label>
               <select
                 required
                 value={issueStudentId}
                 onChange={(e) => setIssueStudentId(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                className={inputCls}
               >
                 <option value="">Choose student...</option>
                 {students.map((s) => (
@@ -445,19 +448,19 @@ export const BooksAndIssuesPanel: React.FC<BooksAndIssuesPanelProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Loan Period (Days)</label>
+              <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Loan Period (Days)</label>
               <input
                 type="number"
                 min={1}
                 max={60}
                 value={dueDays}
                 onChange={(e) => setDueDays(Number(e.target.value))}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                className={inputCls}
               />
             </div>
             <button
               type="submit"
-              className="w-full py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold hover:bg-white"
+              className="w-full py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
             >
               Confirm Issue
             </button>

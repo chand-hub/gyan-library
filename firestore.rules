@@ -647,6 +647,122 @@ service cloud.firestore {
         && data.createdAt is timestamp;
     }
 
+    // Automated Fee Management & WhatsApp Notification Blueprints
+    function isValidStudentFee(data) {
+      return data.keys().hasAll(['studentDocId', 'studentUid', 'studentCode', 'studentName', 'className', 'parentName', 'parentWhatsapp', 'monthlyFee', 'previousBalance', 'currentMonthFee', 'totalPayable', 'totalPaid', 'remainingBalance', 'dueDate', 'paymentStatus', 'reminderStatus', 'autoReminderEnabled', 'whatsappConsent', 'optedOut', 'reminderCount', 'isDemo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['studentDocId', 'studentUid', 'studentCode', 'studentName', 'className', 'parentName', 'parentWhatsapp', 'studentWhatsapp', 'monthlyFee', 'previousBalance', 'currentMonthFee', 'totalPayable', 'totalPaid', 'remainingBalance', 'dueDate', 'paymentStatus', 'reminderStatus', 'autoReminderEnabled', 'whatsappConsent', 'optedOut', 'lastReminderAt', 'nextReminderAt', 'lastReminderError', 'reminderCount', 'isDemo', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.studentDocId, 1, 128)
+        && isNonEmptyString(data.studentUid, 1, 128)
+        && isNonEmptyString(data.studentCode, 2, 24)
+        && isNonEmptyString(data.studentName, 2, 120)
+        && isNonEmptyString(data.className, 1, 120)
+        && isNonEmptyString(data.parentName, 1, 120)
+        && isOptionalString(data.parentWhatsapp, 30)
+        && (!('studentWhatsapp' in data) || data.studentWhatsapp == null || isOptionalString(data.studentWhatsapp, 30))
+        && data.monthlyFee is number && data.monthlyFee >= 0 && data.monthlyFee <= 1000000
+        && data.previousBalance is number && data.previousBalance >= 0 && data.previousBalance <= 10000000
+        && data.currentMonthFee is number && data.currentMonthFee >= 0 && data.currentMonthFee <= 1000000
+        && data.totalPayable is number && data.totalPayable >= 0 && data.totalPayable <= 10000000
+        && data.totalPaid is number && data.totalPaid >= 0 && data.totalPaid <= 10000000
+        && data.remainingBalance is number && data.remainingBalance >= 0 && data.remainingBalance <= 10000000
+        && isNonEmptyString(data.dueDate, 8, 20)
+        && data.paymentStatus in ['paid', 'partially_paid', 'unpaid', 'overdue']
+        && data.reminderStatus in ['active', 'paused', 'stopped', 'opted_out', 'invalid_number']
+        && data.autoReminderEnabled is bool
+        && data.whatsappConsent is bool
+        && data.optedOut is bool
+        && (!('lastReminderAt' in data) || data.lastReminderAt == null || isOptionalString(data.lastReminderAt, 60))
+        && (!('nextReminderAt' in data) || data.nextReminderAt == null || isOptionalString(data.nextReminderAt, 60))
+        && (!('lastReminderError' in data) || data.lastReminderError == null || isOptionalString(data.lastReminderError, 500))
+        && data.reminderCount is int && data.reminderCount >= 0 && data.reminderCount <= 100000
+        && data.isDemo is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidFeePayment(data) {
+      return data.keys().hasAll(['studentFeeId', 'studentDocId', 'studentUid', 'studentCode', 'studentName', 'amountReceived', 'paymentDate', 'paymentMethod', 'recordedByUid', 'balanceAfterPayment', 'createdAt'])
+        && data.keys().hasOnly(['studentFeeId', 'studentDocId', 'studentUid', 'studentCode', 'studentName', 'amountReceived', 'paymentDate', 'paymentMethod', 'transactionRef', 'notes', 'recordedByUid', 'recordedByEmail', 'balanceAfterPayment', 'createdAt'])
+        && isNonEmptyString(data.studentFeeId, 1, 128)
+        && isNonEmptyString(data.studentDocId, 1, 128)
+        && isNonEmptyString(data.studentUid, 1, 128)
+        && isNonEmptyString(data.studentCode, 2, 24)
+        && isNonEmptyString(data.studentName, 2, 120)
+        && data.amountReceived is number && data.amountReceived > 0 && data.amountReceived <= 10000000
+        && isNonEmptyString(data.paymentDate, 8, 20)
+        && data.paymentMethod in ['Cash', 'UPI', 'Bank Transfer', 'Other']
+        && (!('transactionRef' in data) || data.transactionRef == null || isOptionalString(data.transactionRef, 128))
+        && (!('notes' in data) || data.notes == null || isOptionalString(data.notes, 400))
+        && isNonEmptyString(data.recordedByUid, 1, 128)
+        && (!('recordedByEmail' in data) || data.recordedByEmail == null || isOptionalString(data.recordedByEmail, 200))
+        && data.balanceAfterPayment is number && data.balanceAfterPayment >= 0 && data.balanceAfterPayment <= 10000000
+        && data.createdAt is timestamp;
+    }
+
+    function isValidFeeReminder(data) {
+      return data.keys().hasAll(['studentFeeId', 'studentDocId', 'studentUid', 'studentCode', 'studentName', 'recipientWhatsapp', 'dueAmountAtSend', 'dueDate', 'templateName', 'languageCode', 'messagePreview', 'triggerType', 'idempotencyKey', 'status', 'retryCount', 'scheduledFor', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['studentFeeId', 'studentDocId', 'studentUid', 'studentCode', 'studentName', 'recipientWhatsapp', 'dueAmountAtSend', 'dueDate', 'templateName', 'languageCode', 'messagePreview', 'triggerType', 'idempotencyKey', 'status', 'wamid', 'errorMessage', 'retryCount', 'scheduledFor', 'sentAt', 'deliveredAt', 'readAt', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.studentFeeId, 1, 128)
+        && isNonEmptyString(data.studentDocId, 1, 128)
+        && isNonEmptyString(data.studentUid, 1, 128)
+        && isNonEmptyString(data.studentCode, 2, 24)
+        && isNonEmptyString(data.studentName, 2, 120)
+        && isOptionalString(data.recipientWhatsapp, 30)
+        && data.dueAmountAtSend is number && data.dueAmountAtSend >= 0 && data.dueAmountAtSend <= 10000000
+        && isNonEmptyString(data.dueDate, 8, 20)
+        && isNonEmptyString(data.templateName, 1, 120)
+        && isNonEmptyString(data.languageCode, 2, 20)
+        && isNonEmptyString(data.messagePreview, 1, 2000)
+        && data.triggerType in ['scheduled', 'manual', 'bulk']
+        && isNonEmptyString(data.idempotencyKey, 3, 200)
+        && data.status in ['queued', 'sent', 'delivered', 'read', 'failed', 'cancelled', 'skipped']
+        && (!('wamid' in data) || data.wamid == null || isOptionalString(data.wamid, 200))
+        && (!('errorMessage' in data) || data.errorMessage == null || isOptionalString(data.errorMessage, 500))
+        && data.retryCount is int && data.retryCount >= 0 && data.retryCount <= 20
+        && isNonEmptyString(data.scheduledFor, 4, 60)
+        && (!('sentAt' in data) || data.sentAt == null || isOptionalString(data.sentAt, 60))
+        && (!('deliveredAt' in data) || data.deliveredAt == null || isOptionalString(data.deliveredAt, 60))
+        && (!('readAt' in data) || data.readAt == null || isOptionalString(data.readAt, 60))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidWhatsAppMessageLog(data) {
+      return data.keys().hasAll(['reminderId', 'studentFeeId', 'studentCode', 'studentName', 'recipientWhatsapp', 'status', 'templateName', 'messagePreview', 'dueAmountAtSend', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['reminderId', 'studentFeeId', 'studentCode', 'studentName', 'recipientWhatsapp', 'wamid', 'status', 'templateName', 'messagePreview', 'dueAmountAtSend', 'errorMessage', 'httpStatus', 'webhookPayloadSummary', 'createdAt', 'updatedAt'])
+        && isNonEmptyString(data.reminderId, 1, 128)
+        && isNonEmptyString(data.studentFeeId, 1, 128)
+        && isNonEmptyString(data.studentCode, 2, 24)
+        && isNonEmptyString(data.studentName, 2, 120)
+        && isOptionalString(data.recipientWhatsapp, 30)
+        && (!('wamid' in data) || data.wamid == null || isOptionalString(data.wamid, 200))
+        && data.status in ['queued', 'sent', 'delivered', 'read', 'failed']
+        && isNonEmptyString(data.templateName, 1, 120)
+        && isNonEmptyString(data.messagePreview, 1, 2000)
+        && data.dueAmountAtSend is number && data.dueAmountAtSend >= 0 && data.dueAmountAtSend <= 10000000
+        && (!('errorMessage' in data) || data.errorMessage == null || isOptionalString(data.errorMessage, 500))
+        && (!('httpStatus' in data) || data.httpStatus == null || (data.httpStatus is int && data.httpStatus >= 0 && data.httpStatus <= 999))
+        && (!('webhookPayloadSummary' in data) || data.webhookPayloadSummary == null || isOptionalString(data.webhookPayloadSummary, 500))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidFeeSystemSettings(data) {
+      return data.keys().hasAll(['autoReminderEnabled', 'globalPaused', 'reminderIntervalHours', 'timezone', 'sendWindowStartHour', 'sendWindowEndHour', 'triggerOnDueOrOverdueOnly', 'templateName', 'languageCode', 'messageTemplatePreview', 'updatedAt'])
+        && data.keys().hasOnly(['autoReminderEnabled', 'globalPaused', 'reminderIntervalHours', 'timezone', 'sendWindowStartHour', 'sendWindowEndHour', 'triggerOnDueOrOverdueOnly', 'templateName', 'languageCode', 'messageTemplatePreview', 'updatedAt'])
+        && data.autoReminderEnabled is bool
+        && data.globalPaused is bool
+        && data.reminderIntervalHours is int && data.reminderIntervalHours >= 1 && data.reminderIntervalHours <= 720
+        && isNonEmptyString(data.timezone, 3, 60)
+        && data.sendWindowStartHour is int && data.sendWindowStartHour >= 0 && data.sendWindowStartHour <= 23
+        && data.sendWindowEndHour is int && data.sendWindowEndHour >= 0 && data.sendWindowEndHour <= 24
+        && data.triggerOnDueOrOverdueOnly is bool
+        && isNonEmptyString(data.templateName, 1, 120)
+        && isNonEmptyString(data.languageCode, 2, 20)
+        && isNonEmptyString(data.messageTemplatePreview, 5, 2000)
+        && data.updatedAt is timestamp;
+    }
+
     // Existing Collection Rules
     match /users/{userId} {
       allow get: if isValidId(userId) && (isOwner(userId) || isStaffOrAbove());
@@ -1066,6 +1182,54 @@ service cloud.firestore {
         && incoming().createdAt == request.time;
       allow update: if false;
       allow delete: if isValidId(bookmarkId) && isSignedIn() && existing().userUid == request.auth.uid;
+    }
+
+    // Automated Fee Management & WhatsApp Reminder Collections
+    match /student_fees/{feeId} {
+      allow get: if isValidId(feeId) && (isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid));
+      allow list: if isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid);
+      allow create: if isValidId(feeId) && isManagerOrAdmin() && isValidStudentFee(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(feeId) && isManagerOrAdmin() && isValidStudentFee(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(feeId) && isAdmin();
+    }
+
+    match /fee_payments/{paymentId} {
+      allow get: if isValidId(paymentId) && (isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid));
+      allow list: if isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid);
+      allow create: if isValidId(paymentId) && isManagerOrAdmin() && isValidFeePayment(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isValidId(paymentId) && isAdmin();
+    }
+
+    match /fee_reminders/{reminderId} {
+      allow get: if isValidId(reminderId) && (isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid));
+      allow list: if isStaffOrAbove() || (isSignedIn() && existing().studentUid == request.auth.uid);
+      allow create: if isValidId(reminderId) && isManagerOrAdmin() && isValidFeeReminder(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(reminderId) && isManagerOrAdmin() && isValidFeeReminder(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(reminderId) && isAdmin();
+    }
+
+    match /whatsapp_message_logs/{logId} {
+      allow get: if isValidId(logId) && isManagerOrAdmin();
+      allow list: if isManagerOrAdmin();
+      allow create: if isValidId(logId) && isManagerOrAdmin() && isValidWhatsAppMessageLog(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(logId) && isManagerOrAdmin() && isValidWhatsAppMessageLog(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isValidId(logId) && isAdmin();
+    }
+
+    match /system_settings/{settingId} {
+      allow get: if isValidId(settingId) && isManagerOrAdmin();
+      allow list: if isManagerOrAdmin();
+      allow create, update: if isValidId(settingId) && isAdmin() && isValidFeeSystemSettings(incoming())
+        && incoming().updatedAt == request.time;
+      allow delete: if false;
     }
   }
 }

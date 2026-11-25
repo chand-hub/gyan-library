@@ -27,7 +27,14 @@ import {
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
-import { db, logAuditEvent } from '../../lib/firebase';
+import { db, logAuditEvent, markFirestoreConnected } from '../../lib/firebase';
+import {
+  fetchServerAiStatus,
+  formatCooldownRemaining,
+  readStoredAiCooldown,
+  saveStoredAiCooldown,
+  SharedAiCooldownState,
+} from '../../lib/aiClient';
 
 interface AIPdfImportPanelProps {
   exams: ExamCategory[];
@@ -147,6 +154,7 @@ interface JobSnapshot {
   errorMessages: string[];
   extractedQuestions: ExtractedDraft[];
   lastCheckpointAt?: string;
+  lastSuccessfulExtractionAt?: string | null;
   updatedAt?: string;
 }
 
@@ -182,6 +190,7 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
   const [resumeTarget, setResumeTarget] = useState<ResumeCheckpointTarget | null>(null);
   const [importingToDb, setImportingToDb] = useState(false);
   const [controlBusy, setControlBusy] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState<SharedAiCooldownState>(() => readStoredAiCooldown());
   const [importSummary, setImportSummary] = useState<{
     imported: number;
     duplicates: number;
@@ -214,6 +223,7 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
     const unsub = onSnapshot(
       q,
       (snap) => {
+        markFirestoreConnected();
         const list: ImportJobRecord[] = snap.docs.map((d) => ({
           id: d.id,
           ...(d.data() as Omit<ImportJobRecord, 'id'>),
@@ -226,6 +236,25 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
     );
     return () => unsub();
   }, [actorUid]);
+
+  // Keep shared Gemini cooldown countdown synchronized with server & sessionStorage
+  useEffect(() => {
+    if (!actorUid) return;
+    let cancelled = false;
+    (async () => {
+      const token = await getIdToken();
+      if (!token || cancelled) return;
+      const status = await fetchServerAiStatus(token);
+      if (status && !cancelled) setCooldown(status);
+    })();
+    const tick = setInterval(() => {
+      setCooldown(readStoredAiCooldown());
+    }, 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(tick);
+    };
+  }, [actorUid, getIdToken]);
 
   // On mount, check if server has any active/paused jobs persisted on disk
   useEffect(() => {
@@ -663,6 +692,13 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
     batchIndex?: number
   ) => {
     if (!activeJob) return;
+    if (action !== 'pause' && cooldown.active) {
+      onNotify(
+        'err',
+        `Shared Gemini API cooldown active (${formatCooldownRemaining(cooldown.remainingSeconds)} remaining). Completed batches remain safely saved.`
+      );
+      return;
+    }
     const token = await getIdToken();
     if (!token) return;
     setControlBusy(action === 'retry_batch' ? `batch_${batchIndex}` : action);
@@ -677,6 +713,16 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
       });
       const payload = await res.json();
       if (!res.ok) {
+        if (payload?.cooldownActive) {
+          setCooldown(
+            saveStoredAiCooldown({
+              cooldownUntil: payload.cooldownUntil,
+              cooldownRemainingSeconds: payload.cooldownRemainingSeconds,
+              reason: payload.error,
+              category: payload.errorCategory,
+            })
+          );
+        }
         onNotify('err', payload.error || `Failed to ${action} job.`);
         return;
       }
@@ -741,31 +787,31 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
 
     const category = job.errorCategory;
     let title = 'Extraction Notice';
-    let tone = 'bg-rose-950/60 border-rose-500/60 text-rose-100';
+    let tone = 'bg-error-container border-error/40 text-on-error-container';
     let IconComp = AlertTriangle;
     let guidance = '';
 
     if (category === 'daily_quota_exhausted') {
       title = 'Daily Gemini Quota Exhausted (429 RESOURCE_EXHAUSTED)';
-      tone = 'bg-amber-950/70 border-amber-500/70 text-amber-100';
+      tone = 'bg-warning-container border-warning/40 text-on-warning-container';
       IconComp = ShieldAlert;
       guidance =
         'Automatic retries were stopped immediately to avoid wasting quota. Completed batches are saved in Firestore. Wait for daily quota reset or enable billing in Google AI Studio, then click Resume Job.';
     } else if (category === 'billing_restricted') {
       title = 'Gemini API Billing / Permission Restriction';
-      tone = 'bg-rose-950/70 border-rose-500/70 text-rose-100';
+      tone = 'bg-error-container border-error/40 text-on-error-container';
       IconComp = CreditCard;
       guidance =
         'Check Google Cloud / AI Studio billing and API enablement for your key. Completed pages remain safely checkpointed.';
     } else if (category === 'model_unavailable_503') {
-      title = `Temporary High Demand on ${job.modelUsed || 'gemini-4-hydrogen'} (503 UNAVAILABLE)`;
-      tone = 'bg-amber-950/60 border-amber-500/60 text-amber-100';
+      title = `Temporary High Demand on ${job.modelUsed || 'gemini-2.5-flash'} (503 UNAVAILABLE)`;
+      tone = 'bg-warning-container border-warning/40 text-on-warning-container';
       IconComp = Clock;
       guidance =
         'Exponential backoff retries ran and completed pages remain saved. Wait 30–60 seconds and click Retry Failed Pages.';
     } else if (category === 'rate_limit_429') {
       title = 'Short-Term Rate Limit Reached (429)';
-      tone = 'bg-amber-950/60 border-amber-500/60 text-amber-100';
+      tone = 'bg-warning-container border-warning/40 text-on-warning-container';
       IconComp = Clock;
       guidance =
         'API retry cooldown expired after bounded retries. Click Retry Failed Pages shortly to continue from the checkpoint.';
@@ -780,7 +826,7 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
         {job.haltReason && <p className="leading-relaxed">{job.haltReason}</p>}
         {guidance && <p className="opacity-90 leading-relaxed">{guidance}</p>}
         {job.errorMessages.length > 0 && (
-          <div className="pt-1 border-t border-white/15 space-y-1">
+          <div className="pt-1 border-t border-current/20 space-y-1">
             {job.errorMessages.slice(-5).map((msg, i) => (
               <p key={i} className="opacity-90">
                 · {msg}
@@ -804,17 +850,29 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs font-semibold text-[#B5ADC6]">Automated Question Extraction</p>
-        <h2 className="font-display text-2xl font-bold text-white">
+        <p className="text-xs font-semibold text-secondary uppercase tracking-wider">Automated Question Extraction</p>
+        <h2 className="font-headline text-2xl font-bold text-on-surface mt-0.5">
           AI PYQ PDF Import System
         </h2>
-        <p className="text-xs text-[#CFCEDD] mt-0.5">
+        <p className="text-xs text-on-surface-variant mt-0.5">
           Adaptive multi-page OCR (up to 8 pages/request), concurrency-safe Gemini quota guard, automatic Firestore checkpoints, and single-batch resume.
         </p>
       </div>
 
+      {cooldown.active && (
+        <div className="p-4 rounded-lg bg-warning-container border border-warning/40 text-xs text-on-warning-container flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <p className="font-bold text-sm flex items-center gap-1.5">
+              <Clock className="w-4 h-4" />
+              Shared Gemini API Cooldown Active · Retry in {formatCooldownRemaining(cooldown.remainingSeconds)}
+            </p>
+            <p>{cooldown.reason || 'Resume & Retry controls are paused until quota cooldown ends.'}</p>
+          </div>
+        </div>
+      )}
+
       {resumeTarget && (
-        <div className="p-4 rounded-xl bg-amber-950/50 border border-amber-500/70 text-xs text-amber-100 flex flex-wrap items-center justify-between gap-3">
+        <div className="p-4 rounded-lg bg-warning-container border border-warning/40 text-xs text-on-warning-container flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="font-bold text-sm">
               Resuming Checkpoint: {resumeTarget.fileName} ({resumeTarget.pagesProcessed}/{resumeTarget.totalPages} pages saved)
@@ -826,7 +884,7 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
           <button
             type="button"
             onClick={() => setResumeTarget(null)}
-            className="px-3 py-1.5 rounded-lg bg-[#1C0E29] border border-amber-400/50 text-amber-200 font-semibold"
+            className="px-3 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary font-semibold"
           >
             Cancel Resume
           </button>
@@ -836,22 +894,22 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
       {/* Explicit Upload Policy & Form */}
       <form
         onSubmit={handleUploadAndProcess}
-        className="p-6 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-5"
+        className="p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-5"
       >
-        <div className="p-3.5 rounded-lg bg-[#1C0E29] border border-[#514871] text-xs text-[#CFCEDD] flex flex-wrap items-center justify-between gap-2">
+        <div className="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant text-xs text-on-surface-variant flex flex-wrap items-center justify-between gap-2">
           <span>
-            Upload Limits: Max <strong className="text-white">{MAX_PDF_MB} MB</strong> per PDF · 512 KB chunks · Up to 8 pages/batch (auto-sized)
+            Upload Limits: Max <strong className="text-on-surface">{MAX_PDF_MB} MB</strong> per PDF · 512 KB chunks · Up to 8 pages/batch (auto-sized)
           </span>
-          <span className="text-[#B5ADC6]">Auto-Checkpoint + Duplicate Guard Active</span>
+          <span className="font-semibold text-secondary">Auto-Checkpoint + Duplicate Guard Active</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Examination</label>
+            <label className="block text-xs font-semibold text-on-surface-variant mb-1">Examination</label>
             <select
               value={examName}
               onChange={(e) => setExamName(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-sm text-white"
+              className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-sm text-on-surface focus:border-secondary focus:outline-none"
             >
               {exams.map((ex) => (
                 <option key={ex.id} value={ex.name}>
@@ -862,7 +920,7 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Examination Year</label>
+            <label className="block text-xs font-semibold text-on-surface-variant mb-1">Examination Year</label>
             <input
               type="number"
               min={1990}
@@ -870,45 +928,45 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
               required
               value={examYear}
               onChange={(e) => setExamYear(Number(e.target.value))}
-              className="w-full px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-sm text-white tabular-nums"
+              className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-sm text-on-surface tabular-nums focus:border-secondary focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Subject (Optional / Auto-detect)</label>
+            <label className="block text-xs font-semibold text-on-surface-variant mb-1">Subject (Optional / Auto-detect)</label>
             <input
               type="text"
               value={subjectHint}
               onChange={(e) => setSubjectHint(e.target.value)}
               placeholder="Leave blank to auto-detect"
-              className="w-full px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-sm text-white placeholder-[#9993AC]"
+              className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-sm text-on-surface placeholder-outline focus:border-secondary focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Paper / Shift (Optional)</label>
+            <label className="block text-xs font-semibold text-on-surface-variant mb-1">Paper / Shift (Optional)</label>
             <input
               type="text"
               value={shift}
               onChange={(e) => setShift(e.target.value)}
               placeholder="e.g. Shift 1 · Set A"
-              className="w-full px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-sm text-white placeholder-[#9993AC]"
+              className="w-full px-3 py-2 rounded-lg bg-surface border border-outline-variant text-sm text-on-surface placeholder-outline focus:border-secondary focus:outline-none"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-[#CFCEDD] mb-2">
+          <label className="block text-xs font-semibold text-on-surface-variant mb-2">
             Select PDF Question Papers (Single or Multiple)
           </label>
-          <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-[#7C7397] rounded-xl bg-[#1C0E29]/60 hover:bg-[#1C0E29] cursor-pointer transition-colors">
-            <FileUp className="w-8 h-8 text-[#B5ADC6] mb-2" />
-            <span className="text-sm font-semibold text-white">
+          <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-outline-variant rounded-xl bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors">
+            <FileUp className="w-8 h-8 text-secondary mb-2" />
+            <span className="text-sm font-semibold text-on-surface">
               {selectedFiles.length > 0
                 ? `${selectedFiles.length} PDF file(s) selected (${selectedFiles.map((f) => f.name).join(', ')})`
                 : 'Choose PDF file(s) up to 25 MB each'}
             </span>
-            <span className="text-xs text-[#9993AC] mt-1">Text PDFs and Scanned Question Papers supported</span>
+            <span className="text-xs text-on-surface-variant mt-1">Text PDFs and Scanned Question Papers supported</span>
             <input
               type="file"
               accept="application/pdf,.pdf"
@@ -920,14 +978,14 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
         </div>
 
         {uploadingState && (
-          <div className="p-3.5 rounded-lg bg-[#1C0E29] border border-[#B5ADC6]/40 space-y-2">
-            <div className="flex items-center justify-between text-xs text-white">
+          <div className="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant space-y-2">
+            <div className="flex items-center justify-between text-xs text-on-surface">
               <span>{uploadingState}</span>
               <span className="tabular-nums font-bold">{uploadProgress}%</span>
             </div>
-            <div className="w-full h-2 rounded-full bg-[#3D2C56] overflow-hidden">
+            <div className="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden">
               <div
-                className="h-full bg-[#B5ADC6] transition-all"
+                className="h-full bg-secondary transition-all"
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
@@ -937,8 +995,8 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={Boolean(uploadingState) || selectedFiles.length === 0}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-bold hover:bg-white transition-colors disabled:opacity-40"
+            disabled={Boolean(uploadingState) || selectedFiles.length === 0 || cooldown.active}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary transition-colors disabled:opacity-40 cursor-pointer"
           >
             <Upload className="w-4 h-4" />{' '}
             {resumeTarget ? 'Upload PDF & Resume Checkpoint' : 'Upload & Start AI Extraction'}
@@ -948,17 +1006,20 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
 
       {/* Active Extraction Progress, Counters & Controls */}
       {activeJob && (
-        <div className="p-6 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#514871]">
+        <div className="p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-outline-variant">
             <div>
-              <p className="text-xs text-[#B5ADC6]">
-                Job ID: <span className="font-mono">{activeJob.jobId}</span> · {activeJob.examName} ({activeJob.examYear})
+              <p className="text-xs text-on-surface-variant">
+                Job ID: <span className="font-mono text-primary">{activeJob.jobId}</span> · {activeJob.examName} ({activeJob.examYear})
                 {activeJob.modelUsed ? ` · Model: ${activeJob.modelUsed}` : ''}
+                {activeJob.lastSuccessfulExtractionAt
+                  ? ` · Last OK Batch: ${new Date(activeJob.lastSuccessfulExtractionAt).toLocaleTimeString('en-IN')}`
+                  : ''}
               </p>
-              <h3 className="font-display text-lg font-bold text-white flex items-center gap-2">
-                {activeJob.status === 'processing' && <Loader2 className="w-4 h-4 animate-spin text-[#B5ADC6]" />}
+              <h3 className="font-headline text-lg font-bold text-on-surface flex items-center gap-2 mt-0.5">
+                {activeJob.status === 'processing' && <Loader2 className="w-4 h-4 animate-spin text-secondary" />}
                 <span>{activeJob.fileName}</span>
-                <span className="text-xs uppercase font-mono px-2 py-0.5 rounded-md bg-[#1C0E29] text-[#B5ADC6]">
+                <span className="text-xs uppercase font-mono px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container">
                   {activeJob.status}
                 </span>
               </h3>
@@ -970,27 +1031,30 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
                   type="button"
                   disabled={controlBusy === 'pause'}
                   onClick={() => handleJobControl('pause')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs font-semibold text-white"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant text-xs font-semibold text-primary hover:bg-surface-container-low"
                 >
                   <Pause className="w-3.5 h-3.5" /> Pause Job
                 </button>
               ) : activeJob.status === 'paused' || activeJob.pendingPages > 0 ? (
                 <button
                   type="button"
-                  disabled={controlBusy === 'resume'}
+                  disabled={controlBusy === 'resume' || cooldown.active}
                   onClick={() => handleJobControl('resume')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary disabled:opacity-50"
                 >
-                  <Play className="w-3.5 h-3.5" /> Resume Pending Pages
+                  <Play className="w-3.5 h-3.5" />
+                  {cooldown.active
+                    ? `Wait ${formatCooldownRemaining(cooldown.remainingSeconds)}`
+                    : 'Resume Pending Pages'}
                 </button>
               ) : null}
 
               {activeJob.batches.some((b) => b.status === 'failed') && (
                 <button
                   type="button"
-                  disabled={controlBusy === 'retry_failed'}
+                  disabled={controlBusy === 'retry_failed' || cooldown.active}
                   onClick={() => handleJobControl('retry_failed')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-[#0E0713] text-xs font-bold hover:bg-amber-400"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-warning text-on-warning text-xs font-semibold hover:opacity-90 disabled:opacity-50"
                 >
                   <RefreshCw className="w-3.5 h-3.5" /> Retry All Failed Pages
                 </button>
@@ -1001,7 +1065,7 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
                   type="button"
                   disabled={importingToDb}
                   onClick={() => syncJobToFirestore(activeJob, true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 text-xs font-bold hover:bg-emerald-400"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-success text-on-success text-xs font-semibold hover:opacity-90"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   {importingToDb
@@ -1014,22 +1078,22 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
 
           {/* Multi-segment Extraction Progress Bar */}
           <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center justify-between text-xs text-[#CFCEDD]">
+            <div className="flex flex-wrap items-center justify-between text-xs text-on-surface-variant">
               <span>
-                Extraction Progress: <strong className="text-white">{completedPct}%</strong> completed
+                Extraction Progress: <strong className="text-on-surface">{completedPct}%</strong> completed
                 {activeJob.failedPages > 0 ? ` · ${failedPct}% failed` : ''}
               </span>
-              <span className="text-[11px] text-[#9993AC]">
+              <span className="text-[11px] text-outline">
                 Auto-checkpointed to Firestore after every batch
               </span>
             </div>
-            <div className="w-full h-2.5 rounded-full bg-[#1C0E29] overflow-hidden flex">
+            <div className="w-full h-2.5 rounded-full bg-surface-container overflow-hidden flex">
               <div
-                className="h-full bg-emerald-500 transition-all"
+                className="h-full bg-success transition-all"
                 style={{ width: `${completedPct}%` }}
               />
               <div
-                className="h-full bg-rose-500 transition-all"
+                className="h-full bg-error transition-all"
                 style={{ width: `${Math.min(100 - completedPct, failedPct)}%` }}
               />
             </div>
@@ -1038,23 +1102,23 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
           {/* Page & Question Counters */}
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
             {[
-              ['Total Pages', activeJob.totalPages, 'text-white'],
-              ['Completed Pages', activeJob.completedPages, 'text-emerald-300'],
-              ['Failed Pages', activeJob.failedPages, activeJob.failedPages > 0 ? 'text-rose-300' : 'text-white'],
-              ['Pending Pages', activeJob.pendingPages, 'text-amber-200'],
-              ['Extracted MCQs', activeJob.extractedCount, 'text-white'],
-              ['Duplicates Skipped', importSummary ? importSummary.duplicates : activeJob.duplicateCount, 'text-white'],
-              ['Needs Review', importSummary ? importSummary.needsReview : activeJob.reviewCount, 'text-white'],
+              ['Total Pages', activeJob.totalPages, 'text-on-surface'],
+              ['Completed Pages', activeJob.completedPages, 'text-success'],
+              ['Failed Pages', activeJob.failedPages, activeJob.failedPages > 0 ? 'text-error' : 'text-on-surface'],
+              ['Pending Pages', activeJob.pendingPages, 'text-warning'],
+              ['Extracted MCQs', activeJob.extractedCount, 'text-primary'],
+              ['Duplicates Skipped', importSummary ? importSummary.duplicates : activeJob.duplicateCount, 'text-on-surface'],
+              ['Needs Review', importSummary ? importSummary.needsReview : activeJob.reviewCount, 'text-on-surface'],
             ].map(([label, val, colorCls]) => (
-              <div key={String(label)} className="p-3 rounded-lg bg-[#1C0E29] border border-[#514871]">
-                <p className="text-[11px] text-[#CFCEDD]">{label}</p>
+              <div key={String(label)} className="p-3 rounded-lg bg-surface-container-low border border-outline-variant">
+                <p className="text-[11px] text-on-surface-variant">{label}</p>
                 <p className={`text-xl font-bold tabular-nums mt-0.5 ${colorCls}`}>{val}</p>
               </div>
             ))}
           </div>
 
           {importSummary && (
-            <div className="p-3.5 rounded-lg bg-emerald-950/60 border border-emerald-500/60 text-xs text-emerald-100">
+            <div className="p-3.5 rounded-lg bg-success-container border border-success/30 text-xs text-on-success-container">
               Firestore Sync Active: <strong>{importSummary.imported}</strong> new unique questions saved automatically,{' '}
               <strong>{importSummary.duplicates}</strong> duplicates skipped,{' '}
               <strong>{importSummary.needsReview}</strong> flagged for review.
@@ -1065,7 +1129,7 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
 
           {/* Batch Progress Pills with Per-Batch Manual Retry */}
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-[#B5ADC6]">
+            <p className="text-xs font-semibold text-on-surface-variant">
               Page Batches ({activeJob.batches.length} total API batches)
             </p>
             <div className="flex flex-wrap gap-2">
@@ -1075,12 +1139,12 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
                   title={b.error || `Pages ${b.startPage}-${b.endPage} (${b.status})`}
                   className={`px-3 py-1.5 rounded-lg border text-xs tabular-nums flex items-center gap-2 ${
                     b.status === 'completed'
-                      ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200'
+                      ? 'bg-success-container border-success/30 text-on-success-container'
                       : b.status === 'failed'
-                        ? 'bg-rose-950/60 border-rose-500 text-rose-200'
+                        ? 'bg-error-container border-error/30 text-on-error-container'
                         : b.status === 'processing'
-                          ? 'bg-[#675D85] border-[#B5ADC6] text-white'
-                          : 'bg-[#1C0E29] border-[#514871] text-[#9993AC]'
+                          ? 'bg-secondary-container border-secondary/40 text-on-secondary-container'
+                          : 'bg-surface-container-low border-outline-variant text-on-surface-variant'
                   }`}
                 >
                   <span>
@@ -1092,9 +1156,9 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
                   {b.status === 'failed' && (
                     <button
                       type="button"
-                      disabled={controlBusy === `batch_${b.batchIndex}`}
+                      disabled={controlBusy === `batch_${b.batchIndex}` || cooldown.active}
                       onClick={() => handleJobControl('retry_batch', b.batchIndex)}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-400 text-[#0E0713] text-[11px] font-bold hover:bg-amber-300"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-warning text-on-warning text-[11px] font-bold hover:opacity-90 disabled:opacity-50"
                     >
                       <RotateCcw className="w-3 h-3" /> Retry
                     </button>
@@ -1107,28 +1171,28 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
           {/* Preview Extracted Questions */}
           {activeJob.extractedQuestions.length > 0 && (
             <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-              <p className="text-xs font-semibold text-[#B5ADC6]">
+              <p className="text-xs font-semibold text-on-surface-variant">
                 Preview Extracted Questions ({activeJob.extractedQuestions.length})
               </p>
               {activeJob.extractedQuestions.slice(0, 20).map((q, idx) => (
                 <div
                   key={q.tempId}
-                  className="p-3.5 rounded-lg bg-[#1C0E29]/80 border border-[#514871] text-xs space-y-1.5"
+                  className="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant text-xs space-y-1.5"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-[#B5ADC6]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-on-surface-variant">
                     <span>
                       #{idx + 1} · {q.subject} · {q.chapter} · Pages {q.pageRange}
                     </span>
                     <span
                       className={
-                        q.verificationStatus === 'verified' ? 'text-emerald-400' : 'text-amber-300'
+                        q.verificationStatus === 'verified' ? 'text-success font-semibold' : 'text-warning font-semibold'
                       }
                     >
                       {q.verificationStatus === 'verified' ? 'Official Key Verified' : 'AI-Derived / Needs Review'}
                     </span>
                   </div>
-                  <p className="text-sm text-white font-medium">{q.questionText}</p>
-                  <p className="text-[#CFCEDD]">
+                  <p className="text-sm text-on-surface font-medium">{q.questionText}</p>
+                  <p className="text-on-surface-variant">
                     Ans: {['A', 'B', 'C', 'D'][q.correctIndex]} ({q.options[q.correctIndex]})
                   </p>
                 </div>
@@ -1140,13 +1204,13 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
 
       {/* Persisted Firestore Checkpoint Jobs History */}
       {savedJobs.length > 0 && (
-        <div className="p-6 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-4">
+        <div className="p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
-              <History className="w-4 h-4 text-[#B5ADC6]" />
+            <h3 className="font-headline text-base font-bold text-on-surface flex items-center gap-2">
+              <History className="w-4 h-4 text-secondary" />
               Saved Extraction Checkpoints
             </h3>
-            <span className="text-xs text-[#CFCEDD]">Resume incomplete papers without re-processing completed pages</span>
+            <span className="text-xs text-on-surface-variant">Resume incomplete papers without re-processing completed pages</span>
           </div>
 
           <div className="space-y-2.5">
@@ -1159,24 +1223,24 @@ export const AIPdfImportPanel: React.FC<AIPdfImportPanelProps> = ({
               return (
                 <div
                   key={job.id}
-                  className="p-3.5 rounded-lg bg-[#1C0E29] border border-[#514871] flex flex-wrap items-center justify-between gap-3 text-xs"
+                  className="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant flex flex-wrap items-center justify-between gap-3 text-xs"
                 >
                   <div className="space-y-0.5">
-                    <p className="text-sm font-semibold text-white">
+                    <p className="text-sm font-semibold text-on-surface">
                       {job.fileName}{' '}
-                      <span className="text-[11px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#3D2C56] text-[#B5ADC6] ml-1">
+                      <span className="text-[11px] font-mono uppercase px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container ml-1">
                         {job.status}
                       </span>
                     </p>
-                    <p className="text-[#CFCEDD] tabular-nums">
-                      {job.examName} ({job.examYear}) · Completed: <strong className="text-emerald-300">{job.pagesProcessed}</strong>/{job.totalPages} pages · Failed: <strong className="text-rose-300">{failedCount}</strong> · Pending: <strong className="text-amber-200">{pendingCount}</strong> · Saved Qs: <strong className="text-white">{job.importedCount}</strong>
+                    <p className="text-on-surface-variant tabular-nums">
+                      {job.examName} ({job.examYear}) · Completed: <strong className="text-success">{job.pagesProcessed}</strong>/{job.totalPages} pages · Failed: <strong className="text-error">{failedCount}</strong> · Pending: <strong className="text-warning">{pendingCount}</strong> · Saved Qs: <strong className="text-on-surface">{job.importedCount}</strong>
                     </p>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => handleOpenSavedJob(job)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] font-bold hover:bg-white transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-on-primary font-semibold hover:bg-primary-container transition-colors"
                   >
                     <Play className="w-3.5 h-3.5" />
                     {job.status === 'completed' ? 'Inspect' : 'Load / Resume'}

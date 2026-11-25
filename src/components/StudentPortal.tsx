@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Award,
   BarChart3,
@@ -13,6 +13,7 @@ import {
   Home,
   LayoutGrid,
   LogOut,
+  Menu,
   Moon,
   Newspaper,
   Printer,
@@ -53,6 +54,7 @@ import {
   DigitalGKBook,
   ExamCategory,
   ExamQuestion,
+  FeePaymentRecord,
   LibrarySettings,
   MembershipPlan,
   MembershipRecord,
@@ -61,6 +63,7 @@ import {
   PaymentRecord,
   SeatBookingRecord,
   SeatRecord,
+  StudentFeeRecord,
   StudentRecord,
   StudyBookmark,
   TestAttemptRecord,
@@ -155,11 +158,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     : 'overview';
 
   const [tab, setTab] = useState<StudentTab>(resolvedInitialTab);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [memberships, setMemberships] = useState<MembershipRecord[]>([]);
   const [bookings, setBookings] = useState<SeatBookingRecord[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [bookIssues, setBookIssues] = useState<BookIssueRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [studentFees, setStudentFees] = useState<StudentFeeRecord[]>([]);
+  const [manualFeePayments, setManualFeePayments] = useState<FeePaymentRecord[]>([]);
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
   const [attempts, setAttempts] = useState<TestAttemptRecord[]>([]);
   const [bookmarks, setBookmarks] = useState<StudyBookmark[]>([]);
@@ -187,6 +194,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const [editEmergency, setEditEmergency] = useState('');
   const [editPhoto, setEditPhoto] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
+
+  const notify = useCallback((type: 'ok' | 'err', text: string) => {
+    setFeedback({ type, text });
+    setTimeout(() => setFeedback(null), 5000);
+  }, []);
 
   useEffect(() => {
     if (initialTab && VALID_TABS.includes(initialTab as StudentTab)) {
@@ -274,6 +286,30 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
     unsubs.push(
       onSnapshot(
+        query(collection(db, 'student_fees'), where('studentUid', '==', uid)),
+        (snap) => {
+          markFirestoreConnected();
+          setStudentFees(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<StudentFeeRecord, 'id'>) })));
+        },
+        (err) => handleSnapErr(err, 'student_fees')
+      )
+    );
+
+    unsubs.push(
+      onSnapshot(
+        query(collection(db, 'fee_payments'), where('studentUid', '==', uid)),
+        (snap) => {
+          markFirestoreConnected();
+          const list = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<FeePaymentRecord, 'id'>) }));
+          list.sort((a, b) => (b.paymentDate || '').localeCompare(a.paymentDate || ''));
+          setManualFeePayments(list);
+        },
+        (err) => handleSnapErr(err, 'fee_payments')
+      )
+    );
+
+    unsubs.push(
+      onSnapshot(
         query(collection(db, 'notifications'), where('recipientUid', 'in', [uid, 'ALL_STUDENTS'])),
         (snap) => {
           markFirestoreConnected();
@@ -308,9 +344,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     );
 
     return () => unsubs.forEach((u) => u());
-  }, [firebaseUser?.uid]);
+  }, [firebaseUser?.uid, notify]);
 
   const activeStudent: StudentRecord | null = studentRecord;
+  const activeFeeLedger: StudentFeeRecord | null = studentFees[0] || null;
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayOpenRecord = useMemo(
     () => attendance.find((a) => a.date === todayStr && !a.checkOutTime),
@@ -326,6 +363,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     () => payments.filter((p) => p.status === 'pending').reduce((s, p) => s + p.amount, 0),
     [payments]
   );
+
+  const totalFeeBalance = useMemo(() => {
+    const ledgerBal = studentFees.reduce((s, f) => s + Number(f.remainingBalance || 0), 0);
+    return ledgerBal > 0 ? ledgerBal : pendingDues;
+  }, [studentFees, pendingDues]);
 
   const filteredSeats = useMemo(() => {
     if (zoneFilter === 'ALL') return seats;
@@ -353,11 +395,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
   const unreadCount = notifications.filter((n) => !n.read && n.recipientUid === firebaseUser?.uid).length;
   const latestAttempt = selectedAttempt || attempts.find((a) => a.status === 'submitted') || null;
-
-  const notify = (type: 'ok' | 'err', text: string) => {
-    setFeedback({ type, text });
-    setTimeout(() => setFeedback(null), 5000);
-  };
 
   const launchTest = (cfg: ActiveTestConfig) => {
     setSessionQuestions((prev) => {
@@ -766,7 +803,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   // Active full-screen CBT Test Runner takeover
   if (activeTest && firebaseUser) {
     return (
-      <div className="min-h-screen bg-[#1C0E29] text-white p-4 sm:p-6">
+      <div className="min-h-screen bg-surface text-on-surface p-4 sm:p-6">
         <OnlineExamRunner
           config={activeTest}
           studentUid={firebaseUser.uid}
@@ -786,71 +823,113 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   }
 
   const navItems: Array<{ id: StudentTab; label: string; icon: any }> = [
-    { id: 'overview', label: 'Overview', icon: LayoutGrid },
+    { id: 'overview', label: 'Dashboard', icon: LayoutGrid },
     { id: 'exams', label: 'Competitive Exams', icon: Award },
     { id: 'performance', label: 'AI Analytics', icon: BarChart3 },
     { id: 'current_affairs', label: 'Current Affairs', icon: Newspaper },
     { id: 'gk_books', label: 'Digital GK Books', icon: BookMarked },
     { id: 'membership', label: 'Membership', icon: CheckCircle2 },
     { id: 'seats', label: 'Seat Booking', icon: Home },
-    { id: 'attendance', label: 'Attendance', icon: CalendarCheck },
-    { id: 'payments', label: 'Payments & Receipts', icon: CreditCard },
+    { id: 'attendance', label: 'My Attendance', icon: CalendarCheck },
+    { id: 'payments', label: 'Fees & Receipts', icon: CreditCard },
     { id: 'books', label: 'Library Books', icon: BookOpen },
     { id: 'notifications', label: `Notifications${unreadCount ? ` (${unreadCount})` : ''}`, icon: Bell },
-    { id: 'profile', label: 'Profile', icon: UserIcon },
+    { id: 'profile', label: 'Profile & Pass', icon: UserIcon },
   ];
 
+  const initials = (activeStudent?.fullName || firebaseUser?.displayName || 'ST')
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() || '')
+    .join('') || 'ST';
+
+  const selectTab = (next: StudentTab) => {
+    setTab(next);
+    setSidebarOpen(false);
+  };
+
   return (
-    <div className="min-h-screen bg-[#1C0E29] text-white flex flex-col lg:flex-row">
-      {/* Sidebar */}
-      <aside className="lg:w-64 bg-[#0E0713] border-b lg:border-b-0 lg:border-r border-[#7C7397]/40 shrink-0 no-print">
-        <div className="p-5 border-b border-[#7C7397]/40 flex items-center justify-between">
-          <BrandLogo compact />
-          <button
-            type="button"
-            onClick={onGoPublic}
-            className="text-xs font-medium text-[#CFCEDD] hover:text-white"
-          >
-            Website
-          </button>
+    <div className="min-h-screen bg-surface text-on-surface font-body flex flex-col lg:flex-row">
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-primary/40 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Student Portal Navy Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-primary text-on-primary flex flex-col justify-between transform transition-transform duration-200 lg:translate-x-0 lg:static shrink-0 no-print ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex flex-col gap-5 p-4 overflow-y-auto">
+          <div className="flex items-center justify-between px-2 py-1">
+            <BrandLogo variant="light" subtitle="Student portal" />
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close navigation menu"
+              className="lg:hidden p-1.5 rounded text-on-primary-container hover:text-on-primary hover:bg-primary-container"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <nav aria-label="Student navigation" className="flex flex-col gap-1">
+            <span className="px-3 mb-1 font-label text-[11px] font-semibold text-on-primary-container uppercase tracking-wider">
+              My workspace
+            </span>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = tab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => selectTab(item.id)}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded text-left font-label text-sm font-medium transition-colors cursor-pointer ${
+                    active
+                      ? 'bg-secondary text-on-secondary font-semibold'
+                      : 'text-on-primary-container hover:bg-primary-container hover:text-on-primary'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
 
-        <nav className="p-3 flex lg:flex-col gap-1 overflow-x-auto">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = tab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setTab(item.id)}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
-                  active
-                    ? 'bg-[#B5ADC6] text-[#0E0713] font-semibold'
-                    : 'text-[#CFCEDD] hover:bg-[#3D2C56] hover:text-white'
-                }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="p-4 border-t border-[#7C7397]/40 hidden lg:block space-y-2">
+        <div className="p-4 border-t border-primary-container space-y-2.5">
           {actualRole === 'admin' && (
             <button
               type="button"
               onClick={() => setPreviewRole(null)}
-              className="w-full py-2 px-3 rounded-lg bg-[#514871] border border-[#7C7397] text-white text-xs font-semibold hover:bg-[#675D85]"
+              className="w-full py-2 px-3 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-secondary/90 cursor-pointer"
             >
               Return to Admin Console
             </button>
           )}
+          <div className="flex items-center gap-2.5 px-2.5 py-2 rounded bg-primary-container">
+            <div className="w-9 h-9 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-headline text-xs font-bold shrink-0">
+              {initials}
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="font-title text-sm font-semibold text-on-primary truncate">
+                {activeStudent?.fullName || firebaseUser?.displayName || 'Student Member'}
+              </span>
+              <span className="font-mono text-[11px] text-on-primary-container truncate tabular-nums">
+                {activeStudent ? `${activeStudent.studentCode} · ${activeStudent.seatCode || 'No Seat'}` : 'Guest Profile'}
+              </span>
+            </div>
+          </div>
           <button
             type="button"
             onClick={signOut}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-[#7C7397]/60 text-xs font-medium text-[#CFCEDD] hover:bg-[#3D2C56] hover:text-white"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded border border-on-primary-container/30 text-xs font-semibold text-on-primary-container hover:bg-primary-container hover:text-on-primary cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             Sign Out
@@ -860,12 +939,21 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       {/* Main Content */}
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-16 bg-[#0E0713] border-b border-[#7C7397]/40 px-6 flex items-center justify-between gap-4 no-print">
-          <div className="min-w-0">
-            <h1 className="font-display text-lg font-bold text-white truncate">
+        <header className="sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant px-4 lg:px-8 py-3 flex items-center justify-between gap-4 no-print">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open navigation menu"
+              className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low shrink-0"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <h1 className="font-headline text-base sm:text-lg font-bold text-primary truncate">
               Student Learning Portal {activeStudent ? `· ${activeStudent.studentCode}` : ''}
             </h1>
           </div>
+
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
@@ -877,54 +965,65 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   ? `Database status: ${connectionStatus.state} (${connectionStatus.lastError})`
                   : `Database status: ${connectionStatus.state}`
               }
-              className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-colors ${
+              className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs font-semibold transition-colors cursor-pointer ${
                 connectionStatus.state === 'connected'
-                  ? 'border-emerald-500/40 bg-emerald-950/40 text-emerald-300'
+                  ? 'border-success/30 bg-success-container/60 text-on-success-container'
                   : connectionStatus.state === 'offline'
-                    ? 'border-rose-500/50 bg-rose-950/50 text-rose-200 hover:bg-rose-900/60'
-                    : 'border-amber-500/50 bg-amber-950/50 text-amber-200'
+                    ? 'border-error/40 bg-error-container text-on-error-container'
+                    : 'border-warning/40 bg-warning-container text-on-warning-container'
               }`}
             >
               {connectionStatus.state === 'connected' ? (
-                <Wifi className="w-3 h-3" />
+                <Wifi className="w-3.5 h-3.5" />
               ) : connectionStatus.state === 'offline' ? (
-                <WifiOff className="w-3 h-3" />
+                <WifiOff className="w-3.5 h-3.5" />
               ) : (
-                <RefreshCw className="w-3 h-3 animate-spin" />
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
               )}
               <span>
                 {connectionStatus.state === 'connected'
                   ? 'Live Sync'
                   : connectionStatus.state === 'offline'
-                    ? 'Offline (Cached) · Retry'
+                    ? 'Offline · Retry'
                     : 'Reconnecting...'}
               </span>
             </button>
+
+            <button
+              type="button"
+              onClick={onGoPublic}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-outline-variant bg-surface-container-lowest text-xs font-semibold text-primary hover:bg-surface-container-low cursor-pointer"
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Website</span>
+            </button>
+
             <button
               type="button"
               onClick={onToggleDarkMode}
               aria-label="Toggle color theme"
-              className="p-2 rounded-lg border border-[#7C7397]/60 text-[#CFCEDD] hover:text-white"
+              className="p-2 rounded border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:text-primary hover:bg-surface-container-low cursor-pointer"
             >
               {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
+
             <button
               type="button"
               onClick={signOut}
-              className="lg:hidden px-3 py-1.5 rounded-lg border border-[#7C7397]/60 text-xs font-medium text-[#CFCEDD]"
+              className="lg:hidden px-3 py-1.5 rounded bg-primary text-on-primary text-xs font-semibold"
             >
               Sign Out
             </button>
           </div>
         </header>
 
-        <main className="p-6 max-w-6xl w-full mx-auto space-y-6">
+        <main className="p-4 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
           {feedback && (
             <div
-              className={`p-3.5 rounded-lg border text-sm ${
+              className={`p-3.5 rounded-lg border text-sm font-medium ${
                 feedback.type === 'ok'
-                  ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-200'
-                  : 'bg-red-950/60 border-red-500/60 text-red-200'
+                  ? 'bg-success-container/70 border-success/40 text-on-success-container'
+                  : 'bg-error-container border-error/40 text-on-error-container'
               }`}
             >
               {feedback.text}
@@ -932,19 +1031,19 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           )}
 
           {!activeStudent && (
-            <div className="p-6 rounded-xl bg-[#3D2C56] border border-[#7C7397]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="font-display text-xl font-bold text-white">
+                <h2 className="font-headline text-xl font-bold text-primary">
                   Complete Your Student Registration
                 </h2>
-                <p className="text-sm text-[#CFCEDD] mt-1">
+                <p className="text-sm text-on-surface-variant mt-1">
                   Generate your unique Student ID (VL2026XXX) and QR Pass to book seats, record attendance, and activate memberships. Competitive exams and GK notes are already unlocked!
                 </p>
               </div>
               <button
                 type="button"
                 onClick={onOpenCompleteProfile}
-                className="px-4 py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold whitespace-nowrap shrink-0 hover:bg-white"
+                className="px-4 py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold whitespace-nowrap shrink-0 hover:bg-primary cursor-pointer"
               >
                 Complete Profile
               </button>
@@ -955,37 +1054,50 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             <div className="space-y-6">
               {activeStudent && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  <div className="lg:col-span-8 p-6 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 flex flex-col justify-between">
-                    <div>
-                      <p className="text-xs font-semibold text-[#B5ADC6]">Welcome Back · Gyan Adda Campus</p>
-                      <h2 className="mt-1 font-display text-2xl font-bold text-white">
-                        {activeStudent.fullName}
-                      </h2>
-                      <p className="mt-1 text-xs text-[#CFCEDD]">
-                        Student ID <span className="font-mono font-semibold text-white">{activeStudent.studentCode}</span>
-                        <span aria-hidden="true"> · </span>
-                        <span>{activeStudent.email}</span>
-                        <span aria-hidden="true"> · </span>
-                        <span>{activeStudent.mobile}</span>
-                      </p>
+                  <div className="lg:col-span-8 p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col justify-between">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold text-secondary uppercase tracking-wider">
+                          Welcome Back · Gyan Adda Campus
+                        </p>
+                        <h2 className="mt-1 font-headline text-2xl font-bold text-on-surface">
+                          {activeStudent.fullName}
+                        </h2>
+                        <p className="mt-1 text-xs text-on-surface-variant">
+                          Student ID <span className="font-mono font-semibold text-primary">{activeStudent.studentCode}</span>
+                          <span aria-hidden="true"> · </span>
+                          <span>{activeStudent.email}</span>
+                          <span aria-hidden="true"> · </span>
+                          <span>{activeStudent.mobile}</span>
+                        </p>
+                      </div>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
+                          activeStudent.membershipStatus === 'active'
+                            ? 'bg-success-container text-on-success-container'
+                            : 'bg-warning-container text-on-warning-container'
+                        }`}
+                      >
+                        Membership {memberships.find((m) => m.status === 'active')?.status || activeStudent.membershipStatus}
+                      </span>
                     </div>
 
-                    <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 pt-5 border-t border-[#7C7397]/30">
+                    <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 pt-5 border-t border-outline-variant">
                       <div>
-                        <p className="text-xs text-[#9993AC]">Membership</p>
-                        <p className="mt-1 text-sm font-bold capitalize text-white">
-                          {memberships.find((m) => m.status === 'active')?.status || activeStudent.membershipStatus}
+                        <p className="text-xs text-on-surface-variant">Membership</p>
+                        <p className="mt-1 text-sm font-bold capitalize text-on-surface">
+                          {memberships.find((m) => m.status === 'active')?.planName || activeStudent.membershipStatus}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-[#9993AC]">Expiry Date</p>
-                        <p className="mt-1 text-sm font-bold tabular-nums text-white">
+                        <p className="text-xs text-on-surface-variant">Expiry Date</p>
+                        <p className="mt-1 text-sm font-bold tabular-nums text-on-surface">
                           {memberships.find((m) => m.status === 'active')?.expiryDate || activeStudent.membershipExpiry || '—'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-[#9993AC]">Assigned Seat</p>
-                        <p className="mt-1 font-mono text-sm font-bold text-white">
+                        <p className="text-xs text-on-surface-variant">Assigned Seat</p>
+                        <p className="mt-1 font-mono text-sm font-bold text-primary">
                           {activeStudent.seatCode ||
                             (bookings.find((b) => b.status === 'pending')
                               ? `${bookings.find((b) => b.status === 'pending')?.seatCode} (Pending)`
@@ -993,15 +1105,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-[#9993AC]">Study Hours</p>
-                        <p className="mt-1 text-sm font-bold tabular-nums text-white">{totalStudyHours} hrs</p>
+                        <p className="text-xs text-on-surface-variant">Study Hours</p>
+                        <p className="mt-1 text-sm font-bold tabular-nums text-on-surface">{totalStudyHours} hrs</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Student QR Pass */}
-                  <div className="lg:col-span-4 p-6 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 flex flex-col items-center justify-center text-center">
-                    <div className="p-3 bg-white rounded-lg border border-[#7C7397]">
+                  <div className="lg:col-span-4 p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col items-center justify-center text-center">
+                    <div className="p-3 bg-white rounded-lg border border-outline-variant">
                       <QRCodeSVG
                         value={JSON.stringify({
                           studentCode: activeStudent.studentCode,
@@ -1011,10 +1123,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                         size={132}
                       />
                     </div>
-                    <p className="mt-3 font-mono text-sm font-bold text-white">
+                    <p className="mt-3 font-mono text-sm font-bold text-primary">
                       {activeStudent.studentCode}
                     </p>
-                    <p className="text-xs text-[#CFCEDD]">
+                    <p className="text-xs text-on-surface-variant">
                       Scan at library desk for check-in & book lending
                     </p>
                   </div>
@@ -1024,10 +1136,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               {/* Quick KPI & Competitive Exam Strip */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {activeStudent && (
-                  <div className="p-5 rounded-xl bg-[#514871] border border-[#7C7397]/40 flex items-center justify-between gap-2">
+                  <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex items-center justify-between gap-2">
                     <div>
-                      <p className="text-xs text-[#CFCEDD]">Daily Attendance</p>
-                      <p className="mt-1 text-sm font-bold tabular-nums text-white">
+                      <p className="text-xs text-on-surface-variant">Daily Attendance</p>
+                      <p className="mt-1 text-sm font-bold tabular-nums text-on-surface">
                         {todayOpenRecord ? `In (${todayOpenRecord.checkInTime})` : 'Not Checked In'}
                       </p>
                     </div>
@@ -1035,7 +1147,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                       <button
                         type="button"
                         onClick={handleCheckOut}
-                        className="px-3 py-1.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold hover:bg-white"
+                        className="px-3 py-1.5 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
                       >
                         Check Out
                       </button>
@@ -1043,7 +1155,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                       <button
                         type="button"
                         onClick={handleCheckIn}
-                        className="px-3 py-1.5 rounded-lg bg-[#0E0713] text-white border border-[#7C7397]/60 text-xs font-semibold"
+                        className="px-3 py-1.5 rounded bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container cursor-pointer"
                       >
                         Check In
                       </button>
@@ -1051,44 +1163,53 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   </div>
                 )}
 
-                <div className="p-5 rounded-xl bg-[#514871] border border-[#7C7397]/40">
-                  <p className="text-xs text-[#CFCEDD]">Mock Tests Attempted</p>
-                  <p className="mt-1 text-lg font-bold tabular-nums text-white">
+                <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm">
+                  <p className="text-xs text-on-surface-variant">Mock Tests Attempted</p>
+                  <p className="mt-1 font-headline text-xl font-bold tabular-nums text-on-surface">
                     {attempts.filter((a) => a.status === 'submitted').length} Tests
                   </p>
                   <button
                     type="button"
                     onClick={() => setTab('exams')}
-                    className="mt-2 text-xs font-semibold text-[#B5ADC6] hover:text-white underline"
+                    className="mt-1.5 text-xs font-semibold text-secondary hover:underline cursor-pointer"
                   >
                     Launch Exam Portal →
                   </button>
                 </div>
 
-                <div className="p-5 rounded-xl bg-[#514871] border border-[#7C7397]/40">
-                  <p className="text-xs text-[#CFCEDD]">Outstanding Dues</p>
-                  <p className="mt-1 text-lg font-bold tabular-nums text-white">
-                    ₹{pendingDues.toLocaleString('en-IN')}
+                <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm">
+                  <p className="text-xs text-on-surface-variant">Fee Balance Due</p>
+                  <p
+                    className={`mt-1 font-headline text-xl font-bold tabular-nums ${
+                      totalFeeBalance > 0 ? 'text-error' : 'text-success'
+                    }`}
+                  >
+                    ₹{totalFeeBalance.toLocaleString('en-IN')}
+                  </p>
+                  <p className="mt-1 text-[11px] text-on-surface-variant">
+                    {activeFeeLedger
+                      ? `Due ${activeFeeLedger.dueDate} · WA: ${activeFeeLedger.reminderStatus}`
+                      : 'No overdue balance'}
                   </p>
                 </div>
 
-                <div className="p-5 rounded-xl bg-[#514871] border border-[#7C7397]/40">
-                  <p className="text-xs text-[#CFCEDD]">Active Issued Books</p>
-                  <p className="mt-1 text-lg font-bold tabular-nums text-white">
+                <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm">
+                  <p className="text-xs text-on-surface-variant">Active Issued Books</p>
+                  <p className="mt-1 font-headline text-xl font-bold tabular-nums text-on-surface">
                     {bookIssues.filter((i) => i.status === 'issued' || i.status === 'overdue').length} Books
                   </p>
                 </div>
               </div>
 
               {announcements.filter((a) => a.published).length > 0 && (
-                <div className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 space-y-3">
-                  <h3 className="text-sm font-semibold text-white">Library Announcements</h3>
+                <div className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-3">
+                  <h3 className="font-headline text-base font-bold text-on-surface">Library Announcements</h3>
                   {announcements
                     .filter((a) => a.published)
                     .map((ann) => (
-                      <div key={ann.id} className="pt-3 border-t border-[#7C7397]/30">
-                        <p className="text-sm font-medium text-white">{ann.title}</p>
-                        <p className="text-xs text-[#CFCEDD] mt-0.5">{ann.body}</p>
+                      <div key={ann.id} className="pt-3 border-t border-outline-variant">
+                        <p className="text-sm font-semibold text-on-surface">{ann.title}</p>
+                        <p className="text-xs text-on-surface-variant mt-0.5">{ann.body}</p>
                       </div>
                     ))}
                 </div>
@@ -1123,16 +1244,16 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 onBack={() => setTab('exams')}
               />
             ) : (
-              <div className="p-8 rounded-2xl bg-[#3D2C56] border border-[#7C7397]/40 text-center space-y-3">
-                <BarChart3 className="w-10 h-10 mx-auto text-[#B5ADC6]" />
-                <h2 className="font-display text-xl font-bold text-white">No Completed Test Reports Yet</h2>
-                <p className="text-sm text-[#CFCEDD]">
+              <div className="p-8 rounded-xl bg-surface-container-lowest border border-outline-variant shadow-sm text-center space-y-3">
+                <BarChart3 className="w-10 h-10 mx-auto text-secondary" />
+                <h2 className="font-headline text-xl font-bold text-on-surface">No Completed Test Reports Yet</h2>
+                <p className="text-sm text-on-surface-variant">
                   Complete a PYQ test, AI Mock, or Daily Current Affairs Quiz to unlock subject-wise charts and Gemini AI study recommendations.
                 </p>
                 <button
                   type="button"
                   onClick={() => setTab('exams')}
-                  className="px-5 py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold hover:bg-white"
+                  className="px-5 py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
                 >
                   Open Competitive Exam Hub
                 </button>
@@ -1162,10 +1283,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           {tab === 'profile' && activeStudent && (
             <form
               onSubmit={handleSaveProfile}
-              className="p-6 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 space-y-4 max-w-2xl"
+              className="p-6 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm space-y-4 max-w-2xl"
             >
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-xl font-bold text-white">Personal Profile</h2>
+                <h2 className="font-headline text-xl font-bold text-on-surface">Personal Profile</h2>
                 <button
                   type="button"
                   onClick={() =>
@@ -1173,7 +1294,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                       notify('ok', 'Password reset email dispatched.')
                     )
                   }
-                  className="text-xs font-semibold text-[#B5ADC6] hover:text-white hover:underline"
+                  className="text-xs font-semibold text-secondary hover:underline cursor-pointer"
                 >
                   Send Password Reset Email
                 </button>
@@ -1181,80 +1302,80 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Student ID</label>
+                  <label className="block text-xs font-semibold text-on-surface-variant mb-1">Student ID</label>
                   <input
                     type="text"
                     disabled
                     value={activeStudent.studentCode}
-                    className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-[#7C7397]/50 bg-[#1C0E29]/70 text-[#CFCEDD] opacity-80"
+                    className="w-full px-3 py-2 text-sm font-mono rounded border border-outline-variant bg-surface-container-low text-on-surface opacity-80"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Email Address</label>
+                  <label className="block text-xs font-semibold text-on-surface-variant mb-1">Email Address</label>
                   <input
                     type="text"
                     disabled
                     value={activeStudent.email}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/50 bg-[#1C0E29]/70 text-[#CFCEDD] opacity-80"
+                    className="w-full px-3 py-2 text-sm rounded border border-outline-variant bg-surface-container-low text-on-surface opacity-80"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Full Name</label>
+                  <label className="block text-xs font-semibold text-on-surface-variant mb-1">Full Name</label>
                   <input
                     type="text"
                     required
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className="w-full px-3 py-2 text-sm rounded border border-outline-variant bg-surface text-on-surface"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Mobile Number</label>
+                  <label className="block text-xs font-semibold text-on-surface-variant mb-1">Mobile Number</label>
                   <input
                     type="tel"
                     required
                     value={editMobile}
                     onChange={(e) => setEditMobile(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className="w-full px-3 py-2 text-sm rounded border border-outline-variant bg-surface text-on-surface"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Emergency Contact</label>
+                  <label className="block text-xs font-semibold text-on-surface-variant mb-1">Emergency Contact</label>
                   <input
                     type="tel"
                     required
                     value={editEmergency}
                     onChange={(e) => setEditEmergency(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className="w-full px-3 py-2 text-sm rounded border border-outline-variant bg-surface text-on-surface"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Profile Photo URL</label>
+                  <label className="block text-xs font-semibold text-on-surface-variant mb-1">Profile Photo URL</label>
                   <input
                     type="url"
                     value={editPhoto}
                     onChange={(e) => setEditPhoto(e.target.value)}
                     placeholder="https://..."
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className="w-full px-3 py-2 text-sm rounded border border-outline-variant bg-surface text-on-surface"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Address</label>
+                <label className="block text-xs font-semibold text-on-surface-variant mb-1">Address</label>
                 <input
                   type="text"
                   required
                   value={editAddress}
                   onChange={(e) => setEditAddress(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                  className="w-full px-3 py-2 text-sm rounded border border-outline-variant bg-surface text-on-surface"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={savingProfile}
-                className="px-5 py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold hover:bg-white"
+                className="px-5 py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
               >
                 {savingProfile ? 'Saving...' : 'Save Changes'}
               </button>
@@ -1264,10 +1385,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           {tab === 'membership' && (
             <div className="space-y-6">
               <div>
-                <h2 className="font-display text-xl font-bold text-white">
+                <h2 className="font-headline text-xl font-bold text-on-surface">
                   Membership Plans & Online Renewal
                 </h2>
-                <p className="text-sm text-[#CFCEDD]">
+                <p className="text-sm text-on-surface-variant">
                   Select a plan to renew or activate your library subscription via Razorpay.
                 </p>
               </div>
@@ -1278,17 +1399,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   .map((plan) => (
                     <div
                       key={plan.id}
-                      className="p-5 rounded-xl bg-[#514871] border border-[#7C7397]/50 flex flex-col justify-between"
+                      className="p-5 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col justify-between"
                     >
                       <div>
-                        <p className="text-xs text-[#CFCEDD]">
+                        <p className="text-xs text-on-surface-variant">
                           {plan.durationDays} Days · {plan.timings}
                         </p>
-                        <h3 className="mt-1 font-display text-lg font-bold text-white">{plan.name}</h3>
-                        <p className="mt-3 text-2xl font-bold tabular-nums text-white">
+                        <h3 className="mt-1 font-headline text-lg font-bold text-primary">{plan.name}</h3>
+                        <p className="mt-3 font-headline text-2xl font-bold tabular-nums text-on-surface">
                           ₹{Number(plan.price).toLocaleString('en-IN')}
                         </p>
-                        <p className="mt-2 text-xs text-[#CFCEDD]">{plan.seatAccess}</p>
+                        <p className="mt-2 text-xs text-on-surface-variant">{plan.seatAccess}</p>
                       </div>
                       <button
                         type="button"
@@ -1299,7 +1420,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                           }
                           setCheckoutPlan(plan);
                         }}
-                        className="mt-5 w-full py-2 px-4 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold hover:bg-white"
+                        className="mt-5 w-full py-2.5 px-4 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
                       >
                         Pay & Activate Plan
                       </button>
@@ -1307,36 +1428,46 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                   ))}
               </div>
 
-              <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-hidden">
-                <div className="px-5 py-4 border-b border-[#7C7397]/30">
-                  <h3 className="text-sm font-semibold text-white">Membership History</h3>
+              <div className="rounded-lg bg-surface-container-lowest border border-outline-variant overflow-hidden shadow-sm">
+                <div className="px-5 py-3.5 border-b border-outline-variant">
+                  <h3 className="text-sm font-semibold text-on-surface">Membership History</h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-[#0E0713]/60 text-xs text-[#CFCEDD]">
+                    <thead className="bg-surface-container-low text-xs text-on-surface-variant border-b border-outline-variant">
                       <tr>
-                        <th className="text-left px-4 py-3">Plan</th>
-                        <th className="text-left px-4 py-3">Start</th>
-                        <th className="text-left px-4 py-3">Expiry</th>
-                        <th className="text-right px-4 py-3">Amount</th>
-                        <th className="text-left px-4 py-3">Status</th>
+                        <th className="text-left px-4 py-3 font-semibold">Plan</th>
+                        <th className="text-left px-4 py-3 font-semibold">Start</th>
+                        <th className="text-left px-4 py-3 font-semibold">Expiry</th>
+                        <th className="text-right px-4 py-3 font-semibold">Amount</th>
+                        <th className="text-left px-4 py-3 font-semibold">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#7C7397]/25">
+                    <tbody className="divide-y divide-outline-variant">
                       {memberships.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="px-4 py-6 text-center text-[#CFCEDD]">
+                          <td colSpan={5} className="px-4 py-6 text-center text-on-surface-variant">
                             No membership records found yet.
                           </td>
                         </tr>
                       ) : (
                         memberships.map((m) => (
                           <tr key={m.id}>
-                            <td className="px-4 py-3 font-medium text-white">{m.planName}</td>
-                            <td className="px-4 py-3 tabular-nums text-[#CFCEDD]">{m.startDate}</td>
-                            <td className="px-4 py-3 tabular-nums text-[#CFCEDD]">{m.expiryDate}</td>
-                            <td className="px-4 py-3 text-right tabular-nums text-white">₹{m.amount}</td>
-                            <td className="px-4 py-3 capitalize font-medium text-[#B5ADC6]">{m.status}</td>
+                            <td className="px-4 py-3 font-medium text-on-surface">{m.planName}</td>
+                            <td className="px-4 py-3 tabular-nums text-on-surface-variant">{m.startDate}</td>
+                            <td className="px-4 py-3 tabular-nums text-on-surface-variant">{m.expiryDate}</td>
+                            <td className="px-4 py-3 text-right tabular-nums text-on-surface">₹{m.amount}</td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${
+                                  m.status === 'active'
+                                    ? 'bg-success-container text-on-success-container'
+                                    : 'bg-surface-variant text-on-surface-variant'
+                                }`}
+                              >
+                                {m.status}
+                              </span>
+                            </td>
                           </tr>
                         ))
                       )}
@@ -1351,21 +1482,21 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="font-display text-xl font-bold text-white">Interactive Seat Booking</h2>
-                  <p className="text-xs text-[#CFCEDD]">
+                  <h2 className="font-headline text-xl font-bold text-on-surface">Interactive Seat Booking</h2>
+                  <p className="text-xs text-on-surface-variant">
                     Click any green Available seat to reserve it or request a seat change.
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-1 p-1 bg-[#0E0713] rounded-lg border border-[#7C7397]/40">
+                <div className="flex flex-wrap gap-1 p-1 bg-surface-container-lowest rounded-lg border border-outline-variant">
                   {['ALL', ...Array.from(new Set(seats.map((s) => s.zone)))].map((z) => (
                     <button
                       key={z}
                       type="button"
                       onClick={() => setZoneFilter(z)}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap ${
+                      className={`px-3 py-1.5 text-xs font-semibold rounded whitespace-nowrap cursor-pointer ${
                         zoneFilter === z
-                          ? 'bg-[#B5ADC6] text-[#0E0713] font-semibold'
-                          : 'text-[#CFCEDD] hover:text-white'
+                          ? 'bg-primary text-on-primary'
+                          : 'text-on-surface-variant hover:text-primary'
                       }`}
                     >
                       {z === 'ALL' ? 'All Zones' : z}
@@ -1378,14 +1509,14 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 {filteredSeats.map((seat) => {
                   const isMine = seat.assignedStudentUid === firebaseUser?.uid;
                   const cls = isMine
-                    ? 'bg-[#B5ADC6] text-[#0E0713] border-white font-bold'
+                    ? 'bg-secondary text-on-secondary border-secondary font-bold'
                     : seat.status === 'available'
-                      ? 'bg-emerald-950/60 border-emerald-500/70 text-emerald-200 hover:bg-emerald-900/70'
+                      ? 'bg-success-container/70 border-success/40 text-on-success-container hover:bg-success-container cursor-pointer'
                       : seat.status === 'occupied'
-                        ? 'bg-red-950/60 border-red-500/50 text-red-200 opacity-75 cursor-not-allowed'
+                        ? 'bg-error-container/70 border-error/30 text-on-error-container opacity-80 cursor-not-allowed'
                         : seat.status === 'reserved'
-                          ? 'bg-amber-950/60 border-amber-500/60 text-amber-200 opacity-80 cursor-not-allowed'
-                          : 'bg-[#0E0713]/70 border-[#7C7397]/40 text-[#9993AC] cursor-not-allowed';
+                          ? 'bg-warning-container/70 border-warning/30 text-on-warning-container opacity-85 cursor-not-allowed'
+                          : 'bg-surface-variant border-outline-variant text-on-surface-variant cursor-not-allowed';
 
                   return (
                     <button
@@ -1402,28 +1533,28 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 })}
               </div>
 
-              <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-hidden">
-                <div className="px-5 py-4 border-b border-[#7C7397]/30">
-                  <h3 className="text-sm font-semibold text-white">My Seat Booking Requests</h3>
+              <div className="rounded-lg bg-surface-container-lowest border border-outline-variant overflow-hidden shadow-sm">
+                <div className="px-5 py-3.5 border-b border-outline-variant">
+                  <h3 className="text-sm font-semibold text-on-surface">My Seat Booking Requests</h3>
                 </div>
-                <div className="divide-y divide-[#7C7397]/25">
+                <div className="divide-y divide-outline-variant">
                   {bookings.length === 0 ? (
-                    <p className="p-5 text-sm text-[#CFCEDD]">No seat bookings yet.</p>
+                    <p className="p-5 text-sm text-on-surface-variant">No seat bookings yet.</p>
                   ) : (
                     bookings.map((b) => (
                       <div key={b.id} className="px-5 py-3 flex items-center justify-between gap-4 text-sm">
                         <div>
-                          <span className="font-mono font-bold text-white">{b.seatCode}</span>
-                          <span className="mx-2 text-[#9993AC]">·</span>
-                          <span className="capitalize text-[#CFCEDD]">{b.bookingType} request</span>
-                          <span className="mx-2 text-[#9993AC]">·</span>
-                          <span className="capitalize font-medium text-[#B5ADC6]">{b.status}</span>
+                          <span className="font-mono font-bold text-primary">{b.seatCode}</span>
+                          <span className="mx-2 text-outline">·</span>
+                          <span className="capitalize text-on-surface-variant">{b.bookingType} request</span>
+                          <span className="mx-2 text-outline">·</span>
+                          <span className="capitalize font-semibold text-secondary">{b.status}</span>
                         </div>
                         {b.status === 'pending' && (
                           <button
                             type="button"
                             onClick={() => handleCancelBooking(b)}
-                            className="px-3 py-1 rounded-lg border border-red-400/60 text-red-200 text-xs font-medium hover:bg-red-950/60"
+                            className="px-3 py-1 rounded border border-error/40 text-error text-xs font-semibold hover:bg-error-container cursor-pointer"
                           >
                             Cancel Request
                           </button>
@@ -1440,9 +1571,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="font-display text-xl font-bold text-white">Attendance & Study Hours</h2>
-                  <p className="text-sm text-[#CFCEDD] tabular-nums">
-                    Total Study Hours Logged: <strong className="text-white">{totalStudyHours} hrs</strong> across{' '}
+                  <h2 className="font-headline text-xl font-bold text-on-surface">Attendance & Study Hours</h2>
+                  <p className="text-sm text-on-surface-variant tabular-nums">
+                    Total Study Hours Logged: <strong className="text-primary">{totalStudyHours} hrs</strong> across{' '}
                     {attendance.length} sessions
                   </p>
                 </div>
@@ -1451,7 +1582,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     type="button"
                     disabled={Boolean(todayOpenRecord)}
                     onClick={handleCheckIn}
-                    className="px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold disabled:opacity-50"
+                    className="px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold disabled:opacity-50 cursor-pointer"
                   >
                     Check In Now
                   </button>
@@ -1459,41 +1590,41 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     type="button"
                     disabled={!todayOpenRecord}
                     onClick={handleCheckOut}
-                    className="px-4 py-2 rounded-lg bg-[#514871] border border-[#7C7397] text-white text-xs font-semibold disabled:opacity-50"
+                    className="px-4 py-2 rounded bg-primary text-on-primary text-xs font-semibold disabled:opacity-50 cursor-pointer"
                   >
                     Check Out
                   </button>
                 </div>
               </div>
 
-              <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-x-auto">
+              <div className="rounded-lg bg-surface-container-lowest border border-outline-variant overflow-x-auto shadow-sm">
                 <table className="w-full text-sm">
-                  <thead className="bg-[#0E0713]/60 text-xs text-[#CFCEDD]">
+                  <thead className="bg-surface-container-low text-xs text-on-surface-variant border-b border-outline-variant">
                     <tr>
-                      <th className="text-left px-4 py-3">Date</th>
-                      <th className="text-left px-4 py-3">Check In</th>
-                      <th className="text-left px-4 py-3">Check Out</th>
-                      <th className="text-right px-4 py-3">Duration</th>
-                      <th className="text-left px-4 py-3">Method</th>
+                      <th className="text-left px-4 py-3 font-semibold">Date</th>
+                      <th className="text-left px-4 py-3 font-semibold">Check In</th>
+                      <th className="text-left px-4 py-3 font-semibold">Check Out</th>
+                      <th className="text-right px-4 py-3 font-semibold">Duration</th>
+                      <th className="text-left px-4 py-3 font-semibold">Method</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#7C7397]/25">
+                  <tbody className="divide-y divide-outline-variant">
                     {attendance.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-6 text-center text-[#CFCEDD]">
+                        <td colSpan={5} className="px-4 py-6 text-center text-on-surface-variant">
                           No attendance logs yet. Click Check In Now when you arrive.
                         </td>
                       </tr>
                     ) : (
                       attendance.map((a) => (
                         <tr key={a.id}>
-                          <td className="px-4 py-3 tabular-nums text-white">{a.date}</td>
-                          <td className="px-4 py-3 tabular-nums text-[#CFCEDD]">{a.checkInTime}</td>
-                          <td className="px-4 py-3 tabular-nums text-[#CFCEDD]">{a.checkOutTime || 'In Progress'}</td>
-                          <td className="px-4 py-3 text-right tabular-nums text-white">
+                          <td className="px-4 py-3 tabular-nums text-on-surface font-medium">{a.date}</td>
+                          <td className="px-4 py-3 tabular-nums text-on-surface-variant">{a.checkInTime}</td>
+                          <td className="px-4 py-3 tabular-nums text-on-surface-variant">{a.checkOutTime || 'In Progress'}</td>
+                          <td className="px-4 py-3 text-right tabular-nums text-on-surface">
                             {a.durationMinutes ? `${a.durationMinutes} min` : '—'}
                           </td>
-                          <td className="px-4 py-3 uppercase text-xs font-mono text-[#B5ADC6]">{a.method}</td>
+                          <td className="px-4 py-3 uppercase text-xs font-mono text-secondary">{a.method}</td>
                         </tr>
                       ))
                     )}
@@ -1505,48 +1636,177 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
           {tab === 'payments' && (
             <div className="space-y-6">
-              <h2 className="font-display text-xl font-bold text-white">
-                Payments & Downloadable Receipts
+              <h2 className="font-headline text-xl font-bold text-on-surface">
+                Fee Ledger, Payments & Downloadable Receipts
               </h2>
-              <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-x-auto">
+
+              {/* Student Automated Fee Ledger & WhatsApp Reminder Status */}
+              {studentFees.length > 0 && (
+                <div className="space-y-4">
+                  {studentFees.map((fee) => (
+                    <div
+                      key={fee.id}
+                      className="rounded-lg bg-surface-container-lowest border border-outline-variant p-5 shadow-sm space-y-4"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <h3 className="font-headline text-base font-bold text-primary">
+                            Monthly Fee Account · {fee.className}
+                          </h3>
+                          <p className="text-xs text-on-surface-variant">
+                            Due Date: <span className="font-mono font-semibold text-on-surface">{fee.dueDate}</span> · Parent WA:{' '}
+                            <span className="font-mono">{fee.parentWhatsapp || 'Not set'}</span>
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
+                              fee.paymentStatus === 'paid'
+                                ? 'bg-success-container text-on-success-container'
+                                : fee.paymentStatus === 'overdue'
+                                  ? 'bg-error-container text-on-error-container'
+                                  : 'bg-warning-container text-on-warning-container'
+                            }`}
+                          >
+                            {fee.paymentStatus.replace(/_/g, ' ')}
+                          </span>
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-surface-container text-primary">
+                            WhatsApp: {fee.reminderStatus.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                        <div className="p-3 rounded bg-surface-container-low border border-outline-variant">
+                          <span className="text-on-surface-variant block">Monthly Fee</span>
+                          <span className="font-headline text-lg font-bold tabular-nums text-on-surface">
+                            ₹{Number(fee.monthlyFee).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                        <div className="p-3 rounded bg-surface-container-low border border-outline-variant">
+                          <span className="text-on-surface-variant block">Total Payable</span>
+                          <span className="font-headline text-lg font-bold tabular-nums text-on-surface">
+                            ₹{Number(fee.totalPayable).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                        <div className="p-3 rounded bg-surface-container-low border border-outline-variant">
+                          <span className="text-on-surface-variant block">Total Paid</span>
+                          <span className="font-headline text-lg font-bold tabular-nums text-success">
+                            ₹{Number(fee.totalPaid).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                        <div className="p-3 rounded bg-surface-container-low border border-outline-variant">
+                          <span className="text-on-surface-variant block">Remaining Balance</span>
+                          <span
+                            className={`font-headline text-lg font-bold tabular-nums ${
+                              fee.remainingBalance > 0 ? 'text-error' : 'text-success'
+                            }`}
+                          >
+                            ₹{Number(fee.remainingBalance).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-on-surface-variant">
+                        {fee.remainingBalance <= 0
+                          ? 'Your fee balance is ₹0. All automatic 24-hour WhatsApp reminders have stopped automatically.'
+                          : 'Automated WhatsApp reminders run every 24 hours until the remaining balance is cleared at the desk.'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Manual Fee Payments History */}
+              {manualFeePayments.length > 0 && (
+                <div className="rounded-lg bg-surface-container-lowest border border-outline-variant overflow-x-auto shadow-sm">
+                  <div className="px-5 py-3.5 border-b border-outline-variant">
+                    <h3 className="text-sm font-semibold text-on-surface">Desk & Manual Fee Payment Receipts</h3>
+                  </div>
+                  <table className="w-full text-sm">
+                    <thead className="bg-surface-container-low text-xs text-on-surface-variant border-b border-outline-variant">
+                      <tr>
+                        <th className="text-left px-4 py-3 font-semibold">Date</th>
+                        <th className="text-left px-4 py-3 font-semibold">Method</th>
+                        <th className="text-left px-4 py-3 font-semibold">Reference / Notes</th>
+                        <th className="text-right px-4 py-3 font-semibold">Amount Paid</th>
+                        <th className="text-right px-4 py-3 font-semibold">Balance After</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant">
+                      {manualFeePayments.map((fp) => (
+                        <tr key={fp.id}>
+                          <td className="px-4 py-3 font-mono text-xs text-on-surface">{fp.paymentDate}</td>
+                          <td className="px-4 py-3 text-xs font-semibold text-on-surface">{fp.paymentMethod}</td>
+                          <td className="px-4 py-3 text-xs text-on-surface-variant">
+                            {fp.transactionRef ? `Ref: ${fp.transactionRef}` : fp.notes || 'Recorded at desk'}
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold tabular-nums text-success">
+                            ₹{Number(fp.amountReceived).toLocaleString('en-IN')}
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold tabular-nums text-on-surface">
+                            ₹{Number(fp.balanceAfterPayment).toLocaleString('en-IN')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Online Razorpay Receipts */}
+              <div className="rounded-lg bg-surface-container-lowest border border-outline-variant overflow-x-auto shadow-sm">
+                <div className="px-5 py-3.5 border-b border-outline-variant">
+                  <h3 className="text-sm font-semibold text-on-surface">Membership & Online Receipts</h3>
+                </div>
                 <table className="w-full text-sm">
-                  <thead className="bg-[#0E0713]/60 text-xs text-[#CFCEDD]">
+                  <thead className="bg-surface-container-low text-xs text-on-surface-variant border-b border-outline-variant">
                     <tr>
-                      <th className="text-left px-4 py-3">Receipt No.</th>
-                      <th className="text-left px-4 py-3">Plan</th>
-                      <th className="text-left px-4 py-3">Method</th>
-                      <th className="text-right px-4 py-3">Amount</th>
-                      <th className="text-left px-4 py-3">Status</th>
-                      <th className="text-right px-4 py-3">Actions</th>
+                      <th className="text-left px-4 py-3 font-semibold">Receipt No.</th>
+                      <th className="text-left px-4 py-3 font-semibold">Plan</th>
+                      <th className="text-left px-4 py-3 font-semibold">Method</th>
+                      <th className="text-right px-4 py-3 font-semibold">Amount</th>
+                      <th className="text-left px-4 py-3 font-semibold">Status</th>
+                      <th className="text-right px-4 py-3 font-semibold">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#7C7397]/25">
+                  <tbody className="divide-y divide-outline-variant">
                     {payments.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-6 text-center text-[#CFCEDD]">
-                          No transactions recorded yet.
+                        <td colSpan={6} className="px-4 py-6 text-center text-on-surface-variant">
+                          No online membership transactions recorded yet.
                         </td>
                       </tr>
                     ) : (
                       payments.map((p) => (
                         <tr key={p.id}>
-                          <td className="px-4 py-3 font-mono text-xs text-white">{p.receiptNumber}</td>
-                          <td className="px-4 py-3 text-[#CFCEDD]">{p.planName}</td>
-                          <td className="px-4 py-3 capitalize text-xs text-[#CFCEDD]">{p.method.replace(/_/g, ' ')}</td>
-                          <td className="px-4 py-3 text-right font-semibold tabular-nums text-white">₹{p.amount}</td>
-                          <td className="px-4 py-3 capitalize font-medium text-[#B5ADC6]">{p.status}</td>
+                          <td className="px-4 py-3 font-mono text-xs text-on-surface">{p.receiptNumber}</td>
+                          <td className="px-4 py-3 text-on-surface">{p.planName}</td>
+                          <td className="px-4 py-3 capitalize text-xs text-on-surface-variant">{p.method.replace(/_/g, ' ')}</td>
+                          <td className="px-4 py-3 text-right font-semibold tabular-nums text-on-surface">₹{p.amount}</td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${
+                                p.status === 'verified'
+                                  ? 'bg-success-container text-on-success-container'
+                                  : 'bg-warning-container text-on-warning-container'
+                              }`}
+                            >
+                              {p.status}
+                            </span>
+                          </td>
                           <td className="px-4 py-3 text-right space-x-3 whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => setReceiptPreview(p)}
-                              className="inline-flex items-center gap-1 text-xs font-medium text-[#B5ADC6] hover:text-white hover:underline"
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:underline cursor-pointer"
                             >
                               <FileText className="w-3.5 h-3.5" /> View
                             </button>
                             <button
                               type="button"
                               onClick={() => downloadReceiptHtml(p, settings?.libraryName, settings?.address)}
-                              className="inline-flex items-center gap-1 text-xs font-medium text-emerald-300 hover:underline"
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-success hover:underline cursor-pointer"
                             >
                               <Download className="w-3.5 h-3.5" /> Receipt
                             </button>
@@ -1563,42 +1823,42 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           {tab === 'books' && (
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <h2 className="font-display text-xl font-bold text-white">
+                <h2 className="font-headline text-xl font-bold text-on-surface">
                   Physical Book Catalogue & Issued Books
                 </h2>
                 <div className="relative w-full sm:w-72">
-                  <Search className="w-4 h-4 text-[#9993AC] absolute left-3 top-2.5" />
+                  <Search className="w-4 h-4 text-outline absolute left-3 top-2.5" />
                   <input
                     type="search"
                     value={bookSearch}
                     onChange={(e) => setBookSearch(e.target.value)}
                     placeholder="Search title, author, ISBN..."
-                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white placeholder-[#9993AC]"
+                    className="w-full pl-9 pr-3 py-2 text-sm rounded border border-outline-variant bg-surface-container-lowest text-on-surface placeholder:text-outline"
                   />
                 </div>
               </div>
 
               {bookIssues.length > 0 && (
-                <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-x-auto">
-                  <div className="px-5 py-3 border-b border-[#7C7397]/30 text-xs font-semibold text-[#CFCEDD]">
+                <div className="rounded-lg bg-surface-container-lowest border border-outline-variant overflow-x-auto shadow-sm">
+                  <div className="px-5 py-3 border-b border-outline-variant text-xs font-semibold text-on-surface-variant">
                     My Requested & Issued Books
                   </div>
                   <table className="w-full text-sm">
-                    <thead className="bg-[#0E0713]/60 text-xs text-[#CFCEDD]">
+                    <thead className="bg-surface-container-low text-xs text-on-surface-variant border-b border-outline-variant">
                       <tr>
-                        <th className="text-left px-4 py-2.5">Book Title</th>
-                        <th className="text-left px-4 py-2.5">Due Date</th>
-                        <th className="text-right px-4 py-2.5">Fine</th>
-                        <th className="text-left px-4 py-2.5">Status</th>
+                        <th className="text-left px-4 py-2.5 font-semibold">Book Title</th>
+                        <th className="text-left px-4 py-2.5 font-semibold">Due Date</th>
+                        <th className="text-right px-4 py-2.5 font-semibold">Fine</th>
+                        <th className="text-left px-4 py-2.5 font-semibold">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#7C7397]/25">
+                    <tbody className="divide-y divide-outline-variant">
                       {bookIssues.map((bi) => (
                         <tr key={bi.id}>
-                          <td className="px-4 py-2.5 font-medium text-white">{bi.bookTitle}</td>
-                          <td className="px-4 py-2.5 tabular-nums text-[#CFCEDD]">{bi.dueDate || 'Pending Issue'}</td>
-                          <td className="px-4 py-2.5 text-right tabular-nums text-white">₹{bi.fineAmount}</td>
-                          <td className="px-4 py-2.5 capitalize font-medium text-[#B5ADC6]">{bi.status}</td>
+                          <td className="px-4 py-2.5 font-medium text-on-surface">{bi.bookTitle}</td>
+                          <td className="px-4 py-2.5 tabular-nums text-on-surface-variant">{bi.dueDate || 'Pending Issue'}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums text-on-surface">₹{bi.fineAmount}</td>
+                          <td className="px-4 py-2.5 capitalize font-semibold text-secondary">{bi.status}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1610,27 +1870,27 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 {filteredBooks.map((book) => (
                   <div
                     key={book.id}
-                    className="p-4 rounded-xl bg-[#514871] border border-[#7C7397]/40 flex flex-col justify-between"
+                    className="p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex flex-col justify-between"
                   >
                     <div>
-                      <p className="text-xs text-[#CFCEDD]">
+                      <p className="text-xs text-on-surface-variant">
                         {book.categoryName} · Shelf {book.shelfNumber}
                       </p>
-                      <h3 className="mt-1 text-sm font-semibold text-white">{book.title}</h3>
-                      <p className="text-xs text-[#CFCEDD] mt-0.5">
+                      <h3 className="mt-1 text-sm font-bold text-on-surface">{book.title}</h3>
+                      <p className="text-xs text-on-surface-variant mt-0.5">
                         {book.author} · {book.publicationYear}
                       </p>
-                      <p className="mt-2 font-mono text-[11px] text-[#9993AC]">ISBN: {book.isbn}</p>
+                      <p className="mt-2 font-mono text-[11px] text-outline">ISBN: {book.isbn}</p>
                     </div>
-                    <div className="mt-4 pt-3 border-t border-[#7C7397]/30 flex items-center justify-between">
-                      <span className="text-xs font-medium tabular-nums text-white">
+                    <div className="mt-4 pt-3 border-t border-outline-variant flex items-center justify-between">
+                      <span className="text-xs font-semibold tabular-nums text-on-surface">
                         {book.availableCopies} / {book.totalCopies} available
                       </span>
                       <button
                         type="button"
                         disabled={book.availableCopies < 1}
                         onClick={() => handleRequestBook(book)}
-                        className="px-3 py-1.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold disabled:opacity-40 hover:bg-white"
+                        className="px-3 py-1.5 rounded bg-secondary text-on-secondary text-xs font-semibold disabled:opacity-40 hover:bg-primary cursor-pointer"
                       >
                         Request Book
                       </button>
@@ -1643,30 +1903,30 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
           {tab === 'notifications' && (
             <div className="space-y-4">
-              <h2 className="font-display text-xl font-bold text-white">Notifications & Reminders</h2>
+              <h2 className="font-headline text-xl font-bold text-on-surface">Notifications & Reminders</h2>
               <div className="space-y-3">
                 {notifications.length === 0 ? (
-                  <div className="p-6 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 text-sm text-[#CFCEDD]">
+                  <div className="p-6 rounded-lg bg-surface-container-lowest border border-outline-variant text-sm text-on-surface-variant">
                     You are all caught up. No notifications right now.
                   </div>
                 ) : (
                   notifications.map((n) => (
                     <div
                       key={n.id}
-                      className="p-4 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 flex items-start justify-between gap-4"
+                      className="p-4 rounded-lg bg-surface-container-lowest border border-outline-variant shadow-sm flex items-start justify-between gap-4"
                     >
                       <div>
-                        <p className="text-xs text-[#B5ADC6] capitalize">
+                        <p className="text-xs text-secondary font-semibold capitalize">
                           {n.type.replace(/_/g, ' ')} · {n.read ? 'Read' : 'Unread'}
                         </p>
-                        <h4 className="mt-0.5 text-sm font-semibold text-white">{n.title}</h4>
-                        <p className="mt-1 text-xs text-[#CFCEDD]">{n.message}</p>
+                        <h4 className="mt-0.5 text-sm font-bold text-on-surface">{n.title}</h4>
+                        <p className="mt-1 text-xs text-on-surface-variant">{n.message}</p>
                       </div>
                       {!n.read && n.recipientUid === firebaseUser?.uid && (
                         <button
                           type="button"
                           onClick={() => updateDoc(doc(db, 'notifications', n.id), { read: true })}
-                          className="text-xs font-medium text-[#B5ADC6] hover:text-white hover:underline shrink-0"
+                          className="text-xs font-semibold text-secondary hover:underline shrink-0 cursor-pointer"
                         >
                           Mark read
                         </button>
@@ -1682,26 +1942,30 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       {/* Razorpay Checkout Modal */}
       {checkoutPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-          <div className="w-full max-w-md bg-[#3D2C56] border border-[#7C7397] rounded-xl p-6 space-y-4 text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/50 p-4">
+          <div className="w-full max-w-md bg-surface-container-lowest border border-outline-variant rounded-xl p-6 space-y-4 text-on-surface shadow-xl">
             <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-white">
+              <h3 className="font-headline text-lg font-bold text-primary">
                 Razorpay Membership Checkout
               </h3>
-              <button type="button" onClick={() => setCheckoutPlan(null)} className="p-1 text-[#CFCEDD] hover:text-white">
+              <button
+                type="button"
+                onClick={() => setCheckoutPlan(null)}
+                className="p-1 text-on-surface-variant hover:text-on-surface"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-4 rounded-lg bg-[#1C0E29] border border-[#7C7397]/50">
-              <p className="text-xs text-[#9993AC]">Selected Plan</p>
-              <p className="font-semibold text-sm text-white">{checkoutPlan.name}</p>
-              <p className="text-xl font-bold tabular-nums mt-1 text-[#B5ADC6]">
+            <div className="p-4 rounded-lg bg-surface-container-low border border-outline-variant">
+              <p className="text-xs text-on-surface-variant">Selected Plan</p>
+              <p className="font-semibold text-sm text-on-surface">{checkoutPlan.name}</p>
+              <p className="font-headline text-xl font-bold tabular-nums mt-1 text-primary">
                 ₹{Number(checkoutPlan.price).toLocaleString('en-IN')}
               </p>
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs font-medium text-[#CFCEDD]">Payment Method</p>
+              <p className="text-xs font-semibold text-on-surface-variant">Payment Method</p>
               {(
                 [
                   ['razorpay_upi', 'UPI (GPay / PhonePe / BHIM)'],
@@ -1711,7 +1975,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               ).map(([id, label]) => (
                 <label
                   key={id}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-[#7C7397]/50 bg-[#1C0E29]/60 cursor-pointer text-sm text-white"
+                  className="flex items-center gap-3 p-3 rounded border border-outline-variant bg-surface cursor-pointer text-sm text-on-surface"
                 >
                   <input
                     type="radio"
@@ -1728,7 +1992,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               type="button"
               disabled={checkoutLoading}
               onClick={handleCompleteRazorpayCheckout}
-              className="w-full py-2.5 px-4 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold hover:bg-white disabled:opacity-60"
+              className="w-full py-2.5 px-4 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary disabled:opacity-60 cursor-pointer"
             >
               {checkoutLoading ? 'Verifying Payment...' : `Pay ₹${checkoutPlan.price} Securely`}
             </button>
@@ -1736,40 +2000,40 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
         </div>
       )}
 
-      {/* Printable Receipt Modal (keeps clean white paper layout inside printable card) */}
+      {/* Printable Receipt Modal */}
       {receiptPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-          <div className="w-full max-w-lg bg-white text-[#0E0713] border border-[#7C7397] rounded-xl p-6 space-y-4">
-            <div className="flex items-start justify-between border-b border-slate-200 pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/50 p-4">
+          <div className="w-full max-w-lg bg-white text-on-surface border border-outline-variant rounded-xl p-6 space-y-4 shadow-xl">
+            <div className="flex items-start justify-between border-b border-outline-variant pb-4">
               <div>
-                <h3 className="font-display text-xl font-bold text-[#1C0E29]">
+                <h3 className="font-headline text-xl font-bold text-primary">
                   {settings?.libraryName || 'VIDHYA LIBRARY'}
                 </h3>
-                <p className="text-xs text-slate-600">Official Payment Receipt</p>
+                <p className="text-xs text-on-surface-variant">Official Payment Receipt</p>
               </div>
               <div className="text-right text-xs">
-                <p className="font-mono font-bold">{receiptPreview.receiptNumber}</p>
-                <p className="capitalize">{receiptPreview.status}</p>
+                <p className="font-mono font-bold text-primary">{receiptPreview.receiptNumber}</p>
+                <p className="capitalize font-semibold text-success">{receiptPreview.status}</p>
               </div>
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-600">Student Name</span>
-                <span className="font-medium">{receiptPreview.studentName}</span>
+                <span className="text-on-surface-variant">Student Name</span>
+                <span className="font-semibold text-on-surface">{receiptPreview.studentName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-600">Student ID</span>
-                <span className="font-mono">{receiptPreview.studentCode}</span>
+                <span className="text-on-surface-variant">Student ID</span>
+                <span className="font-mono text-on-surface">{receiptPreview.studentCode}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-600">Plan</span>
-                <span>{receiptPreview.planName}</span>
+                <span className="text-on-surface-variant">Plan</span>
+                <span className="text-on-surface">{receiptPreview.planName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-600">Method</span>
-                <span className="capitalize">{receiptPreview.method.replace(/_/g, ' ')}</span>
+                <span className="text-on-surface-variant">Method</span>
+                <span className="capitalize text-on-surface">{receiptPreview.method.replace(/_/g, ' ')}</span>
               </div>
-              <div className="flex justify-between pt-2 border-t border-slate-200 text-base font-bold">
+              <div className="flex justify-between pt-2 border-t border-outline-variant text-base font-bold text-primary">
                 <span>Amount Paid</span>
                 <span className="tabular-nums">₹{receiptPreview.amount}</span>
               </div>
@@ -1778,21 +2042,21 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 text-xs font-medium"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded border border-outline-variant text-xs font-semibold text-primary hover:bg-surface-container-low cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" /> Print
               </button>
               <button
                 type="button"
                 onClick={() => downloadReceiptHtml(receiptPreview, settings?.libraryName, settings?.address)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1C0E29] text-white text-xs font-semibold"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" /> Download HTML
               </button>
               <button
                 type="button"
                 onClick={() => setReceiptPreview(null)}
-                className="px-3 py-2 rounded-lg text-xs text-slate-600"
+                className="px-3 py-2 rounded text-xs font-semibold text-on-surface-variant hover:text-on-surface cursor-pointer"
               >
                 Close
               </button>

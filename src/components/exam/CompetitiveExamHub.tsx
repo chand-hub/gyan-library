@@ -253,7 +253,6 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
     try {
       let sourceQuestions = questions;
       if (selectionPreview.selected.length === 0) {
-        // Perform live paginated Firestore check in case listener subset missed items
         const fetched = await fetchPublishedQuestionsFromFirestore({
           examName: testType === 'current_affairs' ? undefined : effectiveExam,
           subject: selectedSubjects.length === 1 ? selectedSubjects[0] : undefined,
@@ -389,7 +388,6 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
         throw new Error('AI returned 0 valid questions. Try adjusting your subject or difficulty filters.');
       }
 
-      // Build in-session sealed ExamQuestion objects directly without client-side writes to shared question bank
       const readyQuestions: ExamQuestion[] = rawQs.map((q, idx) => ({
         id: q.id,
         questionCode: `Q-AI-${Date.now().toString().slice(-4)}-${idx + 1}`,
@@ -457,17 +455,19 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold text-[#B5ADC6]">AI Examination &amp; Practice Portal</p>
-          <h2 className="font-display text-2xl font-bold text-white">
+          <p className="text-xs font-bold uppercase tracking-wider text-secondary dark:text-blue-400">
+            AI Examination &amp; Practice Portal
+          </p>
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
             Competitive Exam Hub
           </h2>
-          <p className="text-xs text-[#CFCEDD] mt-0.5">
+          <p className="text-xs text-on-surface-variant dark:text-slate-300 mt-0.5">
             Customize question counts (10 to 100+ MCQs), multi-chapter selection, difficulty mix, and timed CBT simulation.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-[#0E0713] border border-[#514871]">
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-container-low dark:bg-slate-800 border border-outline-variant dark:border-slate-700">
             <button
               type="button"
               onClick={() => {
@@ -475,7 +475,9 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                 setTimerEnabled(true);
               }}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                mode === 'exam' ? 'bg-[#B5ADC6] text-[#0E0713]' : 'text-[#CFCEDD]'
+                mode === 'exam'
+                  ? 'bg-primary text-on-primary shadow-xs'
+                  : 'text-on-surface-variant dark:text-slate-300 hover:text-on-surface dark:hover:text-white'
               }`}
             >
               Timed Exam Mode
@@ -487,7 +489,9 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                 setTimerEnabled(false);
               }}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                mode === 'practice' ? 'bg-[#B5ADC6] text-[#0E0713]' : 'text-[#CFCEDD]'
+                mode === 'practice'
+                  ? 'bg-primary text-on-primary shadow-xs'
+                  : 'text-on-surface-variant dark:text-slate-300 hover:text-on-surface dark:hover:text-white'
               }`}
             >
               Untimed Practice
@@ -498,17 +502,19 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
 
       {/* Exam Selector Grid */}
       {activeExams.length === 0 ? (
-        <div className="p-8 rounded-xl bg-[#3D2C56] border border-[#7C7397] text-center space-y-2">
-          <BookOpen className="w-8 h-8 text-[#B5ADC6] mx-auto" />
-          <p className="text-sm font-semibold text-white">Question Bank Initialization Pending</p>
-          <p className="text-xs text-[#CFCEDD]">
+        <div className="p-8 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 text-center space-y-2 shadow-sm">
+          <BookOpen className="w-8 h-8 text-secondary mx-auto" />
+          <p className="text-sm font-semibold text-on-surface dark:text-white">
+            Question Bank Initialization Pending
+          </p>
+          <p className="text-xs text-on-surface-variant dark:text-slate-300">
             Ask your library administrator to sync the Exam Categories &amp; Question Bank from the Admin Console.
           </p>
         </div>
       ) : (
         <>
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-[#B5ADC6] uppercase tracking-wider">
+            <label className="text-xs font-bold text-primary dark:text-blue-300 uppercase tracking-wider">
               A. Select Target Examination ({activeExams.length} Tracks Available)
             </label>
             <div className="flex flex-wrap gap-2">
@@ -529,12 +535,12 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                     }}
                     className={`px-3.5 py-2 rounded-lg border text-xs font-semibold transition-colors ${
                       active
-                        ? 'bg-[#B5ADC6] border-[#B5ADC6] text-[#0E0713]'
-                        : 'bg-[#3D2C56] border-[#7C7397]/60 text-white hover:bg-[#514871]'
+                        ? 'bg-primary border-primary text-on-primary shadow-xs'
+                        : 'bg-surface-container-lowest dark:bg-slate-900 border-outline-variant dark:border-slate-700 text-on-surface dark:text-slate-200 hover:bg-surface-container-low dark:hover:bg-slate-800'
                     }`}
                   >
                     {ex.name}{' '}
-                    <span className="opacity-75 tabular-nums">({count})</span>
+                    <span className="opacity-75 font-mono tabular-nums">({count})</span>
                   </button>
                 );
               })}
@@ -543,7 +549,7 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
 
           {/* Test Type Selector */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-[#B5ADC6] uppercase tracking-wider">
+            <label className="text-xs font-bold text-primary dark:text-blue-300 uppercase tracking-wider">
               B. Select Test Format
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -556,12 +562,16 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                     onClick={() => setTestType(t.id)}
                     className={`text-left p-3.5 rounded-xl border transition-colors ${
                       active
-                        ? 'bg-[#675D85] border-[#B5ADC6] text-white'
-                        : 'bg-[#3D2C56] border-[#7C7397]/50 text-[#CFCEDD] hover:bg-[#514871]'
+                        ? 'bg-secondary-container/70 dark:bg-blue-950/60 border-secondary text-on-surface dark:text-white shadow-xs'
+                        : 'bg-surface-container-lowest dark:bg-slate-900 border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container-low dark:hover:bg-slate-800'
                     }`}
                   >
-                    <p className="text-xs font-bold text-white">{t.label}</p>
-                    <p className="text-[11px] text-[#CFCEDD] mt-1 line-clamp-2">{t.desc}</p>
+                    <p className={`text-xs font-bold ${active ? 'text-primary dark:text-white' : 'text-on-surface dark:text-white'}`}>
+                      {t.label}
+                    </p>
+                    <p className="text-[11px] text-on-surface-variant dark:text-slate-300 mt-1 line-clamp-2">
+                      {t.desc}
+                    </p>
                   </button>
                 );
               })}
@@ -569,22 +579,22 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
           </div>
 
           {/* Dynamic Custom Test Builder */}
-          <div className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#514871]">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Filter className="w-4 h-4 text-[#B5ADC6]" /> C. Custom Test Configuration
+          <div className="p-5 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 space-y-5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-outline-variant/60 dark:border-slate-800">
+              <h3 className="text-sm font-bold text-primary dark:text-white flex items-center gap-2">
+                <Filter className="w-4 h-4 text-secondary dark:text-blue-400" /> C. Custom Test Configuration
               </h3>
               {selectedExamMeta && (
-                <p className="text-xs text-[#CFCEDD] tabular-nums">
+                <p className="text-xs text-on-surface-variant dark:text-slate-300 font-mono tabular-nums">
                   Marking: +{selectedExamMeta.marksPerCorrect} / −{selectedExamMeta.negativeMarks} · Randomized Non-Repeating Draw
                 </p>
               )}
             </div>
 
-            {/* Subjects Multi-Select Pills */}
+            {/* Subjects Multi-Select */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-[#CFCEDD]">
+                <label className="text-xs font-semibold text-on-surface dark:text-slate-200">
                   Subjects ({selectedSubjects.length === 0 ? 'All Subjects' : `${selectedSubjects.length} selected`})
                 </label>
                 {selectedSubjects.length > 0 && (
@@ -595,7 +605,7 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                       setSelectedChapters([]);
                       setSelectedTopics([]);
                     }}
-                    className="text-[11px] text-[#B5ADC6] hover:text-white underline"
+                    className="text-[11px] text-secondary dark:text-blue-400 hover:underline font-medium"
                   >
                     Reset to All Subjects
                   </button>
@@ -611,8 +621,8 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                     selectedSubjects.length === 0
-                      ? 'bg-[#B5ADC6] border-[#B5ADC6] text-[#0E0713]'
-                      : 'bg-[#1C0E29] border-[#7C7397]/60 text-[#CFCEDD] hover:bg-[#514871]'
+                      ? 'bg-primary border-primary text-on-primary'
+                      : 'bg-surface-container-low dark:bg-slate-800 border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container dark:hover:bg-slate-700'
                   }`}
                 >
                   All Subjects
@@ -632,13 +642,13 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                       }
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                         active
-                          ? 'bg-[#B5ADC6] border-[#B5ADC6] text-[#0E0713] font-bold'
-                          : 'bg-[#1C0E29] border-[#7C7397]/60 text-[#CFCEDD] hover:bg-[#514871]'
+                          ? 'bg-secondary border-secondary text-on-secondary font-bold'
+                          : 'bg-surface-container-low dark:bg-slate-800 border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container dark:hover:bg-slate-700'
                       }`}
                     >
                       {active && <Check className="w-3 h-3" />}
                       <span>{subj}</span>
-                      <span className="opacity-70 tabular-nums">({subjCount})</span>
+                      <span className="opacity-75 font-mono tabular-nums">({subjCount})</span>
                     </button>
                   );
                 })}
@@ -649,7 +659,7 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
             {availableChapters.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-[#CFCEDD]">
+                  <label className="text-xs font-semibold text-on-surface dark:text-slate-200">
                     Chapters ({selectedChapters.length === 0 ? 'All Chapters' : `${selectedChapters.length} selected`})
                   </label>
                   {selectedChapters.length > 0 && (
@@ -659,7 +669,7 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                         setSelectedChapters([]);
                         setSelectedTopics([]);
                       }}
-                      className="text-[11px] text-[#B5ADC6] hover:text-white underline"
+                      className="text-[11px] text-secondary dark:text-blue-400 hover:underline font-medium"
                     >
                       Select All Chapters
                     </button>
@@ -672,10 +682,10 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                       setSelectedChapters([]);
                       setSelectedTopics([]);
                     }}
-                    className={`px-2.5 py-1 rounded-md text-xs border ${
+                    className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
                       selectedChapters.length === 0
-                        ? 'bg-[#B5ADC6] border-[#B5ADC6] text-[#0E0713] font-bold'
-                        : 'bg-[#1C0E29] border-[#7C7397]/50 text-[#CFCEDD]'
+                        ? 'bg-primary border-primary text-on-primary font-bold'
+                        : 'bg-surface-container-low dark:bg-slate-800 border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300'
                     }`}
                   >
                     All Chapters ({availableChapters.length})
@@ -691,10 +701,10 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                             setSelectedTopics([])
                           )
                         }
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs border ${
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs border transition-colors ${
                           active
-                            ? 'bg-[#B5ADC6] border-[#B5ADC6] text-[#0E0713] font-bold'
-                            : 'bg-[#1C0E29] border-[#7C7397]/50 text-[#CFCEDD] hover:bg-[#514871]'
+                            ? 'bg-secondary border-secondary text-on-secondary font-bold'
+                            : 'bg-surface-container-low dark:bg-slate-800 border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container dark:hover:bg-slate-700'
                         }`}
                       >
                         {active && <Check className="w-3 h-3" />}
@@ -710,14 +720,14 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
             {availableTopics.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-[#CFCEDD]">
+                  <label className="text-xs font-semibold text-on-surface dark:text-slate-200">
                     Topics ({selectedTopics.length === 0 ? 'All Topics' : `${selectedTopics.length} selected`})
                   </label>
                   {selectedTopics.length > 0 && (
                     <button
                       type="button"
                       onClick={() => setSelectedTopics([])}
-                      className="text-[11px] text-[#B5ADC6] hover:text-white underline"
+                      className="text-[11px] text-secondary dark:text-blue-400 hover:underline font-medium"
                     >
                       Select All Topics
                     </button>
@@ -727,10 +737,10 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                   <button
                     type="button"
                     onClick={() => setSelectedTopics([])}
-                    className={`px-2.5 py-1 rounded-md text-xs border ${
+                    className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
                       selectedTopics.length === 0
-                        ? 'bg-[#B5ADC6] border-[#B5ADC6] text-[#0E0713] font-bold'
-                        : 'bg-[#1C0E29] border-[#7C7397]/50 text-[#CFCEDD]'
+                        ? 'bg-primary border-primary text-on-primary font-bold'
+                        : 'bg-surface-container-low dark:bg-slate-800 border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300'
                     }`}
                   >
                     All Topics ({availableTopics.length})
@@ -742,10 +752,10 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                         key={tp}
                         type="button"
                         onClick={() => toggleMulti(tp, selectedTopics, setSelectedTopics)}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs border ${
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs border transition-colors ${
                           active
-                            ? 'bg-[#B5ADC6] border-[#B5ADC6] text-[#0E0713] font-bold'
-                            : 'bg-[#1C0E29] border-[#7C7397]/50 text-[#CFCEDD] hover:bg-[#514871]'
+                            ? 'bg-secondary border-secondary text-on-secondary font-bold'
+                            : 'bg-surface-container-low dark:bg-slate-800 border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container dark:hover:bg-slate-700'
                         }`}
                       >
                         {active && <Check className="w-3 h-3" />}
@@ -761,7 +771,9 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
               {/* Difficulty Selector */}
               <div className="lg:col-span-4 space-y-1.5">
-                <label className="block text-xs font-semibold text-[#CFCEDD]">Difficulty Level</label>
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-200">
+                  Difficulty Level
+                </label>
                 <div className="grid grid-cols-4 gap-1.5">
                   {(
                     [
@@ -777,8 +789,8 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                       onClick={() => setDifficultyFilter(val)}
                       className={`py-2 px-2 rounded-lg border text-xs font-semibold transition-colors ${
                         difficultyFilter === val
-                          ? 'bg-[#B5ADC6] border-[#B5ADC6] text-[#0E0713]'
-                          : 'bg-[#1C0E29] border-[#7C7397]/60 text-[#CFCEDD] hover:bg-[#514871]'
+                          ? 'bg-primary border-primary text-on-primary'
+                          : 'bg-surface-container-low dark:bg-slate-800 border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container dark:hover:bg-slate-700'
                       }`}
                     >
                       {label}
@@ -787,9 +799,9 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                 </div>
               </div>
 
-              {/* Dynamic Question Count Selector (10, 20, 25, 50, 75, 100 + Custom) */}
+              {/* Dynamic Question Count Selector */}
               <div className="lg:col-span-5 space-y-1.5">
-                <label className="block text-xs font-semibold text-[#CFCEDD]">
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-200">
                   Number of Questions (1 to 200)
                 </label>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -801,10 +813,10 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                         setCustomCountMode(false);
                         setQuestionCount(n);
                       }}
-                      className={`px-3 py-2 rounded-lg border text-xs font-bold tabular-nums transition-colors ${
+                      className={`px-3 py-2 rounded-lg border text-xs font-bold font-mono tabular-nums transition-colors ${
                         !customCountMode && questionCount === n
-                          ? 'bg-[#B5ADC6] border-[#B5ADC6] text-[#0E0713]'
-                          : 'bg-[#1C0E29] border-[#7C7397]/60 text-[#CFCEDD] hover:bg-[#514871]'
+                          ? 'bg-primary border-primary text-on-primary'
+                          : 'bg-surface-container-low dark:bg-slate-800 border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container dark:hover:bg-slate-700'
                       }`}
                     >
                       {n}
@@ -815,8 +827,8 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                     onClick={() => setCustomCountMode(true)}
                     className={`px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${
                       customCountMode
-                        ? 'bg-[#B5ADC6] border-[#B5ADC6] text-[#0E0713]'
-                        : 'bg-[#1C0E29] border-[#7C7397]/60 text-[#CFCEDD] hover:bg-[#514871]'
+                        ? 'bg-primary border-primary text-on-primary'
+                        : 'bg-surface-container-low dark:bg-slate-800 border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container dark:hover:bg-slate-700'
                     }`}
                   >
                     Custom
@@ -828,7 +840,7 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                       max={200}
                       value={customCountInput}
                       onChange={(e) => setCustomCountInput(e.target.value)}
-                      className="w-20 px-2.5 py-2 rounded-lg bg-[#1C0E29] border border-[#B5ADC6] text-xs font-bold text-white tabular-nums"
+                      className="w-20 px-2.5 py-2 rounded-lg bg-surface-container-lowest dark:bg-slate-950 border border-secondary text-xs font-bold text-on-surface dark:text-white font-mono tabular-nums"
                       aria-label="Custom question count"
                     />
                   )}
@@ -838,11 +850,13 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
               {/* Year / Timer / Shift */}
               <div className="lg:col-span-3 grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[11px] text-[#CFCEDD] mb-1">Exam Year</label>
+                  <label className="block text-[11px] font-medium text-on-surface-variant dark:text-slate-300 mb-1">
+                    Exam Year
+                  </label>
                   <select
                     value={yearFilter}
                     onChange={(e) => setYearFilter(e.target.value)}
-                    className="w-full px-2.5 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                    className="w-full px-2.5 py-2 rounded-lg bg-surface-container-lowest dark:bg-slate-950 border border-outline-variant dark:border-slate-700 text-xs text-on-surface dark:text-white"
                   >
                     <option value="ALL">All Years ({availableYears.length})</option>
                     {availableYears.map((y) => (
@@ -854,7 +868,9 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-[#CFCEDD] mb-1">Timer (mins)</label>
+                  <label className="block text-[11px] font-medium text-on-surface-variant dark:text-slate-300 mb-1">
+                    Timer (mins)
+                  </label>
                   <input
                     type="number"
                     min={0}
@@ -862,7 +878,7 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                     placeholder="Auto"
                     value={customDurationMinutes || ''}
                     onChange={(e) => setCustomDurationMinutes(Math.max(0, Number(e.target.value) || 0))}
-                    className="w-full px-2.5 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white tabular-nums"
+                    className="w-full px-2.5 py-2 rounded-lg bg-surface-container-lowest dark:bg-slate-950 border border-outline-variant dark:border-slate-700 text-xs text-on-surface dark:text-white font-mono tabular-nums"
                   />
                 </div>
               </div>
@@ -870,11 +886,11 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
 
             {availableShifts.length > 0 && (
               <div className="flex items-center gap-2 text-xs">
-                <span className="text-[#CFCEDD]">Exam Shift:</span>
+                <span className="text-on-surface-variant dark:text-slate-300 font-medium">Exam Shift:</span>
                 <select
                   value={shiftFilter}
                   onChange={(e) => setShiftFilter(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-lg bg-[#1C0E29] border border-[#7C7397] text-xs text-white"
+                  className="px-2.5 py-1.5 rounded-lg bg-surface-container-lowest dark:bg-slate-950 border border-outline-variant dark:border-slate-700 text-xs text-on-surface dark:text-white"
                 >
                   <option value="ALL">All Shifts</option>
                   {availableShifts.map((sh) => (
@@ -888,14 +904,14 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
 
             {/* Insufficient Question Pool Warning */}
             {selectionPreview.insufficientBy > 0 && (
-              <div className="p-3.5 rounded-xl bg-amber-950/50 border border-amber-500/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-100">
+              <div className="p-3.5 rounded-xl bg-warning-container/70 dark:bg-amber-950/50 border border-warning/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-on-warning-container dark:text-amber-100">
                 <div className="flex items-start gap-2.5">
-                  <AlertTriangle className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 text-warning dark:text-amber-300 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-amber-200">
+                    <p className="font-semibold">
                       Only {candidatePoolCount} published question{candidatePoolCount === 1 ? '' : 's'} currently available for this exact filter (requested {effectiveQuestionCount}).
                     </p>
-                    <p className="text-amber-100/80 mt-0.5">
+                    <p className="opacity-85 mt-0.5">
                       You can start right away with the available {candidatePoolCount} questions, broaden chapters/subjects, or generate {Math.min(100, effectiveQuestionCount)} fresh AI practice questions.
                     </p>
                   </div>
@@ -905,7 +921,7 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                     type="button"
                     onClick={() => handleLaunchFilteredTest(true)}
                     disabled={preparingTest}
-                    className="px-3.5 py-1.5 rounded-lg bg-amber-400 text-[#0E0713] font-bold whitespace-nowrap hover:bg-amber-300 shrink-0"
+                    className="px-3.5 py-1.5 rounded-lg bg-warning text-on-warning font-bold whitespace-nowrap hover:opacity-90 shrink-0"
                   >
                     Start with {candidatePoolCount} Qs
                   </button>
@@ -914,34 +930,36 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
             )}
 
             {/* Live Stats & Launch Controls */}
-            <div className="pt-3 border-t border-[#514871] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="pt-3 border-t border-outline-variant/60 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-4">
-                  <label className="inline-flex items-center gap-2 text-xs text-white cursor-pointer">
+                  <label className="inline-flex items-center gap-2 text-xs text-on-surface dark:text-slate-200 cursor-pointer font-medium">
                     <input
                       type="checkbox"
                       checked={excludeAttempted}
                       onChange={(e) => setExcludeAttempted(e.target.checked)}
+                      className="rounded border-outline-variant text-secondary focus:ring-secondary"
                     />
                     <span>Unseen Only (exclude attempted)</span>
                   </label>
                   {mode === 'exam' && (
-                    <label className="inline-flex items-center gap-2 text-xs text-white cursor-pointer">
+                    <label className="inline-flex items-center gap-2 text-xs text-on-surface dark:text-slate-200 cursor-pointer font-medium">
                       <input
                         type="checkbox"
                         checked={timerEnabled}
                         onChange={(e) => setTimerEnabled(e.target.checked)}
+                        className="rounded border-outline-variant text-secondary focus:ring-secondary"
                       />
                       <span>Countdown Timer &amp; Auto-Submit</span>
                     </label>
                   )}
                 </div>
-                <p className="text-xs text-[#CFCEDD] tabular-nums flex items-center gap-2">
-                  <Shuffle className="w-3.5 h-3.5 text-[#B5ADC6]" />
+                <p className="text-xs text-on-surface-variant dark:text-slate-300 font-mono tabular-nums flex items-center gap-2">
+                  <Shuffle className="w-3.5 h-3.5 text-secondary dark:text-blue-400" />
                   <span>
-                    Available in Bank: <strong className="text-white">{selectionPreview.totalMatching}</strong> · Unseen Remaining:{' '}
-                    <strong className="text-white">{selectionPreview.unseenCount}</strong> · Selected to Launch:{' '}
-                    <strong className="text-[#B5ADC6]">{selectionPreview.selected.length}</strong>
+                    Available in Bank: <strong className="text-on-surface dark:text-white">{selectionPreview.totalMatching}</strong> · Unseen Remaining:{' '}
+                    <strong className="text-on-surface dark:text-white">{selectionPreview.unseenCount}</strong> · Selected to Launch:{' '}
+                    <strong className="text-secondary dark:text-blue-400">{selectionPreview.selected.length}</strong>
                   </span>
                 </p>
               </div>
@@ -951,12 +969,12 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                   type="button"
                   onClick={handleGenerateAiMock}
                   disabled={aiGenerating || preparingTest || aiCooldown.active}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#675D85] border border-[#B5ADC6] text-white text-xs sm:text-sm font-semibold hover:bg-[#7C7397] transition-colors disabled:opacity-60"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-on-primary text-xs sm:text-sm font-semibold hover:bg-primary-container transition-colors disabled:opacity-50 shadow-xs"
                 >
                   {aiGenerating ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#B5ADC6]" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Sparkles className="w-4 h-4 text-[#B5ADC6]" />
+                    <Sparkles className="w-4 h-4" />
                   )}
                   {aiGenerating
                     ? `Generating ${Math.min(100, effectiveQuestionCount)} AI MCQs...`
@@ -969,7 +987,7 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                   type="button"
                   onClick={() => handleLaunchFilteredTest(false)}
                   disabled={preparingTest || aiGenerating || selectionPreview.selected.length === 0}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs sm:text-sm font-bold hover:bg-white transition-colors disabled:opacity-40"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-secondary text-on-secondary text-xs sm:text-sm font-bold hover:bg-primary transition-colors disabled:opacity-40 shadow-xs"
                 >
                   {preparingTest ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -987,8 +1005,8 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
           {/* Curated Admin Mock Tests */}
           {publishedMockTests.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Award className="w-4 h-4 text-[#B5ADC6]" /> Assigned Full-Length &amp; Curated Mock Tests
+              <h3 className="text-sm font-bold text-primary dark:text-white flex items-center gap-2">
+                <Award className="w-4 h-4 text-secondary dark:text-blue-400" /> Assigned Full-Length &amp; Curated Mock Tests
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {publishedMockTests.map((mt) => {
@@ -996,14 +1014,16 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                   return (
                     <div
                       key={mt.id}
-                      className="p-4 rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 flex flex-col justify-between gap-3"
+                      className="p-4 rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 flex flex-col justify-between gap-3 shadow-sm"
                     >
                       <div>
-                        <p className="text-[11px] text-[#B5ADC6]">
+                        <p className="text-[11px] font-semibold text-secondary dark:text-blue-400 font-mono tabular-nums">
                           {mt.examName} · {mt.durationMinutes} mins · {testQs.length} Qs
                         </p>
-                        <h4 className="font-display text-base font-bold text-white mt-1">{mt.title}</h4>
-                        <p className="text-xs text-[#CFCEDD] mt-1 tabular-nums">
+                        <h4 className="font-display text-base font-bold text-on-surface dark:text-white mt-1">
+                          {mt.title}
+                        </h4>
+                        <p className="text-xs text-on-surface-variant dark:text-slate-300 mt-1 font-mono tabular-nums">
                           +{mt.marksPerCorrect} / −{mt.negativeMarks} Negative Marking
                         </p>
                       </div>
@@ -1023,7 +1043,7 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
                             isTimed: mt.isTimed,
                           })
                         }
-                        className="w-full py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white disabled:opacity-40"
+                        className="w-full py-2 rounded-lg bg-secondary text-on-secondary text-xs font-bold hover:bg-primary transition-colors disabled:opacity-40"
                       >
                         Launch Mock Test
                       </button>
@@ -1035,60 +1055,63 @@ export const CompetitiveExamHub: React.FC<CompetitiveExamHubProps> = ({
           )}
 
           {/* Past Attempts History */}
-          <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/60 overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#514871] flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-[#B5ADC6]" /> Recent Exam Attempts &amp; Performance Reports
+          <div className="rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 overflow-hidden shadow-sm">
+            <div className="px-5 py-4 border-b border-outline-variant/60 dark:border-slate-800 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-primary dark:text-white flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-secondary dark:text-blue-400" /> Recent Exam Attempts &amp; Performance Reports
               </h3>
-              <span className="text-xs text-[#CFCEDD] tabular-nums">
+              <span className="text-xs text-on-surface-variant dark:text-slate-300 font-mono tabular-nums">
                 {submittedAttempts.length} Completed
               </span>
             </div>
 
             {submittedAttempts.length === 0 ? (
-              <div className="p-6 text-center text-xs text-[#CFCEDD]">
+              <div className="p-6 text-center text-xs text-on-surface-variant dark:text-slate-300">
                 Complete your first test or practice session above to unlock detailed subject, chapter, difficulty &amp; AI performance analytics.
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-xs sm:text-sm">
-                  <thead className="bg-[#0E0713]/60 text-[#B5ADC6]">
+                  <thead className="bg-surface-container-low dark:bg-slate-800 text-on-surface-variant dark:text-slate-300">
                     <tr>
-                      <th className="text-left px-4 py-3">Exam</th>
-                      <th className="text-left px-4 py-3">Date</th>
-                      <th className="text-right px-4 py-3">Questions</th>
-                      <th className="text-right px-4 py-3">Score</th>
-                      <th className="text-right px-4 py-3">Accuracy</th>
-                      <th className="text-left px-4 py-3">Weak Topics</th>
-                      <th className="text-right px-4 py-3">Report</th>
+                      <th className="text-left px-4 py-3 font-semibold">Exam</th>
+                      <th className="text-left px-4 py-3 font-semibold">Date</th>
+                      <th className="text-right px-4 py-3 font-semibold">Questions</th>
+                      <th className="text-right px-4 py-3 font-semibold">Score</th>
+                      <th className="text-right px-4 py-3 font-semibold">Accuracy</th>
+                      <th className="text-left px-4 py-3 font-semibold">Weak Topics</th>
+                      <th className="text-right px-4 py-3 font-semibold">Report</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#514871]">
+                  <tbody className="divide-y divide-outline-variant/50 dark:divide-slate-800">
                     {submittedAttempts.slice(0, 15).map((att) => (
-                      <tr key={att.id}>
-                        <td className="px-4 py-3 font-semibold text-white">
-                          {att.examName} <span className="text-[#B5ADC6] font-normal">· {att.mode}</span>
+                      <tr key={att.id} className="hover:bg-surface-container-low/50 dark:hover:bg-slate-800/40">
+                        <td className="px-4 py-3 font-semibold text-on-surface dark:text-white">
+                          {att.examName}{' '}
+                          <span className="text-on-surface-variant dark:text-slate-400 font-normal">
+                            · {att.mode}
+                          </span>
                         </td>
-                        <td className="px-4 py-3 text-[#CFCEDD] tabular-nums">
+                        <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300 font-mono tabular-nums">
                           {att.submittedAt?.slice(0, 10) || '—'}
                         </td>
-                        <td className="px-4 py-3 text-right text-[#CFCEDD] tabular-nums">
+                        <td className="px-4 py-3 text-right text-on-surface-variant dark:text-slate-300 font-mono tabular-nums">
                           {att.totalQuestions}
                         </td>
-                        <td className="px-4 py-3 text-right font-bold text-white tabular-nums">
+                        <td className="px-4 py-3 text-right font-bold text-on-surface dark:text-white font-mono tabular-nums">
                           {att.totalMarks} / {att.maxMarks} ({att.percentage}%)
                         </td>
-                        <td className="px-4 py-3 text-right text-emerald-300 tabular-nums">
+                        <td className="px-4 py-3 text-right font-bold text-success dark:text-emerald-400 font-mono tabular-nums">
                           {att.accuracy}%
                         </td>
-                        <td className="px-4 py-3 text-xs text-amber-200 max-w-xs truncate">
+                        <td className="px-4 py-3 text-xs text-warning dark:text-amber-300 max-w-xs truncate">
                           {(att.weakTopics || []).join(', ') || 'None flagged'}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button
                             type="button"
                             onClick={() => onViewAttemptReport(att)}
-                            className="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-[#675D85] text-white text-xs font-semibold hover:bg-[#7C7397]"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary transition-colors"
                           >
                             <Target className="w-3.5 h-3.5" /> View Analytics
                           </button>

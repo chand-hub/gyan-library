@@ -20,12 +20,9 @@ import {
 } from 'recharts';
 import {
   BellRing,
-  Check,
   Download,
-  IndianRupee,
   Plus,
   Printer,
-  RotateCcw,
   Trash2,
   X,
 } from 'lucide-react';
@@ -478,14 +475,17 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
     onNotify('ok', 'Expense removed.');
   };
 
+  const inputCls =
+    'w-full px-3 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white';
+
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 text-on-surface dark:text-slate-100">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl font-bold text-white">
-            Payments, Plans & Financial Analytics
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
+            Payments, Plans &amp; Financial Analytics
           </h2>
-          <p className="text-xs text-[#CFCEDD]">
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
             Verified revenue excludes pending dues. Demo entries are tagged separately from live operations.
           </p>
         </div>
@@ -495,7 +495,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
             value={datasetScope}
             onChange={(e) => setDatasetScope(e.target.value as DatasetScope)}
             aria-label="Dataset Scope"
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+            className="px-3 py-1.5 text-xs font-semibold rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-900 text-on-surface dark:text-white"
           >
             <option value="live">Live Production Only</option>
             <option value="all">Combined (Live + Demo)</option>
@@ -506,7 +506,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value as DateRange)}
             aria-label="Date Range"
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+            className="px-3 py-1.5 text-xs font-semibold rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-900 text-on-surface dark:text-white"
           >
             <option value="daily">Today</option>
             <option value="weekly">Last 7 Days</option>
@@ -518,7 +518,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
           <button
             type="button"
             onClick={() => setShowOfflineModal(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold hover:bg-white"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" /> Record Offline Fee
           </button>
@@ -526,7 +526,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
       </div>
 
       {/* Sub-navigation */}
-      <div className="flex flex-wrap gap-1.5 border-b border-[#7C7397]/40 pb-3">
+      <div className="flex flex-wrap gap-1.5 border-b border-outline-variant dark:border-slate-800 pb-3">
         {(
           [
             ['payments', 'Payments & Receipts'],
@@ -539,10 +539,10 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
             key={key}
             type="button"
             onClick={() => setSubTab(key)}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            className={`px-3.5 py-1.5 rounded text-xs font-semibold transition-colors cursor-pointer ${
               subTab === key
-                ? 'bg-[#B5ADC6] text-[#0E0713]'
-                : 'bg-[#3D2C56] text-[#CFCEDD] hover:text-white hover:bg-[#514871]'
+                ? 'bg-primary text-on-primary'
+                : 'bg-surface-container-low dark:bg-slate-900 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container'
             }`}
           >
             {label}
@@ -553,27 +553,27 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
       {/* Summary Strip */}
       {isManagerOrAdmin && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl bg-[#514871] border border-[#7C7397]/40">
-            <p className="text-xs text-[#CFCEDD] font-medium">Verified Fee Revenue</p>
-            <p className="font-display text-2xl font-bold text-emerald-300 tabular-nums mt-1">
+          <div className="p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+            <p className="text-xs text-on-surface-variant dark:text-slate-400 font-semibold">Verified Fee Revenue</p>
+            <p className="font-display text-2xl font-bold text-success tabular-nums mt-1">
               ₹{financialSummary.verifiedRevenue.toLocaleString('en-IN')}
             </p>
           </div>
-          <div className="p-4 rounded-xl bg-[#514871] border border-[#7C7397]/40">
-            <p className="text-xs text-[#CFCEDD] font-medium">Pending Dues (Excluded)</p>
-            <p className="font-display text-2xl font-bold text-amber-300 tabular-nums mt-1">
+          <div className="p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+            <p className="text-xs text-on-surface-variant dark:text-slate-400 font-semibold">Pending Dues (Excluded)</p>
+            <p className="font-display text-2xl font-bold text-warning tabular-nums mt-1">
               ₹{financialSummary.pendingRevenue.toLocaleString('en-IN')}
             </p>
           </div>
-          <div className="p-4 rounded-xl bg-[#514871] border border-[#7C7397]/40">
-            <p className="text-xs text-[#CFCEDD] font-medium">Operational Expenses</p>
-            <p className="font-display text-2xl font-bold text-red-300 tabular-nums mt-1">
+          <div className="p-4 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+            <p className="text-xs text-on-surface-variant dark:text-slate-400 font-semibold">Operational Expenses</p>
+            <p className="font-display text-2xl font-bold text-error tabular-nums mt-1">
               ₹{financialSummary.totalExpenses.toLocaleString('en-IN')}
             </p>
           </div>
-          <div className="p-4 rounded-xl bg-[#0E0713] text-white border border-[#7C7397]">
-            <p className="text-xs text-[#CFCEDD] font-medium">Net Operating Profit</p>
-            <p className="font-display text-2xl font-bold text-[#B5ADC6] tabular-nums mt-1">
+          <div className="p-4 rounded-lg bg-primary text-on-primary border border-primary-container shadow-sm">
+            <p className="text-xs text-on-primary-container font-semibold">Net Operating Profit</p>
+            <p className="font-display text-2xl font-bold text-on-primary tabular-nums mt-1">
               ₹{financialSummary.netProfit.toLocaleString('en-IN')}
             </p>
           </div>
@@ -584,16 +584,16 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
       {subTab === 'payments' && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1 p-1 rounded bg-surface-container-low dark:bg-slate-900 border border-outline-variant dark:border-slate-800">
               {['ALL', 'verified', 'pending', 'refunded', 'failed'].map((st) => (
                 <button
                   key={st}
                   type="button"
                   onClick={() => setPaymentStatusFilter(st)}
-                  className={`px-3 py-1 rounded-md text-xs font-medium capitalize ${
+                  className={`px-3 py-1 rounded text-xs font-semibold capitalize cursor-pointer ${
                     paymentStatusFilter === st
-                      ? 'bg-[#B5ADC6] text-[#0E0713] font-semibold'
-                      : 'bg-[#3D2C56] text-[#CFCEDD] hover:text-white'
+                      ? 'bg-primary text-on-primary'
+                      : 'text-on-surface-variant dark:text-slate-300 hover:bg-surface-container'
                   }`}
                 >
                   {st === 'ALL' ? 'All Receipts' : st}
@@ -619,62 +619,62 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                   ])
                 )
               }
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#7C7397]/60 bg-[#3D2C56] text-xs font-semibold text-white hover:bg-[#514871]"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-800 text-xs font-semibold text-primary dark:text-white hover:bg-surface-container-low cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" /> Export Payments CSV
             </button>
           </div>
 
-          <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-x-auto">
+          <div className="rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#0E0713]/60 text-xs uppercase text-[#CFCEDD]">
+              <thead className="bg-surface-container-low dark:bg-slate-800/80 text-xs uppercase text-on-surface-variant dark:text-slate-300 border-b border-outline-variant dark:border-slate-700">
                 <tr>
-                  <th className="px-4 py-3">Receipt</th>
-                  <th className="px-4 py-3">Student</th>
-                  <th className="px-4 py-3">Plan / Description</th>
-                  <th className="px-4 py-3">Method</th>
-                  <th className="px-4 py-3 text-right">Amount</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3 font-semibold">Receipt</th>
+                  <th className="px-4 py-3 font-semibold">Student</th>
+                  <th className="px-4 py-3 font-semibold">Plan / Description</th>
+                  <th className="px-4 py-3 font-semibold">Method</th>
+                  <th className="px-4 py-3 text-right font-semibold">Amount</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#7C7397]/25">
+              <tbody className="divide-y divide-outline-variant/60 dark:divide-slate-800">
                 {scopedPayments.map((p) => (
-                  <tr key={p.id} className="hover:bg-[#514871]/40">
-                    <td className="px-4 py-3 font-mono text-xs font-semibold text-white">
+                  <tr key={p.id} className="hover:bg-surface-container-low/50 dark:hover:bg-slate-800/50">
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-primary dark:text-white">
                       {p.receiptNumber}
-                      {p.isDemo && <span className="ml-1.5 text-[10px] text-[#B5ADC6]">· DEMO</span>}
+                      {p.isDemo && <span className="ml-1.5 text-[10px] text-outline">· DEMO</span>}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-xs text-white">{p.studentName}</div>
-                      <div className="font-mono text-[11px] text-[#CFCEDD]">{p.studentCode}</div>
+                      <div className="font-semibold text-xs text-on-surface dark:text-white">{p.studentName}</div>
+                      <div className="font-mono text-[11px] text-on-surface-variant dark:text-slate-400">{p.studentCode}</div>
                     </td>
-                    <td className="px-4 py-3 text-xs text-[#CFCEDD]">{p.planName}</td>
-                    <td className="px-4 py-3 text-xs uppercase text-[#CFCEDD]">
+                    <td className="px-4 py-3 text-xs text-on-surface-variant dark:text-slate-300">{p.planName}</td>
+                    <td className="px-4 py-3 text-xs uppercase text-on-surface-variant dark:text-slate-300">
                       {p.method.replace(/_/g, ' ')}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums text-white">
+                    <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums text-on-surface dark:text-white">
                       ₹{Number(p.amount).toLocaleString('en-IN')}
                     </td>
                     <td className="px-4 py-3 text-xs font-semibold capitalize">
                       <span
-                        className={
+                        className={`inline-flex px-2 py-0.5 rounded-full text-[11px] ${
                           p.status === 'verified'
-                            ? 'text-emerald-300'
+                            ? 'bg-success-container text-on-success-container'
                             : p.status === 'pending'
-                            ? 'text-amber-300'
-                            : 'text-red-300'
-                        }
+                            ? 'bg-warning-container text-on-warning-container'
+                            : 'bg-error-container text-on-error-container'
+                        }`}
                       >
                         {p.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                    <td className="px-4 py-3 text-right space-x-2.5 whitespace-nowrap">
                       {p.status === 'pending' && (
                         <button
                           type="button"
                           onClick={() => handlePaymentStatusUpdate(p, 'verified')}
-                          className="text-xs font-semibold text-emerald-300 hover:underline"
+                          className="text-xs font-semibold text-success hover:underline cursor-pointer"
                         >
                           Verify
                         </button>
@@ -683,7 +683,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                         <button
                           type="button"
                           onClick={() => handlePaymentStatusUpdate(p, 'refunded')}
-                          className="text-xs font-semibold text-red-300 hover:underline"
+                          className="text-xs font-semibold text-error hover:underline cursor-pointer"
                         >
                           Refund
                         </button>
@@ -691,7 +691,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                       <button
                         type="button"
                         onClick={() => setReceiptPreview(p)}
-                        className="text-xs font-semibold text-[#B5ADC6] hover:text-white hover:underline"
+                        className="text-xs font-semibold text-secondary hover:text-primary hover:underline cursor-pointer"
                       >
                         Receipt
                       </button>
@@ -700,7 +700,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                 ))}
                 {scopedPayments.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-xs text-[#CFCEDD]">
+                    <td colSpan={7} className="px-4 py-8 text-center text-xs text-on-surface-variant dark:text-slate-400">
                       No payment transactions match this filter.
                     </td>
                   </tr>
@@ -711,15 +711,17 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
         </div>
       )}
 
-      {/* TAB: PLANS (Admin Only) */}
+      {/* TAB: PLANS */}
       {subTab === 'plans' && isAdmin && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-sm font-semibold text-white">Active & Archived Membership Tiers ({plans.length})</h3>
+            <h3 className="text-sm font-semibold text-primary dark:text-white">
+              Active &amp; Archived Membership Tiers ({plans.length})
+            </h3>
             <button
               type="button"
               onClick={openNewPlanModal}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold hover:bg-white"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Create Plan
             </button>
@@ -729,44 +731,46 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
             {plans.map((p) => (
               <div
                 key={p.id}
-                className="p-5 rounded-xl bg-[#514871] border border-[#7C7397]/40 flex flex-col justify-between gap-4"
+                className="p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm flex flex-col justify-between gap-4"
               >
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-display text-lg font-bold text-white">{p.name}</h4>
+                    <h4 className="font-display text-lg font-bold text-on-surface dark:text-white">{p.name}</h4>
                     <span
-                      className={`text-xs font-semibold ${
-                        p.active ? 'text-emerald-300' : 'text-[#9993AC]'
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                        p.active
+                          ? 'bg-success-container text-on-success-container'
+                          : 'bg-surface-variant text-on-surface-variant'
                       }`}
                     >
                       {p.active ? 'Active' : 'Paused'}
                     </span>
                   </div>
-                  <div className="font-display text-2xl font-bold text-[#B5ADC6] tabular-nums">
+                  <div className="font-display text-2xl font-bold text-primary dark:text-white tabular-nums">
                     ₹{Number(p.price).toLocaleString('en-IN')}{' '}
-                    <span className="text-xs font-sans font-normal text-[#CFCEDD]">
+                    <span className="text-xs font-sans font-normal text-on-surface-variant dark:text-slate-400">
                       / {p.durationDays} days
                     </span>
                   </div>
-                  <p className="text-xs text-[#CFCEDD]">
+                  <p className="text-xs text-on-surface-variant dark:text-slate-300">
                     {p.timings} · {p.seatAccess}
                   </p>
-                  <p className="text-xs text-[#CFCEDD]">{p.terms}</p>
+                  <p className="text-xs text-on-surface-variant dark:text-slate-400">{p.terms}</p>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-[#7C7397]/30">
-                  <div className="flex gap-2">
+                <div className="flex items-center justify-between pt-3 border-t border-outline-variant dark:border-slate-800">
+                  <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => openEditPlanModal(p)}
-                      className="text-xs font-semibold text-[#B5ADC6] hover:text-white hover:underline"
+                      className="text-xs font-semibold text-secondary hover:underline cursor-pointer"
                     >
                       Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => handleTogglePlanActive(p)}
-                      className="text-xs font-semibold text-[#CFCEDD] hover:text-white hover:underline"
+                      className="text-xs font-semibold text-on-surface-variant hover:text-primary hover:underline cursor-pointer"
                     >
                       {p.active ? 'Deactivate' : 'Activate'}
                     </button>
@@ -774,7 +778,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                   <button
                     type="button"
                     onClick={() => handleDeletePlan(p)}
-                    className="text-xs text-red-300 hover:underline inline-flex items-center gap-1"
+                    className="text-xs text-error hover:underline inline-flex items-center gap-1 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" /> Delete
                   </button>
@@ -788,60 +792,60 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
       {/* TAB: SUBSCRIPTIONS & EXPIRY */}
       {subTab === 'subscriptions' && isManagerOrAdmin && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-[#514871] border border-[#7C7397]/60">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-surface-container-low dark:bg-slate-900 border border-outline-variant dark:border-slate-800">
             <div>
-              <h3 className="text-sm font-semibold text-white">
-                Automated Expiry Sync & 7 / 3 / 1-Day Renewal Reminders
+              <h3 className="text-sm font-semibold text-primary dark:text-white">
+                Automated Expiry Sync &amp; 7 / 3 / 1-Day Renewal Reminders
               </h3>
-              <p className="text-xs text-[#CFCEDD] mt-0.5">
+              <p className="text-xs text-on-surface-variant dark:text-slate-400 mt-0.5">
                 Scans active subscriptions, expires overdue plans, and dispatches renewal alerts to student dashboards.
               </p>
             </div>
             <button
               type="button"
               onClick={handleRunExpiryCheckAndReminders}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold shrink-0 hover:bg-white"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold shrink-0 hover:bg-primary cursor-pointer"
             >
-              <BellRing className="w-3.5 h-3.5" /> Run Expiry & Reminder Scan
+              <BellRing className="w-3.5 h-3.5" /> Run Expiry &amp; Reminder Scan
             </button>
           </div>
 
-          <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-x-auto">
+          <div className="rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#0E0713]/60 text-xs uppercase text-[#CFCEDD]">
+              <thead className="bg-surface-container-low dark:bg-slate-800/80 text-xs uppercase text-on-surface-variant dark:text-slate-300 border-b border-outline-variant dark:border-slate-700">
                 <tr>
-                  <th className="px-4 py-3">Student</th>
-                  <th className="px-4 py-3">Plan</th>
-                  <th className="px-4 py-3">Start</th>
-                  <th className="px-4 py-3">Expiry</th>
-                  <th className="px-4 py-3 text-right">Fee</th>
-                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 font-semibold">Student</th>
+                  <th className="px-4 py-3 font-semibold">Plan</th>
+                  <th className="px-4 py-3 font-semibold">Start</th>
+                  <th className="px-4 py-3 font-semibold">Expiry</th>
+                  <th className="px-4 py-3 text-right font-semibold">Fee</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#7C7397]/25">
+              <tbody className="divide-y divide-outline-variant/60 dark:divide-slate-800">
                 {memberships
                   .filter((m) => scopeMatches(Boolean(m.isDemo)))
                   .map((m) => (
                     <tr key={m.id}>
                       <td className="px-4 py-3 text-xs">
-                        <span className="font-semibold text-white">{m.studentName}</span>{' '}
-                        <span className="font-mono text-[#CFCEDD]">· {m.studentCode}</span>
+                        <span className="font-semibold text-on-surface dark:text-white">{m.studentName}</span>{' '}
+                        <span className="font-mono text-on-surface-variant dark:text-slate-400">· {m.studentCode}</span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-[#CFCEDD]">{m.planName}</td>
-                      <td className="px-4 py-3 font-mono text-xs tabular-nums text-[#CFCEDD]">{m.startDate}</td>
-                      <td className="px-4 py-3 font-mono text-xs tabular-nums text-[#CFCEDD]">{m.expiryDate}</td>
-                      <td className="px-4 py-3 text-right font-mono text-xs tabular-nums text-white">
+                      <td className="px-4 py-3 text-xs text-on-surface-variant dark:text-slate-300">{m.planName}</td>
+                      <td className="px-4 py-3 font-mono text-xs tabular-nums text-on-surface-variant dark:text-slate-300">{m.startDate}</td>
+                      <td className="px-4 py-3 font-mono text-xs tabular-nums text-on-surface-variant dark:text-slate-300">{m.expiryDate}</td>
+                      <td className="px-4 py-3 text-right font-mono text-xs tabular-nums font-semibold text-on-surface dark:text-white">
                         ₹{Number(m.amount).toLocaleString('en-IN')}
                       </td>
                       <td className="px-4 py-3 text-xs font-semibold capitalize">
                         <span
-                          className={
+                          className={`inline-flex px-2 py-0.5 rounded-full text-[11px] ${
                             m.status === 'active'
-                              ? 'text-emerald-300'
+                              ? 'bg-success-container text-on-success-container'
                               : m.status === 'expired'
-                              ? 'text-red-300'
-                              : 'text-amber-300'
-                          }
+                              ? 'bg-error-container text-on-error-container'
+                              : 'bg-warning-container text-on-warning-container'
+                          }`}
                         >
                           {m.status}
                         </span>
@@ -858,7 +862,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
       {subTab === 'expenses' && isManagerOrAdmin && (
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold text-white">Income vs Operational Expenses</h3>
+            <h3 className="text-sm font-semibold text-primary dark:text-white">Income vs Operational Expenses</h3>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -876,14 +880,14 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                     ])
                   )
                 }
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#7C7397]/60 bg-[#3D2C56] text-xs font-semibold text-white"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-outline-variant dark:border-slate-700 bg-surface-container-lowest dark:bg-slate-800 text-xs font-semibold text-primary dark:text-white cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" /> Export P&amp;L CSV
               </button>
               <button
                 type="button"
                 onClick={() => setShowExpenseForm((v) => !v)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold hover:bg-white"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" /> Add Expense
               </button>
@@ -893,25 +897,25 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
           {showExpenseForm && (
             <form
               onSubmit={handleAddExpense}
-              className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 grid grid-cols-1 sm:grid-cols-5 gap-3 items-end"
+              className="p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-5 gap-3 items-end"
             >
               <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Expense Title</label>
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Expense Title</label>
                 <input
                   type="text"
                   required
                   value={expTitle}
                   onChange={(e) => setExpTitle(e.target.value)}
                   placeholder="Monthly Electricity Bill"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+                  className={inputCls}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Category</label>
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Category</label>
                 <select
                   value={expCategory}
                   onChange={(e) => setExpCategory(e.target.value as ExpenseRecord['category'])}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+                  className={inputCls}
                 >
                   <option value="electricity">Electricity</option>
                   <option value="rent">Rent</option>
@@ -923,24 +927,24 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Amount (INR)</label>
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Amount (INR)</label>
                 <input
                   type="number"
                   required
                   min={0}
                   value={expAmount}
                   onChange={(e) => setExpAmount(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+                  className={inputCls}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Date</label>
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Date</label>
                 <input
                   type="date"
                   required
                   value={expDate}
                   onChange={(e) => setExpDate(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+                  className={inputCls}
                 />
               </div>
               <div className="sm:col-span-4">
@@ -949,12 +953,12 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                   value={expNotes}
                   onChange={(e) => setExpNotes(e.target.value)}
                   placeholder="Optional invoice / voucher note"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+                  className={inputCls}
                 />
               </div>
               <button
                 type="submit"
-                className="py-2 px-4 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold hover:bg-white"
+                className="py-2 px-4 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
               >
                 Save Expense
               </button>
@@ -962,53 +966,53 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
           )}
 
           {/* Income vs Expense Recharts BarChart */}
-          <div className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-[#CFCEDD] mb-4">
+          <div className="p-5 rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant dark:text-slate-400 mb-4">
               Verified Income vs Expense Breakdown (INR)
             </h4>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={incomeVsExpenseChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#7C7397" strokeOpacity={0.25} />
-                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#CFCEDD' }} />
-                  <YAxis tick={{ fontSize: 12, fill: '#CFCEDD' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#C4C6CF" strokeOpacity={0.5} />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#44474E' }} />
+                  <YAxis tick={{ fontSize: 12, fill: '#44474E' }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#0E0713',
-                      borderColor: '#7C7397',
-                      color: '#FFFFFF',
+                      backgroundColor: '#FFFFFF',
+                      borderColor: '#C4C6CF',
+                      color: '#0B1C30',
                       fontSize: '12px',
                     }}
                   />
-                  <Legend wrapperStyle={{ color: '#CFCEDD', fontSize: '12px' }} />
-                  <Bar dataKey="VerifiedIncome" name="Verified Income" fill="#B5ADC6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Expense" name="Expense" fill="#7C7397" radius={[4, 4, 0, 0]} />
+                  <Legend wrapperStyle={{ color: '#44474E', fontSize: '12px' }} />
+                  <Bar dataKey="VerifiedIncome" name="Verified Income" fill="#0051D5" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Expense" name="Expense" fill="#BF0715" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-x-auto">
+          <div className="rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#0E0713]/60 text-xs uppercase text-[#CFCEDD]">
+              <thead className="bg-surface-container-low dark:bg-slate-800/80 text-xs uppercase text-on-surface-variant dark:text-slate-300 border-b border-outline-variant dark:border-slate-700">
                 <tr>
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Title</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3 text-right">Amount</th>
-                  {isAdmin && <th className="px-4 py-3 text-right">Action</th>}
+                  <th className="px-4 py-3 font-semibold">Date</th>
+                  <th className="px-4 py-3 font-semibold">Title</th>
+                  <th className="px-4 py-3 font-semibold">Category</th>
+                  <th className="px-4 py-3 text-right font-semibold">Amount</th>
+                  {isAdmin && <th className="px-4 py-3 text-right font-semibold">Action</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#7C7397]/25">
+              <tbody className="divide-y divide-outline-variant/60 dark:divide-slate-800">
                 {scopedExpenses.map((e) => (
                   <tr key={e.id}>
-                    <td className="px-4 py-3 font-mono text-xs tabular-nums text-[#CFCEDD]">{e.expenseDate}</td>
-                    <td className="px-4 py-3 text-xs font-medium text-white">
+                    <td className="px-4 py-3 font-mono text-xs tabular-nums text-on-surface-variant dark:text-slate-300">{e.expenseDate}</td>
+                    <td className="px-4 py-3 text-xs font-semibold text-on-surface dark:text-white">
                       {e.title}
-                      {e.isDemo && <span className="ml-1.5 text-[10px] text-[#B5ADC6]">· DEMO</span>}
+                      {e.isDemo && <span className="ml-1.5 text-[10px] text-outline">· DEMO</span>}
                     </td>
-                    <td className="px-4 py-3 text-xs capitalize text-[#CFCEDD]">{e.category}</td>
-                    <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums text-white">
+                    <td className="px-4 py-3 text-xs capitalize text-on-surface-variant dark:text-slate-300">{e.category}</td>
+                    <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums text-on-surface dark:text-white">
                       ₹{Number(e.amount).toLocaleString('en-IN')}
                     </td>
                     {isAdmin && (
@@ -1016,7 +1020,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                         <button
                           type="button"
                           onClick={() => handleDeleteExpense(e.id)}
-                          className="text-xs text-red-300 hover:underline"
+                          className="text-xs font-semibold text-error hover:underline cursor-pointer"
                         >
                           Delete
                         </button>
@@ -1032,24 +1036,24 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
 
       {/* Offline Payment Modal */}
       {showOfflineModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-          <div className="w-full max-w-md bg-[#3D2C56] rounded-xl border border-[#7C7397] p-6 space-y-4 text-white">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-6 space-y-4 text-on-surface dark:text-slate-100 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
+              <h3 className="font-display text-lg font-bold text-primary dark:text-white">
                 Record Offline Counter Payment
               </h3>
-              <button type="button" onClick={() => setShowOfflineModal(false)}>
-                <X className="w-5 h-5 text-[#CFCEDD]" />
+              <button type="button" onClick={() => setShowOfflineModal(false)} className="text-on-surface-variant hover:text-primary cursor-pointer">
+                <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleRecordOfflinePayment} className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Student</label>
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Student</label>
                 <select
                   required
                   value={offStudentId}
                   onChange={(e) => setOffStudentId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                  className={inputCls}
                 >
                   <option value="">Select student...</option>
                   {students.map((s) => (
@@ -1060,7 +1064,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Membership Plan (Optional)</label>
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Membership Plan (Optional)</label>
                 <select
                   value={offPlanId}
                   onChange={(e) => {
@@ -1069,7 +1073,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                     const found = plans.find((p) => p.id === pid);
                     if (found) setOffAmount(found.price);
                   }}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                  className={inputCls}
                 >
                   <option value="">Custom / Fee Adjustment</option>
                   {plans.filter((p) => p.active).map((p) => (
@@ -1081,22 +1085,22 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Amount (INR)</label>
+                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Amount (INR)</label>
                   <input
                     type="number"
                     required
                     min={1}
                     value={offAmount}
                     onChange={(e) => setOffAmount(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className={inputCls}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Payment Mode</label>
+                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Payment Mode</label>
                   <select
                     value={offMethod}
                     onChange={(e) => setOffMethod(e.target.value as 'cash' | 'upi_offline')}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className={inputCls}
                   >
                     <option value="cash">Cash at Desk</option>
                     <option value="upi_offline">UPI QR Scan</option>
@@ -1104,19 +1108,19 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Notes</label>
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Notes</label>
                 <input
                   type="text"
                   value={offNotes}
                   onChange={(e) => setOffNotes(e.target.value)}
                   placeholder="Optional counter reference"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                  className={inputCls}
                 />
               </div>
               <button
                 type="submit"
                 disabled={submittingOffline}
-                className="w-full py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold disabled:opacity-60 hover:bg-white"
+                className="w-full py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold disabled:opacity-60 hover:bg-primary cursor-pointer"
               >
                 {submittingOffline ? 'Recording...' : 'Verify & Generate Receipt'}
               </button>
@@ -1127,30 +1131,30 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
 
       {/* Plan Create/Edit Modal */}
       {showPlanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-          <div className="w-full max-w-lg bg-[#3D2C56] rounded-xl border border-[#7C7397] p-6 space-y-4 text-white">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-6 space-y-4 text-on-surface dark:text-slate-100 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
+              <h3 className="font-display text-lg font-bold text-primary dark:text-white">
                 {editingPlan ? 'Edit Membership Plan' : 'Create Membership Plan'}
               </h3>
-              <button type="button" onClick={() => setShowPlanModal(false)}>
-                <X className="w-5 h-5 text-[#CFCEDD]" />
+              <button type="button" onClick={() => setShowPlanModal(false)} className="text-on-surface-variant hover:text-primary cursor-pointer">
+                <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleSavePlan} className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Plan Name</label>
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Plan Name</label>
                 <input
                   type="text"
                   required
                   value={planName}
                   onChange={(e) => setPlanName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                  className={inputCls}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Duration (Days)</label>
+                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Duration (Days)</label>
                   <input
                     type="number"
                     required
@@ -1158,64 +1162,64 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                     max={3650}
                     value={planDays}
                     onChange={(e) => setPlanDays(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className={inputCls}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Price (INR)</label>
+                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Price (INR)</label>
                   <input
                     type="number"
                     required
                     min={0}
                     value={planPrice}
                     onChange={(e) => setPlanPrice(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className={inputCls}
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Study Timings</label>
+                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Study Timings</label>
                   <input
                     type="text"
                     required
                     value={planTimings}
                     onChange={(e) => setPlanTimings(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className={inputCls}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Seat Access</label>
+                  <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Seat Access</label>
                   <input
                     type="text"
                     required
                     value={planSeatAccess}
                     onChange={(e) => setPlanSeatAccess(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                    className={inputCls}
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Facilities (Comma-Separated)</label>
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Facilities (Comma-Separated)</label>
                 <input
                   type="text"
                   value={planFacilities}
                   onChange={(e) => setPlanFacilities(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                  className={inputCls}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Terms &amp; Conditions</label>
+                <label className="block text-xs font-semibold text-on-surface dark:text-slate-300 mb-1">Terms &amp; Conditions</label>
                 <textarea
                   rows={2}
                   value={planTerms}
                   onChange={(e) => setPlanTerms(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
+                  className={inputCls}
                 />
               </div>
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold hover:bg-white"
+                className="w-full py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
               >
                 {editingPlan ? 'Save Plan Changes' : 'Create Membership Plan'}
               </button>
@@ -1226,39 +1230,39 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
 
       {/* Receipt Preview & Print Modal */}
       {receiptPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-          <div className="w-full max-w-md bg-white text-[#0E0713] rounded-xl border border-[#7C7397] p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md bg-surface-container-lowest text-on-surface rounded-xl border border-outline-variant p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-outline-variant pb-3">
               <div>
-                <h3 className="font-display text-lg font-bold text-[#1C0E29]">
+                <h3 className="font-display text-lg font-bold text-primary">
                   Fee Receipt
                 </h3>
-                <p className="font-mono text-xs text-slate-600">{receiptPreview.receiptNumber}</p>
+                <p className="font-mono text-xs text-on-surface-variant">{receiptPreview.receiptNumber}</p>
               </div>
-              <button type="button" onClick={() => setReceiptPreview(null)}>
-                <X className="w-5 h-5 text-slate-500" />
+              <button type="button" onClick={() => setReceiptPreview(null)} className="text-on-surface-variant hover:text-primary cursor-pointer">
+                <X className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
-                <span className="text-slate-600">Student</span>
+                <span className="text-on-surface-variant">Student</span>
                 <span className="font-semibold">
                   {receiptPreview.studentName} ({receiptPreview.studentCode})
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-600">Plan</span>
+                <span className="text-on-surface-variant">Plan</span>
                 <span className="font-semibold">{receiptPreview.planName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-600">Method</span>
+                <span className="text-on-surface-variant">Method</span>
                 <span className="uppercase">{receiptPreview.method.replace(/_/g, ' ')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-600">Status</span>
+                <span className="text-on-surface-variant">Status</span>
                 <span className="font-semibold capitalize">{receiptPreview.status}</span>
               </div>
-              <div className="flex justify-between pt-2 border-t border-slate-200 text-sm font-bold">
+              <div className="flex justify-between pt-2 border-t border-outline-variant text-sm font-bold text-primary">
                 <span>Total Amount</span>
                 <span className="font-mono tabular-nums">
                   ₹{Number(receiptPreview.amount).toLocaleString('en-IN')}
@@ -1269,7 +1273,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-300 text-xs font-semibold"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-semibold text-primary hover:bg-surface-container-low cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" /> Print
               </button>
@@ -1282,7 +1286,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                     settings?.address || ''
                   )
                 }
-                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#1C0E29] text-white text-xs font-semibold"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded bg-primary text-on-primary text-xs font-semibold hover:bg-primary-container cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" /> Download Receipt
               </button>

@@ -50,16 +50,16 @@ class AppErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-[#1C0E29] text-white p-6">
-          <div className="max-w-md w-full rounded-xl bg-[#3D2C56] border border-[#7C7397] p-6 space-y-4 text-center">
-            <h1 className="font-display text-xl font-bold text-white">
+        <div className="min-h-screen flex items-center justify-center bg-surface text-on-surface p-6">
+          <div className="max-w-md w-full rounded-xl bg-surface-container-lowest border border-outline-variant p-6 space-y-4 text-center shadow-sm">
+            <h1 className="font-headline text-xl font-bold text-primary">
               Something went wrong
             </h1>
-            <p className="text-xs text-[#CFCEDD] break-words">{this.state.message}</p>
+            <p className="text-xs text-on-surface-variant break-words">{this.state.message}</p>
             <button
               type="button"
               onClick={() => this.setState({ hasError: false, message: '' })}
-              className="px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white"
+              className="px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary transition-colors"
             >
               Reload View
             </button>
@@ -86,7 +86,7 @@ const MainRouter: React.FC = () => {
 
   const [viewMode, setViewMode] = useState<'public' | 'portal'>('public');
   const [portalInitialTab, setPortalInitialTab] = useState<string>('overview');
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
   const [firestoreError, setFirestoreError] = useState<string | null>(null);
 
@@ -318,7 +318,7 @@ const MainRouter: React.FC = () => {
       {quotaExceeded && (
         <div
           role="alert"
-          className="sticky top-0 z-50 bg-amber-400 text-[#0E0713] px-4 py-2 text-xs font-medium flex flex-wrap items-center justify-center gap-2 border-b border-amber-500"
+          className="sticky top-0 z-50 bg-warning-container text-on-warning-container px-4 py-2 text-xs font-medium flex flex-wrap items-center justify-center gap-2 border-b border-warning/30"
         >
           <span>
             Map quota limit reached for the preview key. For production deployment, link a Cloud billing-enabled Google Maps API key.
@@ -337,7 +337,7 @@ const MainRouter: React.FC = () => {
       {(connectionStatus.state === 'offline' || connectionStatus.state === 'reconnecting') && (
         <div
           role="status"
-          className="sticky top-0 z-40 bg-amber-950/95 text-amber-100 px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/60"
+          className="sticky top-0 z-40 bg-warning-container text-on-warning-container px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-3 border-b border-warning/30"
         >
           <span>
             {connectionStatus.state === 'reconnecting'
@@ -347,7 +347,7 @@ const MainRouter: React.FC = () => {
           <button
             type="button"
             onClick={() => retryConnection()}
-            className="px-2.5 py-1 rounded bg-amber-500 text-[#0E0713] font-bold hover:bg-amber-400"
+            className="px-2.5 py-1 rounded bg-primary text-on-primary font-semibold hover:bg-primary-container"
           >
             Retry Connection
           </button>
@@ -357,7 +357,7 @@ const MainRouter: React.FC = () => {
       {(firestoreError || bootstrapWarning) && (
         <div
           role="alert"
-          className="sticky top-0 z-40 bg-rose-950/95 text-rose-100 px-4 py-2.5 text-xs flex flex-wrap items-center justify-between gap-3 border-b border-rose-500/60"
+          className="sticky top-0 z-40 bg-error-container text-on-error-container px-4 py-2.5 text-xs flex flex-wrap items-center justify-between gap-3 border-b border-error/30"
         >
           <span>{firestoreError || bootstrapWarning}</span>
           <button
@@ -366,7 +366,7 @@ const MainRouter: React.FC = () => {
               setFirestoreError(null);
               clearBootstrapWarning();
             }}
-            className="px-2.5 py-1 rounded bg-rose-800/80 hover:bg-rose-700 text-white font-semibold"
+            className="px-2.5 py-1 rounded bg-error text-on-error font-semibold hover:opacity-90"
           >
             Dismiss
           </button>
@@ -374,10 +374,10 @@ const MainRouter: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="min-h-screen flex items-center justify-center bg-[#1C0E29] text-white">
+        <div className="min-h-screen flex items-center justify-center bg-surface text-on-surface">
           <div className="text-center space-y-3">
-            <div className="w-8 h-8 border-2 border-[#B5ADC6] border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs font-semibold tracking-wider uppercase text-[#CFCEDD]">
+            <div className="w-8 h-8 border-2 border-secondary border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs font-semibold tracking-wider uppercase text-on-surface-variant">
               Loading VIDHYA LIBRARY · Gyan Adda...
             </p>
           </div>

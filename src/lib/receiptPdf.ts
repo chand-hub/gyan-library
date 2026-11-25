@@ -18,8 +18,8 @@ export function downloadReceiptHtml(payment: PaymentRecord, libraryName = 'VIDHY
 <style>
   body { font-family: system-ui, -apple-system, sans-serif; color: #0f172a; margin: 40px; background: #fff; }
   .box { max-width: 680px; margin: 0 auto; border: 1px solid #cbd5e1; border-radius: 10px; padding: 32px; }
-  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f2147; padding-bottom: 16px; margin-bottom: 24px; }
-  .brand { font-size: 22px; font-weight: 700; color: #0f2147; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #002046; padding-bottom: 16px; margin-bottom: 24px; }
+  .brand { font-size: 22px; font-weight: 700; color: #002046; }
   .tag { font-size: 12px; color: #475569; margin-top: 4px; }
   .meta { text-align: right; font-size: 13px; }
   table { width: 100%; border-collapse: collapse; margin: 20px 0; }

@@ -38,7 +38,7 @@ const LibraryMarkerWithInfo: React.FC<{
         title={libraryName}
         onClick={() => setInfoOpen((prev) => !prev)}
       >
-        <Pin background="#3D2C56" borderColor="#B5ADC6" glyphColor="#FFFFFF" scale={1.2} />
+        <Pin background="#002046" borderColor="#FFFFFF" glyphColor="#FFFFFF" scale={1.2} />
       </AdvancedMarker>
       {infoOpen && marker && (
         <InfoWindow
@@ -46,10 +46,10 @@ const LibraryMarkerWithInfo: React.FC<{
           maxWidth={270}
           onCloseClick={() => setInfoOpen(false)}
         >
-          <div className="p-1 text-slate-900">
-            <p className="font-semibold text-sm text-[#1C0E29]">{libraryName}</p>
-            <p className="text-xs text-slate-700 mt-1">{address}</p>
-            <p className="text-xs font-semibold text-[#514871] mt-1">{openingHours}</p>
+          <div className="p-1 text-on-surface">
+            <p className="font-semibold text-sm text-primary">{libraryName}</p>
+            <p className="text-xs text-on-surface-variant mt-1">{address}</p>
+            <p className="text-xs font-semibold text-secondary mt-1">{openingHours}</p>
           </div>
         </InfoWindow>
       )}
@@ -74,23 +74,23 @@ export const LibraryMap: React.FC<LibraryMapProps> = ({
 
   if (!apiKey || quotaExceeded) {
     return (
-      <div className="h-[340px] w-full rounded-xl border border-[#7C7397]/60 bg-[#3D2C56] flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-12 h-12 rounded-full bg-[#1C0E29] flex items-center justify-center text-[#B5ADC6] mb-3 border border-[#7C7397]">
+      <div className="h-[340px] w-full rounded-lg border border-outline-variant bg-surface-container-low dark:bg-slate-900 flex flex-col items-center justify-center p-6 text-center shadow-sm">
+        <div className="w-12 h-12 rounded-full bg-surface-container-lowest dark:bg-slate-800 flex items-center justify-center text-secondary mb-3 border border-outline-variant">
           <MapPin className="w-6 h-6" />
         </div>
-        <h4 className="font-semibold text-white text-base">{libraryName}</h4>
-        <p className="text-sm text-[#CFCEDD] max-w-md mt-1">{address}</p>
+        <h4 className="font-semibold text-primary dark:text-white text-base">{libraryName}</h4>
+        <p className="text-sm text-on-surface-variant dark:text-slate-300 max-w-md mt-1">{address}</p>
         {ratingText && (
-          <p className="text-xs font-semibold text-[#B5ADC6] mt-1">{ratingText}</p>
+          <p className="text-xs font-semibold text-secondary mt-1">{ratingText}</p>
         )}
-        <p className="text-xs text-[#9993AC] mt-1 tabular-nums">
+        <p className="text-xs font-mono text-outline mt-1 tabular-nums">
           Coordinates: {lat.toFixed(4)}, {lng.toFixed(4)}
         </p>
         <a
           href={directionsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-bold hover:bg-white transition-colors"
+          className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded bg-primary text-on-primary text-sm font-semibold hover:bg-primary-container transition-colors"
         >
           <Navigation className="w-4 h-4" />
           Open Google Maps Directions
@@ -101,7 +101,7 @@ export const LibraryMap: React.FC<LibraryMapProps> = ({
 
   return (
     <div className="space-y-2">
-      <div className="h-[320px] w-full rounded-xl overflow-hidden border border-[#7C7397]/60">
+      <div className="h-[320px] w-full rounded-lg overflow-hidden border border-outline-variant shadow-sm">
         <APIProvider apiKey={apiKey} libraries={['marker']}>
           <GoogleMap
             mapId="DEMO_MAP_ID"
@@ -121,13 +121,13 @@ export const LibraryMap: React.FC<LibraryMapProps> = ({
           </GoogleMap>
         </APIProvider>
       </div>
-      <div className="flex items-center justify-between text-xs text-[#CFCEDD] px-1">
+      <div className="flex items-center justify-between text-xs text-on-surface-variant px-1">
         <span>{ratingText || 'Darbhanga · Mirzapur Chowk'}</span>
         <a
           href={directionsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-[#B5ADC6] hover:text-white font-semibold"
+          className="inline-flex items-center gap-1 text-secondary hover:text-primary font-semibold"
         >
           Open in Google Maps <ExternalLink className="w-3.5 h-3.5" />
         </a>

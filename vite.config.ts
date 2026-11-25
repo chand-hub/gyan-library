@@ -6,14 +6,12 @@ import {defineConfig} from 'vite';
 
 function isHmrEnabled(): boolean {
   if (process.env.DISABLE_HMR === 'true') return false;
-  if (process.env.ENABLE_HMR === 'true') return true;
-  const isCloudRunPreview =
-    Boolean(process.env.K_SERVICE) || String(process.env.APP_URL || '').includes('.run.app');
-  return !isCloudRunPreview;
+  return true;
 }
 
 export default defineConfig(() => {
   const hmrEnabled = isHmrEnabled();
+  const port = Number(process.env.PORT) || 3000;
   return {
     plugins: [
       react(),
@@ -43,9 +41,17 @@ export default defineConfig(() => {
       },
     },
     server: {
-      // Disable HMR in AI Studio Cloud Run preview containers where WebSockets are not proxied.
+      host: '0.0.0.0',
+      port,
+      allowedHosts: true as const,
       hmr: hmrEnabled,
+      ws: {},
       watch: hmrEnabled ? {} : null,
+    },
+    preview: {
+      host: '0.0.0.0',
+      port,
+      allowedHosts: true as const,
     },
   };
 });

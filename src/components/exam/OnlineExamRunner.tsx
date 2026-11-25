@@ -388,12 +388,12 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
   return (
     <div
       ref={containerRef}
-      className="min-h-screen bg-[#1C0E29] text-white flex flex-col"
+      className="min-h-screen bg-surface dark:bg-slate-950 text-on-surface dark:text-slate-100 flex flex-col"
     >
       {/* CBT Top Bar */}
-      <header className="bg-[#0E0713] border-b border-[#514871] px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <header className="bg-primary text-on-primary border-b border-primary-container px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
         <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-wider text-[#B5ADC6] font-semibold">
+          <p className="text-[11px] uppercase tracking-wider text-on-primary-container font-semibold">
             {config.examName} · {config.mode === 'exam' ? 'Timed Examination Mode' : 'Practice Mode'}
           </p>
           <h2 className="font-display text-base sm:text-lg font-bold text-white truncate">
@@ -405,11 +405,11 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
           <div
             className={`px-3 py-1.5 rounded-lg border text-sm font-mono font-bold tabular-nums flex items-center gap-2 ${
               config.isTimed && remainingSeconds < 120
-                ? 'bg-rose-950/70 border-rose-500 text-rose-200'
-                : 'bg-[#3D2C56] border-[#7C7397] text-white'
+                ? 'bg-error-container border-error text-on-error-container'
+                : 'bg-primary-container border-white/20 text-white'
             }`}
           >
-            <Clock className="w-4 h-4 text-[#B5ADC6]" />
+            <Clock className="w-4 h-4" />
             {config.isTimed ? formatTimer(remainingSeconds) : formatTimer(elapsedSeconds)}
           </div>
 
@@ -417,7 +417,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
             type="button"
             onClick={toggleFullscreen}
             title="Toggle Fullscreen"
-            className="p-2 rounded-lg bg-[#3D2C56] border border-[#7C7397] text-[#CFCEDD] hover:bg-[#514871]"
+            className="p-2 rounded-lg bg-primary-container border border-white/20 text-on-primary-container hover:text-white transition-colors"
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
@@ -426,7 +426,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
             type="button"
             onClick={() => setShowConfirmModal(true)}
             disabled={submitting}
-            className="px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs sm:text-sm font-bold hover:bg-white transition-colors"
+            className="px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs sm:text-sm font-bold hover:bg-white hover:text-primary transition-colors shadow-xs"
           >
             {submitting ? 'Scoring...' : 'Submit Test'}
           </button>
@@ -434,7 +434,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
           <button
             type="button"
             onClick={onExit}
-            className="px-3 py-2 rounded-lg border border-[#7C7397] text-xs font-medium text-[#CFCEDD] hover:bg-[#3D2C56]"
+            className="px-3 py-2 rounded-lg border border-white/25 text-xs font-medium text-on-primary-container hover:bg-primary-container hover:text-white transition-colors"
           >
             Exit
           </button>
@@ -442,11 +442,11 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
       </header>
 
       {/* Visual Test Progress Bar */}
-      <div className="bg-[#0E0713]/80 border-b border-[#514871]/60 px-4 sm:px-6 py-2">
+      <div className="bg-surface-container-low dark:bg-slate-900 border-b border-outline-variant dark:border-slate-800 px-4 sm:px-6 py-2">
         <div className="max-w-7xl mx-auto flex items-center gap-3">
-          <div className="flex-1 h-2 rounded-full bg-[#3D2C56] overflow-hidden">
+          <div className="flex-1 h-2 rounded-full bg-surface-variant dark:bg-slate-800 overflow-hidden">
             <div
-              className="h-full bg-[#B5ADC6] transition-all duration-300"
+              className="h-full bg-secondary transition-all duration-300"
               style={{
                 width: `${
                   config.questions.length > 0
@@ -456,7 +456,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
               }}
             />
           </div>
-          <span className="text-[11px] font-semibold text-[#CFCEDD] tabular-nums shrink-0">
+          <span className="text-[11px] font-semibold text-on-surface-variant dark:text-slate-300 font-mono tabular-nums shrink-0">
             {stats.answered} / {config.questions.length} Answered (
             {config.questions.length > 0
               ? Math.round((stats.answered / config.questions.length) * 100)
@@ -469,11 +469,11 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
       {/* Main CBT Grid */}
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Active Question */}
-        <div className="lg:col-span-8 flex flex-col justify-between bg-[#3D2C56] border border-[#7C7397]/60 rounded-xl p-5 sm:p-7 space-y-6">
+        <div className="lg:col-span-8 flex flex-col justify-between bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 rounded-xl p-5 sm:p-7 space-y-6 shadow-sm">
           <div className="space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-[#514871]">
-              <div className="text-xs text-[#CFCEDD] flex flex-wrap items-center gap-1.5">
-                <span className="font-bold text-white tabular-nums">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-outline-variant/60 dark:border-slate-800">
+              <div className="text-xs text-on-surface-variant dark:text-slate-300 flex flex-wrap items-center gap-1.5">
+                <span className="font-bold text-primary dark:text-white font-mono tabular-nums">
                   Question {currentIdx + 1} of {config.questions.length}
                 </span>
                 <span aria-hidden="true"> · </span>
@@ -481,36 +481,36 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
                 <span aria-hidden="true"> · </span>
                 <span>{currentQuestion.chapter}</span>
                 <span
-                  className={`ml-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                  className={`ml-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border ${
                     currentQuestion.difficulty === 'hard'
-                      ? 'bg-rose-950/80 text-rose-200 border border-rose-500/50'
+                      ? 'bg-error-container dark:bg-rose-950/70 text-on-error-container dark:text-rose-200 border-error/30'
                       : currentQuestion.difficulty === 'easy'
-                        ? 'bg-emerald-950/80 text-emerald-200 border border-emerald-500/50'
-                        : 'bg-[#1C0E29] text-[#B5ADC6] border border-[#7C7397]/50'
+                        ? 'bg-success-container dark:bg-emerald-950/70 text-on-success-container dark:text-emerald-200 border-success/30'
+                        : 'bg-surface-container-low dark:bg-slate-800 text-on-surface-variant dark:text-slate-300 border-outline-variant dark:border-slate-700'
                   }`}
                 >
                   {currentQuestion.difficulty === 'medium' ? 'moderate' : currentQuestion.difficulty}
                 </span>
               </div>
-              <div className="text-xs text-[#B5ADC6] tabular-nums">
+              <div className="text-xs font-semibold text-secondary dark:text-blue-400 font-mono tabular-nums">
                 +{config.marksPerCorrect} / −{config.negativeMarks} Marks
               </div>
             </div>
 
             {errorMsg && (
-              <div className="p-3 rounded-lg bg-rose-950/60 border border-rose-500/60 text-rose-200 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-lg bg-error-container dark:bg-rose-950/60 border border-error/40 text-on-error-container dark:text-rose-200 text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
             <div className="space-y-3">
-              <p className="text-base sm:text-lg leading-relaxed text-white font-medium whitespace-pre-line">
+              <p className="text-base sm:text-lg leading-relaxed text-on-surface dark:text-white font-medium whitespace-pre-line">
                 {currentQuestion.questionText}
               </p>
               {currentQuestion.hasDiagramOrTable && currentQuestion.diagramDescription && (
-                <div className="p-3.5 rounded-lg bg-[#1C0E29]/80 border border-[#7C7397] text-xs text-[#CFCEDD]">
-                  <span className="font-semibold text-[#B5ADC6]">Diagram / Table Note: </span>
+                <div className="p-3.5 rounded-lg bg-surface-container-low dark:bg-slate-800 border border-outline-variant dark:border-slate-700 text-xs text-on-surface-variant dark:text-slate-300">
+                  <span className="font-semibold text-primary dark:text-blue-300">Diagram / Table Note: </span>
                   {currentQuestion.diagramDescription}
                 </div>
               )}
@@ -523,15 +523,18 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
                 const letter = ['A', 'B', 'C', 'D'][idx];
 
                 let optionStyle =
-                  'bg-[#1C0E29]/60 border-[#7C7397]/60 text-[#CFCEDD] hover:border-[#B5ADC6] hover:bg-[#514871]/60';
+                  'bg-surface-container-low/50 dark:bg-slate-800/60 border-outline-variant dark:border-slate-700 text-on-surface dark:text-slate-200 hover:border-secondary hover:bg-surface-container-low dark:hover:bg-slate-800';
                 if (practiceResult) {
                   if (idx === practiceResult.correctIndex) {
-                    optionStyle = 'bg-emerald-950/70 border-emerald-400 text-white';
+                    optionStyle =
+                      'bg-success-container/70 dark:bg-emerald-950/70 border-success text-on-success-container dark:text-emerald-100';
                   } else if (selected && idx !== practiceResult.correctIndex) {
-                    optionStyle = 'bg-rose-950/70 border-rose-400 text-white';
+                    optionStyle =
+                      'bg-error-container/70 dark:bg-rose-950/70 border-error text-on-error-container dark:text-rose-100';
                   }
                 } else if (selected) {
-                  optionStyle = 'bg-[#675D85] border-[#B5ADC6] text-white shadow-sm';
+                  optionStyle =
+                    'bg-secondary-container/70 dark:bg-blue-950/60 border-secondary text-on-surface dark:text-white shadow-xs';
                 }
 
                 return (
@@ -544,8 +547,8 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
                     <span
                       className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold shrink-0 ${
                         selected
-                          ? 'bg-[#B5ADC6] text-[#0E0713]'
-                          : 'bg-[#3D2C56] text-[#CFCEDD] border border-[#7C7397]/60'
+                          ? 'bg-secondary text-on-secondary'
+                          : 'bg-surface-container-lowest dark:bg-slate-900 text-on-surface-variant dark:text-slate-300 border border-outline-variant dark:border-slate-700'
                       }`}
                     >
                       {letter}
@@ -561,40 +564,40 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
               <div
                 className={`p-4 rounded-xl border text-sm space-y-1.5 ${
                   practiceResult.isCorrect
-                    ? 'bg-emerald-950/50 border-emerald-500/60 text-emerald-100'
-                    : 'bg-rose-950/50 border-rose-500/60 text-rose-100'
+                    ? 'bg-success-container/60 dark:bg-emerald-950/50 border-success/50 text-on-success-container dark:text-emerald-100'
+                    : 'bg-error-container/60 dark:bg-rose-950/50 border-error/50 text-on-error-container dark:text-rose-100'
                 }`}
               >
                 <div className="flex items-center gap-2 font-semibold">
                   {practiceResult.isCorrect ? (
                     <>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <CheckCircle2 className="w-4 h-4 text-success dark:text-emerald-400" />
                       <span>Correct Answer!</span>
                     </>
                   ) : (
                     <>
-                      <XCircle className="w-4 h-4 text-rose-400" />
+                      <XCircle className="w-4 h-4 text-error dark:text-rose-400" />
                       <span>
                         Incorrect · Correct Option: {['A', 'B', 'C', 'D'][practiceResult.correctIndex]}
                       </span>
                     </>
                   )}
                 </div>
-                <p className="text-xs text-[#CFCEDD] leading-relaxed">{practiceResult.explanation}</p>
+                <p className="text-xs opacity-90 leading-relaxed">{practiceResult.explanation}</p>
               </div>
             )}
           </div>
 
           {/* Question Footer Navigation */}
-          <div className="pt-5 border-t border-[#514871] flex flex-wrap items-center justify-between gap-3">
+          <div className="pt-5 border-t border-outline-variant/60 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={handleToggleMarkReview}
                 className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${
                   markedForReview.includes(currentQuestion.id)
-                    ? 'bg-amber-500/20 border-amber-400 text-amber-200'
-                    : 'bg-[#1C0E29]/60 border-[#7C7397] text-[#CFCEDD] hover:bg-[#514871]'
+                    ? 'bg-warning-container dark:bg-amber-950/60 border-warning text-on-warning-container dark:text-amber-200'
+                    : 'bg-surface-container-low dark:bg-slate-800 border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300 hover:bg-surface-container dark:hover:bg-slate-700'
                 }`}
               >
                 <Flag className="w-3.5 h-3.5" />
@@ -604,7 +607,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
               <button
                 type="button"
                 onClick={handleClearResponse}
-                className="px-3 py-2 rounded-lg border border-[#7C7397] text-xs font-medium text-[#CFCEDD] hover:bg-[#514871]"
+                className="px-3 py-2 rounded-lg border border-outline-variant dark:border-slate-700 text-xs font-medium text-on-surface-variant dark:text-slate-300 hover:bg-surface-container-low dark:hover:bg-slate-800"
               >
                 Clear Option
               </button>
@@ -614,7 +617,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
                   type="button"
                   disabled={checkingPractice}
                   onClick={handleCheckPracticeAnswer}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary-container transition-colors"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   {checkingPractice ? 'Checking...' : 'Check Answer'}
@@ -627,7 +630,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
                 type="button"
                 disabled={currentIdx === 0}
                 onClick={() => setCurrentIdx((i) => Math.max(0, i - 1))}
-                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[#7C7397] text-xs font-semibold text-white disabled:opacity-40 hover:bg-[#514871]"
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-outline-variant dark:border-slate-700 text-xs font-semibold text-on-surface dark:text-white disabled:opacity-40 hover:bg-surface-container-low dark:hover:bg-slate-800"
               >
                 <ChevronLeft className="w-4 h-4" /> Previous
               </button>
@@ -640,7 +643,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
                     setShowConfirmModal(true);
                   }
                 }}
-                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white"
+                className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-bold hover:bg-primary transition-colors shadow-xs"
               >
                 {currentIdx < config.questions.length - 1 ? (
                   <>
@@ -652,7 +655,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
                     )}
                   </>
                 ) : (
-                  <span>Review & Submit</span>
+                  <span>Review &amp; Submit</span>
                 )}
               </button>
             </div>
@@ -661,29 +664,31 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
 
         {/* Right: Question Palette & Legend */}
         <aside className="lg:col-span-4 space-y-4">
-          <div className="bg-[#3D2C56] border border-[#7C7397]/60 rounded-xl p-5 space-y-4">
+          <div className="bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Bookmark className="w-4 h-4 text-[#B5ADC6]" /> Question Palette
+              <h3 className="text-sm font-bold text-primary dark:text-white flex items-center gap-2">
+                <Bookmark className="w-4 h-4 text-secondary dark:text-blue-400" /> Question Palette
               </h3>
-              <span className="text-xs text-[#CFCEDD] tabular-nums">
+              <span className="text-xs text-on-surface-variant dark:text-slate-300 font-mono tabular-nums">
                 {stats.answered}/{config.questions.length} Answered
               </span>
             </div>
 
-            <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-5 gap-2 max-h-60 lg:max-h-96 overflow-y-auto pr-1">
+            <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-5 gap-2 max-h-60 lg:max-h-96 overflow-y-auto pr-1 p-0.5">
               {config.questions.map((q, idx) => {
                 const isAnswered = typeof responses[q.id] === 'number';
                 const isReview = markedForReview.includes(q.id);
                 const isCurrent = idx === currentIdx;
 
-                let tileCls = 'bg-[#1C0E29] border-[#7C7397]/60 text-[#CFCEDD]';
+                let tileCls =
+                  'bg-surface-container-low dark:bg-slate-800 border-outline-variant dark:border-slate-700 text-on-surface-variant dark:text-slate-300';
                 if (isReview && isAnswered) {
-                  tileCls = 'bg-amber-500 border-amber-300 text-[#0E0713] font-bold';
+                  tileCls = 'bg-warning border-warning text-on-warning font-bold';
                 } else if (isReview) {
-                  tileCls = 'bg-amber-900/70 border-amber-400 text-amber-100';
+                  tileCls =
+                    'bg-warning-container dark:bg-amber-900/70 border-warning text-on-warning-container dark:text-amber-100 font-semibold';
                 } else if (isAnswered) {
-                  tileCls = 'bg-emerald-600 border-emerald-400 text-white font-bold';
+                  tileCls = 'bg-success border-success text-on-success font-bold';
                 }
 
                 return (
@@ -692,7 +697,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
                     type="button"
                     onClick={() => setCurrentIdx(idx)}
                     className={`h-9 rounded-lg border text-xs font-mono tabular-nums transition-transform ${tileCls} ${
-                      isCurrent ? 'ring-2 ring-white scale-105' : ''
+                      isCurrent ? 'ring-2 ring-secondary scale-105' : ''
                     }`}
                   >
                     {idx + 1}
@@ -701,65 +706,75 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
               })}
             </div>
 
-            <div className="pt-3 border-t border-[#514871] grid grid-cols-2 gap-2 text-[11px] text-[#CFCEDD]">
+            <div className="pt-3 border-t border-outline-variant/60 dark:border-slate-800 grid grid-cols-2 gap-2 text-[11px] text-on-surface-variant dark:text-slate-300">
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-xs bg-emerald-600 inline-block" />
+                <span className="w-3 h-3 rounded-xs bg-success inline-block" />
                 <span>Answered ({stats.answered})</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-xs bg-[#1C0E29] border border-[#7C7397] inline-block" />
+                <span className="w-3 h-3 rounded-xs bg-surface-container-low dark:bg-slate-800 border border-outline-variant dark:border-slate-700 inline-block" />
                 <span>Unanswered ({stats.unanswered})</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-xs bg-amber-500 inline-block" />
+                <span className="w-3 h-3 rounded-xs bg-warning inline-block" />
                 <span>Marked ({stats.marked})</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-xs ring-2 ring-white inline-block" />
+                <span className="w-3 h-3 rounded-xs ring-2 ring-secondary inline-block" />
                 <span>Current</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-[#3D2C56]/80 border border-[#7C7397]/50 rounded-xl p-4 text-xs text-[#CFCEDD] space-y-1.5">
-            <p className="font-semibold text-white">Examination Rules</p>
+          <div className="bg-surface-container-low dark:bg-slate-900 border border-outline-variant dark:border-slate-800 rounded-xl p-4 text-xs text-on-surface-variant dark:text-slate-300 space-y-1.5">
+            <p className="font-semibold text-primary dark:text-white">Examination Rules</p>
             <p>
               {config.mode === 'exam'
                 ? 'Answers and explanations remain hidden until final test submission. Unanswered questions incur zero negative penalty.'
                 : 'Practice Mode allows checking step-by-step explanations after attempting each question.'}
             </p>
-            <p className="text-[#B5ADC6]">Progress is automatically saved to your account.</p>
+            <p className="text-secondary dark:text-blue-400 font-medium">
+              Progress is automatically saved to your account.
+            </p>
           </div>
         </aside>
       </div>
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-md rounded-xl bg-[#3D2C56] border border-[#B5ADC6]/40 p-6 space-y-4">
-            <h3 className="font-display text-lg font-bold text-white">Submit {config.title}?</h3>
-            <div className="grid grid-cols-3 gap-2 text-center bg-[#1C0E29] rounded-lg p-3 text-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md rounded-xl bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-700 p-6 space-y-4 shadow-xl">
+            <h3 className="font-display text-lg font-bold text-primary dark:text-white">
+              Submit {config.title}?
+            </h3>
+            <div className="grid grid-cols-3 gap-2 text-center bg-surface-container-low dark:bg-slate-800 rounded-lg p-3 text-xs border border-outline-variant/60 dark:border-slate-700">
               <div>
-                <p className="text-[#B5ADC6]">Answered</p>
-                <p className="text-lg font-bold text-emerald-400 tabular-nums">{stats.answered}</p>
+                <p className="text-on-surface-variant dark:text-slate-300">Answered</p>
+                <p className="text-lg font-bold text-success dark:text-emerald-400 font-mono tabular-nums">
+                  {stats.answered}
+                </p>
               </div>
               <div>
-                <p className="text-[#B5ADC6]">Marked</p>
-                <p className="text-lg font-bold text-amber-400 tabular-nums">{stats.marked}</p>
+                <p className="text-on-surface-variant dark:text-slate-300">Marked</p>
+                <p className="text-lg font-bold text-warning dark:text-amber-400 font-mono tabular-nums">
+                  {stats.marked}
+                </p>
               </div>
               <div>
-                <p className="text-[#B5ADC6]">Skipped</p>
-                <p className="text-lg font-bold text-white tabular-nums">{stats.unanswered}</p>
+                <p className="text-on-surface-variant dark:text-slate-300">Skipped</p>
+                <p className="text-lg font-bold text-on-surface dark:text-white font-mono tabular-nums">
+                  {stats.unanswered}
+                </p>
               </div>
             </div>
-            <p className="text-xs text-[#CFCEDD]">
+            <p className="text-xs text-on-surface-variant dark:text-slate-300">
               Once submitted, your score sheet, negative marking breakdown, weak topic analytics, and full solution key will be generated.
             </p>
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2 rounded-lg border border-[#7C7397] text-xs font-semibold text-white hover:bg-[#514871]"
+                className="px-4 py-2 rounded-lg border border-outline-variant dark:border-slate-700 text-xs font-semibold text-on-surface dark:text-white hover:bg-surface-container-low dark:hover:bg-slate-800"
               >
                 Continue Test
               </button>
@@ -767,7 +782,7 @@ export const OnlineExamRunner: React.FC<OnlineExamRunnerProps> = ({
                 type="button"
                 disabled={submitting}
                 onClick={handleFinalSubmit}
-                className="px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-bold hover:bg-white"
+                className="px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-bold hover:bg-primary transition-colors"
               >
                 {submitting ? 'Submitting...' : 'Confirm & Score'}
               </button>

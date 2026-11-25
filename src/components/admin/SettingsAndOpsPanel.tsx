@@ -9,14 +9,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import {
-  Bell,
   Database,
-  Image as ImageIcon,
-  Megaphone,
-  MessageSquare,
-  Plus,
-  Settings,
-  Shield,
   Trash2,
   UserPlus,
   X,
@@ -161,7 +154,6 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
     })();
   }, [activeSection, getIdToken]);
 
-  // Staff CRUD + RBAC sync
   const openAddStaff = () => {
     setEditingStaff(null);
     setStfUid('');
@@ -270,7 +262,6 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
     onNotify('ok', `${s.fullName} marked ${nextStatus}.`);
   };
 
-  // Enquiries
   const handleEnquiryStatus = async (enq: EnquiryRecord, status: EnquiryRecord['status']) => {
     await updateDoc(doc(db, 'enquiries', enq.id), {
       status,
@@ -279,7 +270,6 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
     onNotify('ok', `Enquiry from ${enq.name} marked ${status}.`);
   };
 
-  // Gallery
   const handleAddGallery = async (e: React.FormEvent) => {
     e.preventDefault();
     await addDoc(collection(db, 'gallery'), {
@@ -296,7 +286,6 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
     onNotify('ok', 'Gallery image published.');
   };
 
-  // Announcements
   const handleAddAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     await addDoc(collection(db, 'announcements'), {
@@ -311,7 +300,6 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
     onNotify('ok', 'Library announcement published.');
   };
 
-  // Notifications Broadcast
   const handleSendInAppBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
     await addDoc(collection(db, 'notifications'), {
@@ -328,7 +316,6 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
     onNotify('ok', 'In-app notification dispatched.');
   };
 
-  // Settings Save
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     await setDoc(doc(db, 'library_settings', 'main'), {
@@ -368,15 +355,20 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
     }
   };
 
+  const inputCls =
+    'w-full px-3 py-2 text-sm rounded border border-outline-variant dark:border-slate-700 bg-surface dark:bg-slate-800 text-on-surface dark:text-white focus:border-secondary focus:outline-none';
+  const cardCls =
+    'rounded-lg bg-surface-container-lowest dark:bg-slate-900 border border-outline-variant dark:border-slate-800 shadow-sm';
+
   if (activeSection === 'staff') {
     return (
-      <div className="space-y-6 text-white">
+      <div className="space-y-6 text-on-surface dark:text-slate-100">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="font-display text-2xl font-bold text-white">
+            <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
               Staff &amp; Manager Access Control
             </h2>
-            <p className="text-xs text-[#CFCEDD]">
+            <p className="text-xs text-on-surface-variant dark:text-slate-400">
               Assign granular desk permissions and link Firebase UIDs to enforce backend role checks.
             </p>
           </div>
@@ -384,62 +376,62 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
             <button
               type="button"
               onClick={openAddStaff}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold hover:bg-white"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
             >
               <UserPlus className="w-4 h-4" /> Add Staff / Manager
             </button>
           )}
         </div>
 
-        <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-x-auto">
+        <div className={`${cardCls} overflow-x-auto`}>
           <table className="w-full text-left text-sm">
-            <thead className="bg-[#0E0713]/60 text-xs uppercase text-[#CFCEDD]">
+            <thead className="bg-surface-container-low dark:bg-slate-800/80 text-xs uppercase text-on-surface-variant dark:text-slate-300 border-b border-outline-variant dark:border-slate-700">
               <tr>
-                <th className="px-4 py-3">Staff</th>
-                <th className="px-4 py-3">Role &amp; Shift</th>
-                <th className="px-4 py-3">Permissions</th>
-                <th className="px-4 py-3 text-right">Salary</th>
-                <th className="px-4 py-3">Status</th>
-                {isAdmin && <th className="px-4 py-3 text-right">Actions</th>}
+                <th className="px-4 py-3 font-semibold">Staff</th>
+                <th className="px-4 py-3 font-semibold">Role &amp; Shift</th>
+                <th className="px-4 py-3 font-semibold">Permissions</th>
+                <th className="px-4 py-3 text-right font-semibold">Salary</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
+                {isAdmin && <th className="px-4 py-3 text-right font-semibold">Actions</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#7C7397]/25">
+            <tbody className="divide-y divide-outline-variant/60 dark:divide-slate-800">
               {staffList.map((s) => (
                 <tr key={s.id}>
                   <td className="px-4 py-3">
-                    <div className="font-semibold text-xs text-white">{s.fullName}</div>
-                    <div className="font-mono text-[11px] text-[#CFCEDD]">
+                    <div className="font-semibold text-xs text-on-surface dark:text-white">{s.fullName}</div>
+                    <div className="font-mono text-[11px] text-on-surface-variant dark:text-slate-400">
                       {s.staffCode} · {s.email}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-xs">
-                    <div className="font-semibold capitalize text-white">{s.role}</div>
-                    <div className="text-[#CFCEDD]">{s.shift}</div>
+                    <div className="font-semibold capitalize text-on-surface dark:text-white">{s.role}</div>
+                    <div className="text-on-surface-variant dark:text-slate-400">{s.shift}</div>
                   </td>
-                  <td className="px-4 py-3 text-xs text-[#CFCEDD] max-w-xs">
+                  <td className="px-4 py-3 text-xs text-on-surface-variant dark:text-slate-300 max-w-xs">
                     {(s.permissions || []).map((p) => p.replace(/_/g, ' ')).join(' · ')}
                   </td>
-                  <td className="px-4 py-3 text-right font-mono text-xs tabular-nums text-white">
+                  <td className="px-4 py-3 text-right font-mono text-xs tabular-nums text-on-surface dark:text-white">
                     ₹{Number(s.monthlySalary).toLocaleString('en-IN')}
                   </td>
                   <td className="px-4 py-3 text-xs font-semibold capitalize">
-                    <span className={s.status === 'active' ? 'text-emerald-300' : 'text-[#9993AC]'}>
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] ${s.status === 'active' ? 'bg-success-container text-on-success-container' : 'bg-surface-variant text-on-surface-variant'}`}>
                       {s.status}
                     </span>
                   </td>
                   {isAdmin && (
-                    <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                    <td className="px-4 py-3 text-right space-x-2.5 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => openEditStaff(s)}
-                        className="text-xs font-semibold text-[#B5ADC6] hover:text-white hover:underline"
+                        className="text-xs font-semibold text-secondary hover:underline cursor-pointer"
                       >
                         Edit
                       </button>
                       <button
                         type="button"
                         onClick={() => handleToggleStaffStatus(s)}
-                        className="text-xs font-semibold text-[#CFCEDD] hover:text-white hover:underline"
+                        className="text-xs font-semibold text-on-surface-variant hover:text-primary hover:underline cursor-pointer"
                       >
                         {s.status === 'active' ? 'Disable' : 'Enable'}
                       </button>
@@ -452,104 +444,63 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
         </div>
 
         {showStaffModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-            <div className="w-full max-w-lg bg-[#3D2C56] rounded-xl border border-[#7C7397] p-6 space-y-4 max-h-[90vh] overflow-y-auto text-white">
-              <div className="flex items-center justify-between">
-                <h3 className="font-display text-lg font-bold text-white">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 backdrop-blur-xs p-4">
+            <div className="w-full max-w-lg bg-surface-container-lowest dark:bg-slate-900 rounded-xl border border-outline-variant dark:border-slate-700 p-6 space-y-4 max-h-[90vh] overflow-y-auto text-on-surface dark:text-slate-100 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-outline-variant dark:border-slate-800 pb-3">
+                <h3 className="font-display text-lg font-bold text-primary dark:text-white">
                   {editingStaff ? 'Update Staff Permissions' : 'Add Staff or Manager'}
                 </h3>
-                <button type="button" onClick={() => setShowStaffModal(false)}>
-                  <X className="w-5 h-5 text-[#CFCEDD]" />
+                <button type="button" onClick={() => setShowStaffModal(false)} className="text-on-surface-variant hover:text-primary cursor-pointer">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
               <form onSubmit={handleSaveStaff} className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Full Name</label>
-                    <input
-                      type="text"
-                      required
-                      value={stfName}
-                      onChange={(e) => setStfName(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
-                    />
+                    <label className="block text-xs font-semibold mb-1">Full Name</label>
+                    <input type="text" required value={stfName} onChange={(e) => setStfName(e.target.value)} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Mobile</label>
-                    <input
-                      type="tel"
-                      required
-                      value={stfMobile}
-                      onChange={(e) => setStfMobile(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
-                    />
+                    <label className="block text-xs font-semibold mb-1">Mobile</label>
+                    <input type="tel" required value={stfMobile} onChange={(e) => setStfMobile(e.target.value)} className={inputCls} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Email</label>
-                    <input
-                      type="email"
-                      required
-                      value={stfEmail}
-                      onChange={(e) => setStfEmail(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
-                    />
+                    <label className="block text-xs font-semibold mb-1">Email</label>
+                    <input type="email" required value={stfEmail} onChange={(e) => setStfEmail(e.target.value)} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Firebase Auth UID (Optional)</label>
-                    <input
-                      type="text"
-                      value={stfUid}
-                      onChange={(e) => setStfUid(e.target.value)}
-                      placeholder="Links live RBAC login"
-                      className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
-                    />
+                    <label className="block text-xs font-semibold mb-1">Firebase Auth UID (Optional)</label>
+                    <input type="text" value={stfUid} onChange={(e) => setStfUid(e.target.value)} placeholder="Links live RBAC login" className={`${inputCls} font-mono`} />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Role</label>
-                    <select
-                      value={stfRole}
-                      onChange={(e) => setStfRole(e.target.value as 'staff' | 'manager')}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
-                    >
+                    <label className="block text-xs font-semibold mb-1">Role</label>
+                    <select value={stfRole} onChange={(e) => setStfRole(e.target.value as 'staff' | 'manager')} className={inputCls}>
                       <option value="staff">Staff</option>
                       <option value="manager">Manager</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Shift</label>
-                    <input
-                      type="text"
-                      required
-                      value={stfShift}
-                      onChange={(e) => setStfShift(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
-                    />
+                    <label className="block text-xs font-semibold mb-1">Shift</label>
+                    <input type="text" required value={stfShift} onChange={(e) => setStfShift(e.target.value)} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Monthly Salary</label>
-                    <input
-                      type="number"
-                      min={0}
-                      required
-                      value={stfSalary}
-                      onChange={(e) => setStfSalary(Number(e.target.value))}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#1C0E29] text-white"
-                    />
+                    <label className="block text-xs font-semibold mb-1">Monthly Salary</label>
+                    <input type="number" min={0} required value={stfSalary} onChange={(e) => setStfSalary(Number(e.target.value))} className={inputCls} />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CFCEDD] mb-1.5">Granular Permissions</label>
+                  <label className="block text-xs font-semibold mb-1.5">Granular Permissions</label>
                   <div className="grid grid-cols-2 gap-2">
                     {ALL_STAFF_PERMISSIONS.map((perm) => {
                       const checked = stfPerms.includes(perm);
                       return (
                         <label
                           key={perm}
-                          className="flex items-center gap-2 text-xs p-2 rounded-lg border border-[#7C7397]/50 bg-[#1C0E29]/60 cursor-pointer"
+                          className="flex items-center gap-2 text-xs p-2 rounded border border-outline-variant dark:border-slate-700 bg-surface-container-low dark:bg-slate-800 cursor-pointer"
                         >
                           <input
                             type="checkbox"
@@ -568,7 +519,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold hover:bg-white"
+                  className="w-full py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
                 >
                   Save Staff Account
                 </button>
@@ -582,12 +533,12 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
 
   if (activeSection === 'enquiries') {
     return (
-      <div className="space-y-6 text-white">
+      <div className="space-y-6 text-on-surface dark:text-slate-100">
         <div>
-          <h2 className="font-display text-2xl font-bold text-white">
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
             Public Website Enquiries ({enquiries.length})
           </h2>
-          <p className="text-xs text-[#CFCEDD]">
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
             Inquiries submitted via the Contact Us page are stored here for follow-up.
           </p>
         </div>
@@ -595,25 +546,25 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
           {enquiries.map((e) => (
             <div
               key={e.id}
-              className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 flex flex-col md:flex-row md:items-center justify-between gap-4"
+              className={`${cardCls} p-5 flex flex-col md:flex-row md:items-center justify-between gap-4`}
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="font-bold text-sm text-white">{e.subject}</span>
-                  <span className="text-[#9993AC]">·</span>
-                  <span className="capitalize font-semibold text-[#B5ADC6]">{e.status}</span>
+                  <span className="font-bold text-sm text-primary dark:text-white">{e.subject}</span>
+                  <span className="text-outline">·</span>
+                  <span className="capitalize font-semibold text-secondary dark:text-blue-400">{e.status}</span>
                 </div>
-                <p className="text-xs text-[#CFCEDD]">
+                <p className="text-xs text-on-surface-variant dark:text-slate-400">
                   {e.name} · {e.phone} · {e.email}
                 </p>
-                <p className="text-sm text-[#CFCEDD] mt-1">{e.message}</p>
+                <p className="text-sm text-on-surface dark:text-slate-200 mt-1">{e.message}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {e.status !== 'contacted' && (
                   <button
                     type="button"
                     onClick={() => handleEnquiryStatus(e, 'contacted')}
-                    className="px-3 py-1.5 rounded-lg border border-[#7C7397]/60 text-xs font-semibold text-white"
+                    className="px-3 py-1.5 rounded border border-outline-variant dark:border-slate-700 text-xs font-semibold text-primary dark:text-white hover:bg-surface-container-low cursor-pointer"
                   >
                     Mark Contacted
                   </button>
@@ -622,7 +573,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
                   <button
                     type="button"
                     onClick={() => handleEnquiryStatus(e, 'resolved')}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold"
+                    className="px-3 py-1.5 rounded bg-success text-on-success text-xs font-semibold cursor-pointer"
                   >
                     Resolve
                   </button>
@@ -631,7 +582,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
                   <button
                     type="button"
                     onClick={() => deleteDoc(doc(db, 'enquiries', e.id))}
-                    className="p-1.5 text-red-300"
+                    className="p-1.5 text-error hover:bg-error-container rounded cursor-pointer"
                     aria-label="Delete enquiry"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -641,7 +592,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
             </div>
           ))}
           {enquiries.length === 0 && (
-            <div className="p-8 text-center rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 text-xs text-[#CFCEDD]">
+            <div className={`${cardCls} p-8 text-center text-xs text-on-surface-variant dark:text-slate-400`}>
               No public contact enquiries received yet.
             </div>
           )}
@@ -652,10 +603,10 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
 
   if (activeSection === 'gallery') {
     return (
-      <div className="space-y-6 text-white">
+      <div className="space-y-6 text-on-surface dark:text-slate-100">
         <div>
-          <h2 className="font-display text-2xl font-bold text-white">Gallery Management</h2>
-          <p className="text-xs text-[#CFCEDD]">
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">Gallery Management</h2>
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
             Add or remove library interior photographs displayed on the public homepage.
           </p>
         </div>
@@ -663,76 +614,44 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
         {isManagerOrAdmin && (
           <form
             onSubmit={handleAddGallery}
-            className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"
+            className={`${cardCls} p-5 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end`}
           >
             <div>
-              <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Photo Title</label>
-              <input
-                type="text"
-                required
-                value={galTitle}
-                onChange={(e) => setGalTitle(e.target.value)}
-                placeholder="Silent Hall Wing B"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-              />
+              <label className="block text-xs font-semibold mb-1">Photo Title</label>
+              <input type="text" required value={galTitle} onChange={(e) => setGalTitle(e.target.value)} placeholder="Silent Hall Wing B" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Category</label>
-              <input
-                type="text"
-                required
-                value={galCat}
-                onChange={(e) => setGalCat(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-              />
+              <label className="block text-xs font-semibold mb-1">Category</label>
+              <input type="text" required value={galCat} onChange={(e) => setGalCat(e.target.value)} className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Image URL</label>
-              <input
-                type="text"
-                required
-                value={galUrl}
-                onChange={(e) => setGalUrl(e.target.value)}
-                placeholder="https://... or /assets/..."
-                className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-              />
+              <label className="block text-xs font-semibold mb-1">Image URL</label>
+              <input type="text" required value={galUrl} onChange={(e) => setGalUrl(e.target.value)} placeholder="https://... or /assets/..." className={inputCls} />
             </div>
-            <button
-              type="submit"
-              className="py-2 px-4 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold hover:bg-white"
-            >
+            <button type="submit" className="py-2 px-4 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer">
               Add Photo
             </button>
             <div className="sm:col-span-4">
-              <input
-                type="text"
-                value={galCaption}
-                onChange={(e) => setGalCaption(e.target.value)}
-                placeholder="Short architectural / desk caption"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-              />
+              <input type="text" value={galCaption} onChange={(e) => setGalCaption(e.target.value)} placeholder="Short architectural / desk caption" className={inputCls} />
             </div>
           </form>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {gallery.map((g) => (
-            <div
-              key={g.id}
-              className="rounded-xl overflow-hidden bg-[#514871] border border-[#7C7397]/40"
-            >
+            <div key={g.id} className={`${cardCls} overflow-hidden`}>
               <img src={g.imageUrl} alt={g.title} className="w-full aspect-4/3 object-cover" />
               <div className="p-4 flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase text-[#B5ADC6]">{g.category}</p>
-                  <p className="font-semibold text-sm text-white">{g.title}</p>
-                  <p className="text-xs text-[#CFCEDD] mt-0.5">{g.caption}</p>
+                  <p className="text-[11px] font-semibold uppercase text-secondary dark:text-blue-400">{g.category}</p>
+                  <p className="font-semibold text-sm text-on-surface dark:text-white">{g.title}</p>
+                  <p className="text-xs text-on-surface-variant dark:text-slate-400 mt-0.5">{g.caption}</p>
                 </div>
                 {isAdmin && (
                   <button
                     type="button"
                     onClick={() => deleteDoc(doc(db, 'gallery', g.id))}
-                    className="p-1.5 text-red-300"
+                    className="p-1.5 text-error hover:bg-error-container rounded cursor-pointer"
                     aria-label="Delete photo"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -748,21 +667,18 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
 
   if (activeSection === 'announcements') {
     return (
-      <div className="space-y-6 text-white">
+      <div className="space-y-6 text-on-surface dark:text-slate-100">
         <div>
-          <h2 className="font-display text-2xl font-bold text-white">
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
             Announcements &amp; Notice Board
           </h2>
-          <p className="text-xs text-[#CFCEDD]">
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
             Published announcements appear on the public homepage and inside every Student Portal.
           </p>
         </div>
 
         {isManagerOrAdmin && (
-          <form
-            onSubmit={handleAddAnnouncement}
-            className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 space-y-3"
-          >
+          <form onSubmit={handleAddAnnouncement} className={`${cardCls} p-5 space-y-3`}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <input
                 type="text"
@@ -770,12 +686,12 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
                 value={annTitle}
                 onChange={(e) => setAnnTitle(e.target.value)}
                 placeholder="Announcement headline"
-                className="sm:col-span-2 px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+                className={`sm:col-span-2 ${inputCls}`}
               />
               <select
                 value={annPriority}
                 onChange={(e) => setAnnPriority(e.target.value as 'normal' | 'important')}
-                className="px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+                className={inputCls}
               >
                 <option value="normal">Normal Notice</option>
                 <option value="important">Important Priority</option>
@@ -787,11 +703,11 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
               value={annBody}
               onChange={(e) => setAnnBody(e.target.value)}
               placeholder="Write full announcement text..."
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+              className={inputCls}
             />
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold hover:bg-white"
+              className="px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
             >
               Publish Announcement
             </button>
@@ -800,25 +716,20 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
 
         <div className="space-y-3">
           {announcements.map((a) => (
-            <div
-              key={a.id}
-              className="p-4 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 flex items-start justify-between gap-4"
-            >
+            <div key={a.id} className={`${cardCls} p-4 flex items-start justify-between gap-4`}>
               <div>
-                <p className="text-xs font-semibold uppercase text-[#B5ADC6]">
+                <p className="text-xs font-semibold uppercase text-secondary dark:text-blue-400">
                   {a.priority} · {a.published ? 'Published' : 'Hidden'}
                 </p>
-                <h4 className="font-semibold text-sm mt-0.5 text-white">{a.title}</h4>
-                <p className="text-xs text-[#CFCEDD] mt-1">{a.body}</p>
+                <h4 className="font-semibold text-sm mt-0.5 text-on-surface dark:text-white">{a.title}</h4>
+                <p className="text-xs text-on-surface-variant dark:text-slate-300 mt-1">{a.body}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 {isManagerOrAdmin && (
                   <button
                     type="button"
-                    onClick={() =>
-                      updateDoc(doc(db, 'announcements', a.id), { published: !a.published })
-                    }
-                    className="text-xs font-semibold text-[#B5ADC6] hover:text-white hover:underline"
+                    onClick={() => updateDoc(doc(db, 'announcements', a.id), { published: !a.published })}
+                    className="text-xs font-semibold text-secondary hover:underline cursor-pointer"
                   >
                     {a.published ? 'Unpublish' : 'Publish'}
                   </button>
@@ -827,7 +738,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
                   <button
                     type="button"
                     onClick={() => deleteDoc(doc(db, 'announcements', a.id))}
-                    className="text-red-300"
+                    className="text-error hover:bg-error-container p-1 rounded cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -842,12 +753,12 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
 
   if (activeSection === 'notifications') {
     return (
-      <div className="space-y-6 text-white">
+      <div className="space-y-6 text-on-surface dark:text-slate-100">
         <div>
-          <h2 className="font-display text-2xl font-bold text-white">
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
             Notifications &amp; Integration Status
           </h2>
-          <p className="text-xs text-[#CFCEDD]">
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
             In-app notifications are always active. External gateways remain disabled unless configured in server environment secrets.
           </p>
         </div>
@@ -858,33 +769,19 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
             { name: 'SMTP Email Relay', ready: providers?.email.configured },
             { name: 'Transactional SMS Gateway', ready: providers?.sms.configured },
           ].map((item) => (
-            <div
-              key={item.name}
-              className="p-4 rounded-xl bg-[#514871] border border-[#7C7397]/40"
-            >
-              <p className="text-xs text-[#CFCEDD] font-medium">{item.name}</p>
-              <p
-                className={`text-sm font-bold mt-1 ${
-                  item.ready ? 'text-emerald-300' : 'text-[#B5ADC6]'
-                }`}
-              >
+            <div key={item.name} className={`${cardCls} p-4`}>
+              <p className="text-xs text-on-surface-variant dark:text-slate-400 font-semibold">{item.name}</p>
+              <p className={`text-sm font-bold mt-1 ${item.ready ? 'text-success' : 'text-outline'}`}>
                 {item.ready ? 'Active & Configured' : 'Not Configured'}
               </p>
             </div>
           ))}
         </div>
 
-        <form
-          onSubmit={handleSendInAppBroadcast}
-          className="p-5 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 space-y-3"
-        >
-          <h3 className="text-sm font-semibold text-white">Dispatch In-App Student Notification</h3>
+        <form onSubmit={handleSendInAppBroadcast} className={`${cardCls} p-5 space-y-3`}>
+          <h3 className="text-sm font-semibold text-primary dark:text-white">Dispatch In-App Student Notification</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <select
-              value={notifRecipient}
-              onChange={(e) => setNotifRecipient(e.target.value)}
-              className="px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-            >
+            <select value={notifRecipient} onChange={(e) => setNotifRecipient(e.target.value)} className={inputCls}>
               <option value="ALL_STUDENTS">Broadcast to All Students</option>
               {students.map((s) => (
                 <option key={s.id} value={s.uid}>
@@ -898,7 +795,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
               value={notifTitle}
               onChange={(e) => setNotifTitle(e.target.value)}
               placeholder="Notification title"
-              className="px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+              className={inputCls}
             />
           </div>
           <textarea
@@ -907,11 +804,11 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
             value={notifMessage}
             onChange={(e) => setNotifMessage(e.target.value)}
             placeholder="Message content..."
-            className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+            className={inputCls}
           />
           <button
             type="submit"
-            className="px-4 py-2 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-xs font-semibold hover:bg-white"
+            className="px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-primary cursor-pointer"
           >
             Send Notification
           </button>
@@ -922,36 +819,36 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
 
   if (activeSection === 'audit') {
     return (
-      <div className="space-y-4 text-white">
+      <div className="space-y-4 text-on-surface dark:text-slate-100">
         <div>
-          <h2 className="font-display text-2xl font-bold text-white">
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
             Immutable Security Audit Logs ({auditLogs.length})
           </h2>
-          <p className="text-xs text-[#CFCEDD]">
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
             Append-only operational trail across authentication, payments, seat updates, exam publishing, and role changes.
           </p>
         </div>
-        <div className="rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 overflow-x-auto">
+        <div className={`${cardCls} overflow-x-auto`}>
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#0E0713]/60 uppercase text-[#CFCEDD]">
+            <thead className="bg-surface-container-low dark:bg-slate-800/80 uppercase text-on-surface-variant dark:text-slate-300 border-b border-outline-variant dark:border-slate-700">
               <tr>
-                <th className="px-4 py-3">Action</th>
-                <th className="px-4 py-3">Actor</th>
-                <th className="px-4 py-3">Target</th>
-                <th className="px-4 py-3">Details</th>
+                <th className="px-4 py-3 font-semibold">Action</th>
+                <th className="px-4 py-3 font-semibold">Actor</th>
+                <th className="px-4 py-3 font-semibold">Target</th>
+                <th className="px-4 py-3 font-semibold">Details</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#7C7397]/25">
+            <tbody className="divide-y divide-outline-variant/60 dark:divide-slate-800">
               {auditLogs.map((l) => (
                 <tr key={l.id}>
-                  <td className="px-4 py-3 font-mono font-semibold text-[#B5ADC6]">{l.action}</td>
-                  <td className="px-4 py-3 text-white">
-                    {l.actorEmail} · <span className="capitalize text-[#CFCEDD]">{l.actorRole}</span>
+                  <td className="px-4 py-3 font-mono font-semibold text-secondary dark:text-blue-400">{l.action}</td>
+                  <td className="px-4 py-3 text-on-surface dark:text-white">
+                    {l.actorEmail} · <span className="capitalize text-on-surface-variant dark:text-slate-400">{l.actorRole}</span>
                   </td>
-                  <td className="px-4 py-3 font-mono text-[#CFCEDD]">
+                  <td className="px-4 py-3 font-mono text-on-surface-variant dark:text-slate-300">
                     {l.targetType}/{l.targetId}
                   </td>
-                  <td className="px-4 py-3 text-[#CFCEDD]">{l.details}</td>
+                  <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{l.details}</td>
                 </tr>
               ))}
             </tbody>
@@ -961,15 +858,14 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
     );
   }
 
-  // Library Settings & Demo Seed
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6 text-on-surface dark:text-slate-100">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl font-bold text-white">
+          <h2 className="font-display text-2xl font-bold text-primary dark:text-white">
             Library Profile, Facilities &amp; Demo Seed
           </h2>
-          <p className="text-xs text-[#CFCEDD]">
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
             Changes sync immediately to the public homepage, Google Maps pin, and receipts.
           </p>
         </div>
@@ -978,7 +874,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
             type="button"
             disabled={seedingDemo}
             onClick={handleSeedDemo}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#B5ADC6] text-[#B5ADC6] text-xs font-semibold hover:bg-[#514871] hover:text-white disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded border border-secondary text-secondary text-xs font-semibold hover:bg-secondary hover:text-on-secondary disabled:opacity-50 cursor-pointer"
           >
             <Database className="w-4 h-4" />
             {seedingDemo ? 'Populating Demo Data...' : 'Seed 175-Record Demonstration Dataset'}
@@ -986,130 +882,67 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
         )}
       </div>
 
-      <form
-        onSubmit={handleSaveSettings}
-        className="p-6 rounded-xl bg-[#3D2C56] border border-[#7C7397]/40 space-y-5"
-      >
+      <form onSubmit={handleSaveSettings} className={`${cardCls} p-6 space-y-5`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Library Name</label>
-            <input
-              type="text"
-              required
-              value={libName}
-              onChange={(e) => setLibName(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-            />
+            <label className="block text-xs font-semibold mb-1">Library Name</label>
+            <input type="text" required value={libName} onChange={(e) => setLibName(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Tagline</label>
-            <input
-              type="text"
-              required
-              value={tagline}
-              onChange={(e) => setTagline(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-            />
+            <label className="block text-xs font-semibold mb-1">Tagline</label>
+            <input type="text" required value={tagline} onChange={(e) => setTagline(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Phone</label>
-            <input
-              type="text"
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-            />
+            <label className="block text-xs font-semibold mb-1">Phone</label>
+            <input type="text" required value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">WhatsApp</label>
-            <input
-              type="text"
-              required
-              value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-            />
+            <label className="block text-xs font-semibold mb-1">WhatsApp</label>
+            <input type="text" required value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Official Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-            />
+            <label className="block text-xs font-semibold mb-1">Official Email</label>
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Opening Hours</label>
-            <input
-              type="text"
-              required
-              value={openingHours}
-              onChange={(e) => setOpeningHours(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-            />
+            <label className="block text-xs font-semibold mb-1">Opening Hours</label>
+            <input type="text" required value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} className={inputCls} />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Full Street Address</label>
-            <input
-              type="text"
-              required
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-            />
+            <label className="block text-xs font-semibold mb-1">Full Street Address</label>
+            <input type="text" required value={address} onChange={(e) => setAddress(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Google Maps Latitude</label>
-            <input
-              type="number"
-              step="0.0001"
-              required
-              value={mapLat}
-              onChange={(e) => setMapLat(Number(e.target.value))}
-              className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-            />
+            <label className="block text-xs font-semibold mb-1">Google Maps Latitude</label>
+            <input type="number" step="0.0001" required value={mapLat} onChange={(e) => setMapLat(Number(e.target.value))} className={`${inputCls} font-mono`} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Google Maps Longitude</label>
-            <input
-              type="number"
-              step="0.0001"
-              required
-              value={mapLng}
-              onChange={(e) => setMapLng(Number(e.target.value))}
-              className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-            />
+            <label className="block text-xs font-semibold mb-1">Google Maps Longitude</label>
+            <input type="number" step="0.0001" required value={mapLng} onChange={(e) => setMapLng(Number(e.target.value))} className={`${inputCls} font-mono`} />
           </div>
         </div>
 
-        <label className="flex items-center gap-2.5 text-sm font-medium cursor-pointer text-white">
-          <input
-            type="checkbox"
-            checked={is24Hour}
-            onChange={(e) => setIs24Hour(e.target.checked)}
-          />
+        <label className="flex items-center gap-2.5 text-sm font-medium cursor-pointer">
+          <input type="checkbox" checked={is24Hour} onChange={(e) => setIs24Hour(e.target.checked)} />
           Enable 24-Hour Study Hall Access Badge &amp; Policy on Public Website
         </label>
 
         {/* Editable Facilities */}
-        <div className="space-y-3 pt-4 border-t border-[#7C7397]/40">
-          <h4 className="text-sm font-semibold text-white">
+        <div className="space-y-3 pt-4 border-t border-outline-variant dark:border-slate-800">
+          <h4 className="text-sm font-semibold text-primary dark:text-white">
             Editable Public Facilities ({facilities.length}/20)
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {facilities.map((fac, idx) => (
               <div
                 key={`${fac}-${idx}`}
-                className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#1C0E29] border border-[#7C7397]/50 text-xs text-[#CFCEDD]"
+                className="flex items-center justify-between px-3 py-2 rounded bg-surface-container-low dark:bg-slate-800 border border-outline-variant dark:border-slate-700 text-xs"
               >
                 <span>{fac}</span>
                 <button
                   type="button"
                   onClick={() => setFacilities((prev) => prev.filter((_, i) => i !== idx))}
-                  className="text-red-300 ml-2"
+                  className="text-error ml-2 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1122,7 +955,7 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
               value={newFacility}
               onChange={(e) => setNewFacility(e.target.value)}
               placeholder="Add new facility (e.g. Personal Storage Lockers)"
-              className="flex-1 px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
+              className={`flex-1 ${inputCls}`}
             />
             <button
               type="button"
@@ -1131,37 +964,27 @@ export const SettingsAndOpsPanel: React.FC<SettingsAndOpsPanelProps> = ({
                 setFacilities((prev) => [...prev, newFacility.trim()]);
                 setNewFacility('');
               }}
-              className="px-4 py-2 rounded-lg border border-[#7C7397]/60 bg-[#514871] text-white text-xs font-semibold"
+              className="px-4 py-2 rounded border border-outline-variant dark:border-slate-700 bg-surface-container-low dark:bg-slate-800 text-primary dark:text-white text-xs font-semibold hover:bg-surface-container cursor-pointer"
             >
               Add Facility
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-[#7C7397]/40">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-outline-variant dark:border-slate-800">
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Terms &amp; Library Rules</label>
-            <textarea
-              rows={3}
-              value={termsText}
-              onChange={(e) => setTermsText(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-            />
+            <label className="block text-xs font-semibold mb-1">Terms &amp; Library Rules</label>
+            <textarea rows={3} value={termsText} onChange={(e) => setTermsText(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#CFCEDD] mb-1">Privacy Policy Text</label>
-            <textarea
-              rows={3}
-              value={privacyText}
-              onChange={(e) => setPrivacyText(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[#7C7397]/60 bg-[#0E0713] text-white"
-            />
+            <label className="block text-xs font-semibold mb-1">Privacy Policy Text</label>
+            <textarea rows={3} value={privacyText} onChange={(e) => setPrivacyText(e.target.value)} className={inputCls} />
           </div>
         </div>
 
         <button
           type="submit"
-          className="px-6 py-2.5 rounded-lg bg-[#B5ADC6] text-[#0E0713] text-sm font-semibold hover:bg-white"
+          className="px-6 py-2.5 rounded bg-secondary text-on-secondary text-sm font-semibold hover:bg-primary cursor-pointer"
         >
           Save Library Configuration
         </button>
